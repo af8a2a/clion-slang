@@ -1,0 +1,14 @@
+{
+  "slang.predefinedMacros": [
+    "VULKAN=1",
+    "USE_BINDLESS=1"
+  ],
+  "slang.additionalSearchPaths": [
+    "${workspaceFolder}/Shaders",
+    "${workspaceFolder}/Shaders/Lib"
+  ],
+  "slang.searchInAllWorkspaceDirectories": true,
+  "slang.workspaceFlavor": "standard",
+  "slang.inlayHints.deducedTypes": true,
+  "slang.inlayHints.parameterNames": true
+}

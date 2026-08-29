@@ -1,0 +1,75 @@
+# Architecture
+
+## Product direction
+
+The plugin follows a two-layer design:
+
+```text
+CLion editor
+├── lightweight lexical layer
+│   └── file type, fallback colors, comments, braces, quotes
+└── JetBrains Native LSP client
+    └── slangd
+        └── official Slang compiler frontend
+```
+
+This is intentionally different from porting Rider's HLSL implementation. Rider's HLSL support is
+part of the ReSharper C++ backend and HLSL is not the same language as Slang. Slang-specific
+interfaces, extensions, modules, generics, associated types, variadics, and compiler diagnostics are
+best handled by `slangd`.
+
+## Main components
+
+- `lang/`: independent `Language`, `LanguageFileType`, token vocabulary, and handwritten tolerant lexer.
+- `highlighting/`: static fallback colors. LSP semantic tokens layer on top when `slangd` is running.
+- `editor/`: commenter, brace matcher, and quote handler.
+- `settings/`: per-project executable selection stored in the workspace file.
+- `lsp/`: executable discovery, project-wide LSP descriptor, and workspace configuration mapping.
+- `synth/`: support code for generated builtin-module documents returned through `slang-synth://` URIs.
+
+No component depends on CLion Classic/CIDR C++ PSI or on Radler internals.
+
+## Version strategy
+
+The checked-in implementation compiles against CLion 2026.1.3 because that IDE is available in the
+development environment. It sets that build as the minimum without an artificial maximum version,
+and uses the pre-2026.1.4 LSP names (`LspServerSupportProvider` and
+`ProjectWideLspServerDescriptor`) in a small adapter surface. JetBrains preserves these types after
+renaming them to `LspIntegrationProvider` and `ProjectWideLspClientDescriptor`, so the rest of the
+plugin is independent of that rename.
+
+When the minimum supported IDE moves past 2026.1.3, only the provider, descriptor, extension-point
+registration, and restart call need to switch to the new names.
+
+## Configuration contract
+
+`slangdconfig.json` is preferred over an IDE-only shader project model. Flattened settings such as
+`slang.predefinedMacros` and `slang.additionalSearchPaths` are converted to the value requested by
+LSP `workspace/configuration`. `${workspaceFolder}` is expanded against the project root. This keeps
+the configuration portable between CLion, VS Code, Visual Studio, and CI.
+
+CMake definitions and include paths are not imported automatically: host C++ options and shader
+options are often intentionally different. A future explicit import action can provide that bridge.
+
+## Synthetic builtin modules
+
+`slangd` can return definition URIs such as `slang-synth://core`. The descriptor maps those URIs to a
+read-only virtual document whose content is produced by:
+
+```text
+slangd --print-builtin-module <module>
+```
+
+Generated content is cached for the lifetime of the project/plugin process. A future cache can include
+the resolved `slangd` version as part of its persistent key.
+
+## Planned follow-ups
+
+1. Differential LSP tests against the official VS Code extension using the same `slangd` binary.
+2. Optional `.hlsl`/`.hlsli` ownership setting, disabled by default.
+3. Native variants that bundle matching `slangd` binaries per OS/architecture.
+4. Compile and Reflection actions backed by `slangc`.
+5. A non-blocking background cache for very large synthetic modules.
+
+Full Grammar-Kit PSI and the browser-based Playground remain out of scope until a concrete IDE
+feature requires them.

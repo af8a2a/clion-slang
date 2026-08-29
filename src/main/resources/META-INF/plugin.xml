@@ -1,0 +1,43 @@
+<idea-plugin>
+    <id>dev.shader.slang</id>
+    <name>Slang Language Support</name>
+    <vendor url="https://github.com/shader-slang/slang">Community</vendor>
+
+    <description><![CDATA[
+      Language support for the Slang shading language in CLion. The plugin provides
+      built-in lexical highlighting and editor assistance, then connects CLion's native
+      LSP client to the official <code>slangd</code> language server for diagnostics,
+      completion, navigation, semantic highlighting, inlay hints, and formatting.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.modules.ultimate</depends>
+    <depends>com.intellij.modules.lsp</depends>
+    <depends>com.intellij.modules.clion</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType
+                name="Slang"
+                language="Slang"
+                implementationClass="dev.slang.intellij.lang.SlangFileType"
+                fieldName="INSTANCE"
+                extensions="slang;slangh"/>
+
+        <lang.syntaxHighlighterFactory
+                language="Slang"
+                implementationClass="dev.slang.intellij.highlighting.SlangSyntaxHighlighterFactory"/>
+        <colorSettingsPage implementation="dev.slang.intellij.highlighting.SlangColorSettingsPage"/>
+        <lang.commenter language="Slang" implementationClass="dev.slang.intellij.editor.SlangCommenter"/>
+        <lang.braceMatcher language="Slang" implementationClass="dev.slang.intellij.editor.SlangBraceMatcher"/>
+        <lang.quoteHandler language="Slang" implementationClass="dev.slang.intellij.editor.SlangQuoteHandler"/>
+
+        <projectConfigurable
+                id="dev.shader.slang.settings"
+                parentId="language"
+                displayName="Slang"
+                instance="dev.slang.intellij.settings.SlangSettingsConfigurable"/>
+
+        <platform.lsp.serverSupportProvider implementation="dev.slang.intellij.lsp.SlangLspServerSupportProvider"/>
+    </extensions>
+</idea-plugin>
