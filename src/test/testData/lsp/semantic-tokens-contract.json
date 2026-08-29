@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "profiles": {
+    "stock": {
+      "legend": {
+        "tokenTypesExact": [
+          "type",
+          "enumMember",
+          "variable",
+          "parameter",
+          "function",
+          "property",
+          "namespace",
+          "keyword",
+          "macro",
+          "string"
+        ],
+        "tokenModifiersExact": []
+      },
+      "expectedTokens": [
+        { "text": "ContractMode", "type": "type", "line": 5 },
+        { "text": "ContractCool", "type": "enumMember", "line": 7 },
+        { "text": "contractWeight", "type": "variable", "minimumCount": 2 },
+        { "text": "contractNormal", "type": "parameter", "minimumCount": 3 },
+        { "text": "contractEntry", "type": "function", "line": 45 },
+        { "text": "ContractCorpus", "type": "namespace", "minimumCount": 3 },
+        { "text": "CONTRACT_SCALE", "type": "macro", "line": 34 },
+        { "text": "contractUtf16Color", "type": "variable", "line": 50 }
+      ]
+    },
+    "enhanced": {
+      "legend": {
+        "tokenTypesRequired": [
+          "type",
+          "enumMember",
+          "variable",
+          "parameter",
+          "function",
+          "property",
+          "namespace",
+          "keyword",
+          "macro",
+          "string",
+          "class",
+          "struct",
+          "interface",
+          "enum",
+          "typeParameter",
+          "method",
+          "decorator"
+        ],
+        "tokenModifiersRequired": [
+          "declaration",
+          "definition",
+          "readonly",
+          "static",
+          "defaultLibrary"
+        ]
+      },
+      "expectedTokens": [
+        { "text": "ContractReference", "type": "class", "line": 11, "modifiers": ["definition"] },
+        { "text": "ContractBox", "type": "struct", "line": 16, "modifiers": ["definition"] },
+        { "text": "TContractValue", "type": "typeParameter", "line": 16 },
+        { "text": "IContractSurface", "type": "interface", "line": 21, "modifiers": ["definition"] },
+        { "text": "ContractMode", "type": "enum", "line": 5, "modifiers": ["definition"] },
+        { "text": "contractEvaluate", "type": "method", "line": 23, "modifiers": ["declaration"] },
+        { "text": "contractEvaluate", "type": "method", "line": 31, "modifiers": ["definition"] },
+        { "text": "contractTint", "type": "property", "line": 28, "modifiers": ["declaration"] },
+        { "text": "CONTRACT_THREAD_COUNT", "type": "variable", "line": 40, "modifiers": ["readonly", "static"] },
+        { "text": "max", "type": "function", "line": 36, "modifiers": ["defaultLibrary"] },
+        { "text": "shader", "type": "decorator", "line": 43 }
+      ]
+    }
+  }
+}

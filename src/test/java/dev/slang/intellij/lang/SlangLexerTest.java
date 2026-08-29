@@ -17,7 +17,13 @@ import static org.junit.Assert.assertTrue;
 public class SlangLexerTest {
     @Test
     public void coversRepresentativeSlangWithoutGaps() throws IOException {
-        for (String fileName : List.of("Basic.slang", "Interface.slang", "ModernSyntax.slang", "BrokenSyntax.slang")) {
+        for (String fileName : List.of(
+                "Basic.slang",
+                "Interface.slang",
+                "ModernSyntax.slang",
+                "BrokenSyntax.slang",
+                "SemanticHighlighting.slang"
+        )) {
             String source = Files.readString(Path.of("src", "test", "testData", "slang", fileName));
             List<Token> tokens = lex(source);
 

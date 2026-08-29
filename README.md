@@ -97,7 +97,17 @@ slangc -no-codegen .\src\test\testData\slang\Basic.slang
 ```
 
 `slangd-lsp-smoke.ps1` 会打开仓库内的定义夹具并断言调用点准确返回 `twice` 的声明位置，
-而不只是检查服务器是否发布了 Definition capability。
+同时打开语义高亮语料、调用 `textDocument/semanticTokens/full`、解码相对五元组并校验
+UTF-16 范围、legend 和 token 合同，而不只是检查服务器是否发布了对应 capability。
+默认执行当前官方服务器的 `stock` 合同；增强版服务器可使用：
+
+```powershell
+.\scripts\slangd-lsp-smoke.ps1 -SemanticContract enhanced -AsJson
+```
+
+JSON 输出会记录解析后的 `slangd` 路径、可执行文件 SHA-256、`serverInfo`、完整 legend 和
+解码后的 token，适合作为 CI 差分产物。协议合同与演进规则见
+[docs/semantic-token-protocol.md](docs/semantic-token-protocol.md)。
 
 在开发沙箱中启动 CLion：
 
