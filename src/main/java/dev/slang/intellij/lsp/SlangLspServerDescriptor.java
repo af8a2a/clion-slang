@@ -2,9 +2,12 @@ package dev.slang.intellij.lsp;
 
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
+import com.intellij.execution.process.OSProcessHandler;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor;
+import com.intellij.util.io.BaseDataReader;
+import com.intellij.util.io.BaseOutputReader;
 import dev.slang.intellij.synth.SlangSyntheticModuleFileProvider;
 import org.eclipse.lsp4j.ConfigurationItem;
 import org.jetbrains.annotations.NotNull;
@@ -49,6 +52,34 @@ public final class SlangLspServerDescriptor extends ProjectWideLspServerDescript
             commandLine.withWorkDirectory(project.getBasePath());
         }
         return commandLine;
+    }
+
+    @Override
+    public @NotNull OSProcessHandler startServerProcess() throws ExecutionException {
+        GeneralCommandLine commandLine = createCommandLine();
+        Process process = commandLine.createProcess();
+        Process normalizedProcess = new SlangLspProtocolProcess(process);
+        return new OSProcessHandler(
+                normalizedProcess,
+                commandLine.getCommandLineString(),
+                commandLine.getCharset()
+        ) {
+            @Override
+            protected BaseOutputReader.Options readerOptions() {
+                return new BaseOutputReader.Options() {
+                    @Override
+                    public BaseDataReader.SleepingPolicy policy() {
+                        return BaseOutputReader.Options.forMostlySilentProcess().policy();
+                    }
+
+                    @Override
+                    public boolean splitToLines() {
+                        // LSP Content-Length framing must not be split or normalized as console lines.
+                        return false;
+                    }
+                };
+            }
+        };
     }
 
     @Override

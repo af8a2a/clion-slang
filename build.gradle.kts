@@ -1,10 +1,12 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+
 plugins {
     java
     id("org.jetbrains.intellij.platform") version "2.18.1"
 }
 
 group = "dev.slang.intellij"
-version = "0.1.0"
+version = "0.1.1"
 
 repositories {
     mavenCentral()
@@ -23,9 +25,11 @@ dependencies {
         } else {
             local(localIdePath)
         }
+        testFramework(TestFrameworkType.Platform)
     }
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.opentest4j:opentest4j:1.3.0")
 }
 
 java {
@@ -52,6 +56,7 @@ tasks {
         gradleVersion = "9.0.0"
         distributionType = Wrapper.DistributionType.BIN
     }
+
 }
 
 intellijPlatform {

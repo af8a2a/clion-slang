@@ -27,10 +27,14 @@
         <lang.syntaxHighlighterFactory
                 language="Slang"
                 implementationClass="dev.slang.intellij.highlighting.SlangSyntaxHighlighterFactory"/>
+        <lang.parserDefinition
+                language="Slang"
+                implementationClass="dev.slang.intellij.lang.SlangParserDefinition"/>
         <colorSettingsPage implementation="dev.slang.intellij.highlighting.SlangColorSettingsPage"/>
         <lang.commenter language="Slang" implementationClass="dev.slang.intellij.editor.SlangCommenter"/>
         <lang.braceMatcher language="Slang" implementationClass="dev.slang.intellij.editor.SlangBraceMatcher"/>
         <lang.quoteHandler language="Slang" implementationClass="dev.slang.intellij.editor.SlangQuoteHandler"/>
+        <gotoDeclarationHandler implementation="dev.slang.intellij.navigation.SlangGotoDeclarationHandler"/>
 
         <projectConfigurable
                 id="dev.shader.slang.settings"

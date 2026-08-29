@@ -11,13 +11,16 @@
 - 基于 JetBrains Native LSP API 的 project-wide `slangd` 客户端
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
   Inlay Hints、Formatting 等标准能力（实际能力取决于所用 `slangd`）
+- Ctrl+左键、Ctrl+B 与 Ctrl+悬停的定义导航；插件会直接复用当前 `slangd` 会话，规避
+  CLion 2026.1 原生 LSP 在 Ctrl+鼠标路径中不发起 Definition 请求的问题，并兼容部分
+  `slangd` 版本将单个定义返回为 `Location` 而非标准数组的响应形态
 - `slangd` 查找顺序：项目设置的显式路径、`SLANGD_PATH`、`VULKAN_SDK`、`PATH`
 - `slangdconfig.json` 的 `workspace/configuration` 映射与 `${workspaceFolder}` 展开
 - `slang-synth://<module>` 内建模块跳转，内容由
   `slangd --print-builtin-module <module>` 生成并缓存
 
-第一版有意不实现完整 Slang Parser/PSI。语义真值来自 Slang 编译器前端，避免维护一套会随
-Slang 演进而落后的第二解析器。
+插件只构建由词法 token 组成的扁平 PSI，用来给编辑器动作提供精确范围；它有意不实现
+第二套 Slang 语义解析器。语义真值仍来自 Slang 编译器前端，避免随 Slang 演进而失真。
 
 ## 兼容性
 
@@ -92,6 +95,9 @@ Slang 演进而落后的第二解析器。
 slangc -no-codegen .\src\test\testData\slang\Basic.slang
 .\scripts\slangd-lsp-smoke.ps1
 ```
+
+`slangd-lsp-smoke.ps1` 会打开仓库内的定义夹具并断言调用点准确返回 `twice` 的声明位置，
+而不只是检查服务器是否发布了 Definition capability。
 
 在开发沙箱中启动 CLion：
 

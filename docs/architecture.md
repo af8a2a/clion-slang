@@ -25,6 +25,8 @@ best handled by `slangd`.
 - `editor/`: commenter, brace matcher, and quote handler.
 - `settings/`: per-project executable selection stored in the workspace file.
 - `lsp/`: executable discovery, project-wide LSP descriptor, and workspace configuration mapping.
+- `navigation/`: a public-LSP-API declaration bridge for Ctrl+hover, Ctrl+click, and Ctrl+B. CLion
+  2026.1's implicit LSP reference provider does not issue definition requests from its Ctrl+mouse path.
 - `synth/`: support code for generated builtin-module documents returned through `slang-synth://` URIs.
 
 No component depends on CLion Classic/CIDR C++ PSI or on Radler internals.

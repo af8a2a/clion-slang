@@ -1,6 +1,12 @@
 param(
     [string] $Slangd = "slangd",
-    [string] $Workspace = (Split-Path -Parent $PSScriptRoot)
+    [string] $Workspace = (Split-Path -Parent $PSScriptRoot),
+    [string] $DefinitionFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\Definition.slang"),
+    [int] $DefinitionLine = 8,
+    [int] $DefinitionCharacter = 13,
+    [string] $ExpectedTargetFileName = "Definition.slang",
+    [int] $ExpectedTargetLine = 1,
+    [int] $ExpectedTargetCharacter = 6
 )
 
 $ErrorActionPreference = "Stop"
@@ -87,6 +93,9 @@ function Read-LspResponse([int] $ExpectedId) {
 
 try {
     $workspaceUri = ([System.Uri](Resolve-Path -LiteralPath $Workspace).Path).AbsoluteUri
+    $definitionPath = (Resolve-Path -LiteralPath $DefinitionFile).Path
+    $definitionUri = ([System.Uri]$definitionPath).AbsoluteUri
+    $definitionText = [System.IO.File]::ReadAllText($definitionPath)
     Send-LspMessage @{
         jsonrpc = "2.0"
         id = 1
@@ -94,7 +103,10 @@ try {
         params = @{
             processId = $null
             rootUri = $workspaceUri
-            capabilities = @{}
+            capabilities = @{
+                workspace = @{ configuration = $true; workspaceFolders = $true }
+                textDocument = @{ definition = @{ linkSupport = $true } }
+            }
             workspaceFolders = @(@{ uri = $workspaceUri; name = "slang-smoke" })
         }
     }
@@ -113,9 +125,63 @@ try {
     }
 
     Send-LspMessage @{ jsonrpc = "2.0"; method = "initialized"; params = @{} }
-    Send-LspMessage @{ jsonrpc = "2.0"; id = 2; method = "shutdown"; params = $null }
-    $shutdown = Read-LspResponse 2
-    if ($shutdown.id -ne 2) {
+    Send-LspMessage @{
+        jsonrpc = "2.0"
+        method = "textDocument/didOpen"
+        params = @{
+            textDocument = @{
+                uri = $definitionUri
+                languageId = "slang"
+                version = 1
+                text = $definitionText
+            }
+        }
+    }
+    Send-LspMessage @{
+        jsonrpc = "2.0"
+        id = 2
+        method = "textDocument/definition"
+        params = @{
+            textDocument = @{ uri = $definitionUri }
+            position = @{ line = $DefinitionLine; character = $DefinitionCharacter }
+        }
+    }
+
+    $definition = Read-LspResponse 2
+    $definitionWireShape = if ($definition.result -is [System.Array]) { "array" } else { "singleton" }
+    $definitionItems = @($definition.result)
+    if ($definitionItems.Count -eq 0 -or $null -eq $definitionItems[0]) {
+        throw "slangd returned no definition for $definitionUri at $DefinitionLine`:$DefinitionCharacter"
+    }
+
+    $firstDefinition = $definitionItems[0]
+    $targetUri = if ($null -ne $firstDefinition.targetUri) {
+        $firstDefinition.targetUri
+    } else {
+        $firstDefinition.uri
+    }
+    $targetRange = if ($null -ne $firstDefinition.targetSelectionRange) {
+        $firstDefinition.targetSelectionRange
+    } else {
+        $firstDefinition.range
+    }
+    if ([string]::IsNullOrWhiteSpace($targetUri) -or $null -eq $targetRange) {
+        throw "slangd returned an invalid definition: $($definition.result | ConvertTo-Json -Compress -Depth 10)"
+    }
+    if (-not $targetUri.EndsWith("/$ExpectedTargetFileName", [System.StringComparison]::OrdinalIgnoreCase) -or
+        $targetRange.start.line -ne $ExpectedTargetLine -or
+        $targetRange.start.character -ne $ExpectedTargetCharacter) {
+        throw "slangd returned the wrong definition target: $targetUri at $($targetRange.start.line):$($targetRange.start.character)"
+    }
+
+    Send-LspMessage @{
+        jsonrpc = "2.0"
+        method = "textDocument/didClose"
+        params = @{ textDocument = @{ uri = $definitionUri } }
+    }
+    Send-LspMessage @{ jsonrpc = "2.0"; id = 3; method = "shutdown"; params = $null }
+    $shutdown = Read-LspResponse 3
+    if ($shutdown.id -ne 3) {
         throw "slangd returned an invalid shutdown response"
     }
     Send-LspMessage @{ jsonrpc = "2.0"; method = "exit"; params = $null }
@@ -124,7 +190,8 @@ try {
         Executable = $Slangd
         Completion = $true
         Hover = $true
-        Definition = $true
+        Definition = "$targetUri`:$($targetRange.start.line + 1)"
+        DefinitionWireShape = $definitionWireShape
         SemanticTokens = $true
         InlayHints = ($null -ne $capabilities.inlayHintProvider)
         Formatting = ($null -ne $capabilities.documentFormattingProvider)
