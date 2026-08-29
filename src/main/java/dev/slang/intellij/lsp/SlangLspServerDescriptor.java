@@ -6,6 +6,7 @@ import com.intellij.execution.process.OSProcessHandler;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor;
+import com.intellij.platform.lsp.api.customization.LspCustomization;
 import com.intellij.util.io.BaseDataReader;
 import com.intellij.util.io.BaseOutputReader;
 import dev.slang.intellij.synth.SlangSyntheticModuleFileProvider;
@@ -24,6 +25,7 @@ public final class SlangLspServerDescriptor extends ProjectWideLspServerDescript
     private final SlangServerLocator locator;
     private final SlangWorkspaceConfiguration workspaceConfiguration;
     private final SlangSyntheticModuleFileProvider syntheticFiles;
+    private final LspCustomization customization;
 
     public SlangLspServerDescriptor(@NotNull Project project) {
         super(project, "Slang");
@@ -31,6 +33,7 @@ public final class SlangLspServerDescriptor extends ProjectWideLspServerDescript
         locator = new SlangServerLocator();
         workspaceConfiguration = new SlangWorkspaceConfiguration(project);
         syntheticFiles = new SlangSyntheticModuleFileProvider(project, locator);
+        customization = new SlangLspCustomization();
     }
 
     @Override
@@ -102,5 +105,10 @@ public final class SlangLspServerDescriptor extends ProjectWideLspServerDescript
     @Override
     public @Nullable Object getWorkspaceConfiguration(@NotNull ConfigurationItem item) {
         return workspaceConfiguration.get(item);
+    }
+
+    @Override
+    public @NotNull LspCustomization getLspCustomization() {
+        return customization;
     }
 }

@@ -94,3 +94,14 @@ reordering a token type changes numeric indices; doing so for a modifier changes
 Either operation requires a new incompatible profile/version and an explicit migration. A consumer
 persists names, not numeric positions, and discards cached token data whenever the server, legend,
 document version, or position encoding changes.
+
+## CLion consumer
+
+The plugin advertises the complete LSP 3.17 standard token vocabulary and modifiers, then decodes
+the server-provided legend by name. Stock roles and enhanced refinements map to Slang-specific
+`TextAttributesKey` entries exposed under `Editor | Color Scheme | Slang | Semantic`.
+
+`defaultLibrary` takes precedence and selects built-in type, intrinsic, or other built-in symbol
+colors. `readonly` and `static` select dedicated value/member colors. Unknown future token names
+fall back to the Slang semantic identifier key, while a missing server keeps the lexical layer
+unchanged.

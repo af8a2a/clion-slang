@@ -21,7 +21,9 @@ best handled by `slangd`.
 ## Main components
 
 - `lang/`: independent `Language`, `LanguageFileType`, token vocabulary, and handwritten tolerant lexer.
-- `highlighting/`: static fallback colors. LSP semantic tokens layer on top when `slangd` is running.
+- `highlighting/`: static fallback colors plus Slang-specific semantic role keys. The LSP customizer
+  explicitly enables semantic-token requests for Slang PSI and maps the negotiated server legend
+  onto these keys when `slangd` is running.
 - `editor/`: commenter, brace matcher, and quote handler.
 - `settings/`: per-project executable selection stored in the workspace file.
 - `lsp/`: executable discovery, project-wide LSP descriptor, and workspace configuration mapping.

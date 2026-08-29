@@ -7,7 +7,9 @@
 
 - `.slang` / `.slangh` 文件类型和图标
 - Slang/HLSL 常用关键字、内建类型、属性、语义、预处理器、字符串、数字与注释的词法高亮
-- 行注释、块注释、括号匹配、引号配对和独立配色页
+- `slangd` Semantic Tokens 语义配色：类型、命名空间、变量、参数、字段、函数、宏等 stock
+  类别，以及 struct、interface、enum、type parameter、method、decorator 和标准 modifiers
+- 行注释、块注释、括号匹配、引号配对，以及包含词法/语义角色的独立配色页
 - 基于 JetBrains Native LSP API 的 project-wide `slangd` 客户端
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
   Inlay Hints、Formatting 等标准能力（实际能力取决于所用 `slangd`）
@@ -57,6 +59,10 @@
 4. 在 **Settings | Languages & Frameworks | Slang** 中启用自动发现，或指定
    `slangd` / `slangd.exe` 的完整路径。
 5. 打开 `.slang` 或 `.slangh` 文件。Language Services 状态栏会显示 `slangd` 状态。
+
+语义颜色可在 **Settings | Editor | Color Scheme | Slang | Semantic** 中单独调整。服务器
+不可用时，插件会保留本地 Lexer 提供的基础颜色；使用 stock slangd 时显示其现有十类，
+增强版 slangd 发布更细分类和 modifiers 后会自动使用对应颜色。
 
 本机开发时可避免下载另一份 CLion SDK：
 
