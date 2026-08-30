@@ -18,8 +18,14 @@ The classification uses checked base types, not identifier spelling. Tuple eleme
 uses `SwizzleExpr` internally and is deliberately excluded; a user-defined field named `xy` remains
 `property`.
 
-Apply the patches in numeric order. M3 is intentionally a separate patch so the M2a baseline can
-still be reproduced and reviewed independently.
+`0003-field-layout-hover.patch` enriches standard field Hover Markdown with the owning struct plus
+the field's natural size, alignment, and offset. It uses Slang's existing `ASTNaturalLayoutContext`,
+labels the values as **Natural layout**, and omits them when the type or any preceding field has an
+indeterminate target-dependent layout. It does not add a custom LSP method or change the Hover wire
+shape.
+
+Apply the patches in numeric order. Each layer remains separate so the semantic-token baselines and
+field-hover extension can be reproduced and reviewed independently.
 
 ## Apply
 
@@ -39,6 +45,9 @@ git -C $slangSource apply $patch
 $m3Patch = (Resolve-Path '.\patches\slang\0002-m3-slang-hlsl-semantic-tokens.patch').Path
 git -C $slangSource apply --check $m3Patch
 git -C $slangSource apply $m3Patch
+$fieldHoverPatch = (Resolve-Path '.\patches\slang\0003-field-layout-hover.patch').Path
+git -C $slangSource apply --check $fieldHoverPatch
+git -C $slangSource apply $fieldHoverPatch
 ```
 
 The verified Windows build used CMake, Ninja, and an x64 Visual Studio developer environment:
@@ -82,6 +91,11 @@ $slangd = Join-Path $buildDir 'RelWithDebInfo\bin\slangd.exe'
 .\scripts\slangd-lsp-smoke.ps1 -Slangd $slangd -SemanticContract stock
 .\scripts\slangd-lsp-smoke.ps1 -Slangd $slangd -SemanticContract m3
 ```
+
+Every smoke run also issues a real `textDocument/hover` request for a non-first struct field and
+requires the signature, **Natural layout**, size `4 bytes`, alignment `4 bytes`, offset `40 bytes`,
+and exact UTF-16 hover range. This catches regressions that accidentally report every offset as zero
+and keeps the field metadata covered independently of semantic-token legend negotiation.
 
 On Windows, the M3 language-server bundle contains `slangd.exe`, its matching
 `slang-compiler.dll`, and the generated `slang-glsl-module.bin`. Build with the static MSVC runtime

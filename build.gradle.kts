@@ -32,6 +32,7 @@ val bundledSlangdArchive = file(
 val bundledRuntimeEntries = listOf(
     "0001-m2a-enhanced-semantic-tokens.patch",
     "0002-m3-slang-hlsl-semantic-tokens.patch",
+    "0003-field-layout-hover.patch",
     "LICENSE-slang.txt",
     "LICENSES/lz4-distribution.txt",
     "LICENSES/lz4-lib-BSD-2-Clause.txt",
@@ -148,11 +149,16 @@ val verifyBundledSlangdArchive = tasks.register("verifyBundledSlangdArchive") {
             }
             val protocol = requiredObject(manifest, "protocol")
             if (requiredInteger(protocol, "major") != 1 ||
-                requiredInteger(protocol, "minor") != 1 ||
-                protocol["features"] != listOf("semanticTokens.m2a", "semanticTokens.m3")
+                requiredInteger(protocol, "minor") != 2 ||
+                protocol["features"] != listOf(
+                    "semanticTokens.m2a",
+                    "semanticTokens.m3",
+                    "hover.fieldLayout.natural",
+                )
             ) {
                 throw GradleException(
-                    "Bundled slangd manifest protocol must be 1.1 with semanticTokens.m2a and semanticTokens.m3"
+                    "Bundled slangd manifest protocol must be 1.2 with semanticTokens.m2a, " +
+                        "semanticTokens.m3, and hover.fieldLayout.natural"
                 )
             }
 

@@ -7,6 +7,15 @@ param(
     [string] $ExpectedTargetFileName = "Definition.slang",
     [int] $ExpectedTargetLine = 1,
     [int] $ExpectedTargetCharacter = 6,
+    [string] $HoverFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\StructFieldHover.slang"),
+    [int] $HoverLine = 14,
+    [int] $HoverCharacter = 12,
+    [string] $ExpectedHoverSignature = "(field) int LightShapeSample.materialIndex",
+    [int] $ExpectedHoverSize = 4,
+    [int] $ExpectedHoverAlignment = 4,
+    [int] $ExpectedHoverOffset = 40,
+    [int] $ExpectedHoverRangeStart = 11,
+    [int] $ExpectedHoverRangeEnd = 24,
     [string] $SemanticFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\SemanticHighlighting.slang"),
     [ValidateSet("stock", "enhanced", "m3", "none")]
     [string] $SemanticContract = "stock",
@@ -725,6 +734,9 @@ try {
     $definitionPath = (Resolve-Path -LiteralPath $DefinitionFile).Path
     $definitionUri = ([System.Uri]$definitionPath).AbsoluteUri
     $definitionText = [System.IO.File]::ReadAllText($definitionPath)
+    $hoverPath = (Resolve-Path -LiteralPath $HoverFile).Path
+    $hoverUri = ([System.Uri]$hoverPath).AbsoluteUri
+    $hoverText = [System.IO.File]::ReadAllText($hoverPath)
     $semanticPath = (Resolve-Path -LiteralPath $SemanticFile).Path
     $semanticUri = ([System.Uri]$semanticPath).AbsoluteUri
     $semanticText = [System.IO.File]::ReadAllText($semanticPath)
@@ -754,6 +766,7 @@ try {
                 workspace = @{ configuration = $true; workspaceFolders = $true }
                 textDocument = @{
                     definition = @{ linkSupport = $true }
+                    hover = @{ contentFormat = @("markdown", "plaintext") }
                     semanticTokens = @{
                         dynamicRegistration = $false
                         requests = @{ range = $false; full = $true }
@@ -838,6 +851,21 @@ try {
             }
         }
     }
+    if (-not [string]::Equals($hoverUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($hoverUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Send-LspMessage @{
+            jsonrpc = "2.0"
+            method = "textDocument/didOpen"
+            params = @{
+                textDocument = @{
+                    uri = $hoverUri
+                    languageId = "slang"
+                    version = 1
+                    text = $hoverText
+                }
+            }
+        }
+    }
 
     Send-LspMessage @{
         jsonrpc = "2.0"
@@ -879,12 +907,57 @@ try {
     Send-LspMessage @{
         jsonrpc = "2.0"
         id = 3
+        method = "textDocument/hover"
+        params = @{
+            textDocument = @{ uri = $hoverUri }
+            position = @{ line = $HoverLine; character = $HoverCharacter }
+        }
+    }
+    $hoverResponse = Read-LspResponse 3
+    if ($null -eq $hoverResponse.result -or
+        $null -eq $hoverResponse.result.contents -or
+        -not [string]::Equals(
+            [string]$hoverResponse.result.contents.kind,
+            "markdown",
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+        throw "slangd returned an invalid field hover: $($hoverResponse.result | ConvertTo-Json -Compress -Depth 10)"
+    }
+    $hoverValue = [string]$hoverResponse.result.contents.value
+    $hoverLines = @(
+        $hoverValue.Replace("`r`n", "`n").Replace("`r", "`n").Split("`n") |
+            ForEach-Object { $_.TrimEnd() }
+    )
+    $requiredHoverLines = @(
+        $ExpectedHoverSignature,
+        "**Natural layout**",
+        "Size: $ExpectedHoverSize bytes",
+        "Alignment: $ExpectedHoverAlignment bytes",
+        "Offset: $ExpectedHoverOffset bytes"
+    )
+    foreach ($requiredLine in $requiredHoverLines) {
+        if ($hoverLines -cnotcontains $requiredLine) {
+            throw "slangd field hover is missing exact line '$requiredLine': $hoverValue"
+        }
+    }
+    $hoverRange = $hoverResponse.result.range
+    if ($null -eq $hoverRange -or
+        $hoverRange.start.line -ne $HoverLine -or
+        $hoverRange.start.character -ne $ExpectedHoverRangeStart -or
+        $hoverRange.end.line -ne $HoverLine -or
+        $hoverRange.end.character -ne $ExpectedHoverRangeEnd) {
+        throw "slangd returned the wrong hover range: $($hoverRange | ConvertTo-Json -Compress -Depth 5)"
+    }
+
+    Send-LspMessage @{
+        jsonrpc = "2.0"
+        id = 4
         method = "textDocument/semanticTokens/full"
         params = @{
             textDocument = @{ uri = $semanticUri }
         }
     }
-    $semanticResponse = Read-LspResponse 3
+    $semanticResponse = Read-LspResponse 4
     if ($null -eq $semanticResponse.result -or $null -eq $semanticResponse.result.data) {
         throw "slangd returned no semanticTokens/full data for $semanticUri"
     }
@@ -911,9 +984,17 @@ try {
             params = @{ textDocument = @{ uri = $semanticUri } }
         }
     }
-    Send-LspMessage @{ jsonrpc = "2.0"; id = 4; method = "shutdown"; params = $null }
-    $shutdown = Read-LspResponse 4
-    if ($shutdown.id -ne 4) {
+    if (-not [string]::Equals($hoverUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($hoverUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Send-LspMessage @{
+            jsonrpc = "2.0"
+            method = "textDocument/didClose"
+            params = @{ textDocument = @{ uri = $hoverUri } }
+        }
+    }
+    Send-LspMessage @{ jsonrpc = "2.0"; id = 5; method = "shutdown"; params = $null }
+    $shutdown = Read-LspResponse 5
+    if ($shutdown.id -ne 5) {
         throw "slangd returned an invalid shutdown response"
     }
     Send-LspMessage @{ jsonrpc = "2.0"; method = "exit"; params = $null }
@@ -939,6 +1020,13 @@ try {
         PositionEncoding = $positionEncoding.ToLowerInvariant()
         Completion = $true
         Hover = $true
+        FieldHover = [pscustomobject][ordered]@{
+            Signature = $ExpectedHoverSignature
+            Size = $ExpectedHoverSize
+            Alignment = $ExpectedHoverAlignment
+            Offset = $ExpectedHoverOffset
+            Range = "$HoverLine`:$ExpectedHoverRangeStart-$HoverLine`:$ExpectedHoverRangeEnd"
+        }
         Definition = "$targetUri`:$($targetRange.start.line + 1)"
         DefinitionWireShape = $definitionWireShape
         SemanticTokens = [pscustomobject][ordered]@{

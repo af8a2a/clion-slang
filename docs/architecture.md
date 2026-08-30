@@ -24,7 +24,8 @@ best handled by `slangd`.
 - `highlighting/`: static fallback colors plus Slang-specific semantic role keys. The LSP customizer
   explicitly enables semantic-token requests for Slang PSI and maps the negotiated server legend
   onto these keys when `slangd` is running.
-- `editor/`: commenter, brace matcher, and quote handler.
+- `editor/`: commenter, brace matcher, quote handler, and dumb-aware comment folding with concise
+  summaries for consecutive line comments and multiline block comments.
 - `settings/`: bundled-runtime default plus an explicit per-project advanced external override.
 - `lsp/`: verified bundled-runtime installation, executable resolution, project-wide LSP descriptor,
   and workspace configuration mapping.
@@ -81,6 +82,13 @@ express precisely. Checked `HLSLSemantic` and swizzle AST nodes publish `slangSe
 `slangSwizzle` only when the client advertises both custom names. Otherwise they fall back to
 `enumMember` and `property` while preserving all M2a refinements. No parser, checker, or codegen
 changes are required.
+
+The third publisher patch enriches standard `textDocument/hover` Markdown for instance fields of
+concrete structs. It reuses Slang's `ASTNaturalLayoutContext`, so the displayed size and alignment
+match the language's `sizeof` / `alignof` semantics; field offsets are accumulated with the same
+alignment rule. The result is explicitly labelled **Natural layout** because it is not a target
+resource layout such as cbuffer or std430. If a pointer, resource, unresolved generic, or preceding
+field makes the layout indeterminate, the metadata is omitted instead of reporting a guessed zero.
 
 ## Bundled runtime
 

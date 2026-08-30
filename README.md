@@ -12,9 +12,12 @@
 - M3 Slang/HLSL 专属语义类别：绑定 semantic（`POSITION`、`SV_*`）与向量/矩阵 swizzle
   使用独立可配置颜色，并在不支持 M3 的客户端上逐级回退到 M2a/stock 类别
 - 行注释、块注释、括号匹配、引号配对，以及包含词法/语义角色的独立配色页
+- 连续整行注释和多行块注释折叠；摘要会跳过分隔线并显示首个有意义的注释行
 - 基于 JetBrains Native LSP API 的 project-wide `slangd` 客户端
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
   Inlay Hints、Formatting 等标准能力（实际能力取决于所用 `slangd`）
+- 结构体字段 Hover 展示字段类型、所属结构体，以及 Slang `sizeof` / `alignof` 语义下的
+  natural layout 大小、对齐和偏移；目标相关或无法确定的布局会安全省略
 - Ctrl+左键、Ctrl+B 与 Ctrl+悬停的定义导航；插件会直接复用当前 `slangd` 会话，规避
   CLion 2026.1 原生 LSP 在 Ctrl+鼠标路径中不发起 Definition 请求的问题，并兼容部分
   `slangd` 版本将单个定义返回为 `Location` 而非标准数组的响应形态
@@ -130,10 +133,10 @@ JSON 输出会记录解析后的 `slangd` 路径、可执行文件 SHA-256、`se
 解码后的 token，适合作为 CI 差分产物。协议合同与演进规则见
 [docs/semantic-token-protocol.md](docs/semantic-token-protocol.md)。
 
-Publisher 侧实现以 M2a + M3 两层可重放补丁保存在
-[`patches/slang/`](patches/slang/README.md)。M2a 增加标准细分类型与 modifiers；M3 追加
-`slangSemantic` 和 `slangSwizzle`。Initialize 能力协商按 M3 → M2a → stock 逐级选择 legend，
-构建和三协议验证命令见该目录说明。
+Publisher 侧实现以三层可重放补丁保存在 [`patches/slang/`](patches/slang/README.md)。M2a
+增加标准细分类型与 modifiers；M3 追加 `slangSemantic` 和 `slangSwizzle`；字段 Hover 层追加
+结构体 natural layout 信息。Initialize 能力协商按 M3 → M2a → stock 逐级选择 legend，构建
+和三协议验证命令见该目录说明。
 
 在开发沙箱中启动 CLion：
 

@@ -14,6 +14,7 @@ param(
     [string] $LicensePath = "",
     [string] $PatchPath = "",
     [string] $M3PatchPath = "",
+    [string] $FieldHoverPatchPath = "",
     [string] $OutputArchive = "",
     [string] $BuildConfiguration = "RelWithDebInfo",
     [string] $BuildGenerator = "Ninja"
@@ -28,6 +29,9 @@ if ([string]::IsNullOrWhiteSpace($PatchPath)) {
 }
 if ([string]::IsNullOrWhiteSpace($M3PatchPath)) {
     $M3PatchPath = Join-Path $projectRoot "patches\slang\0002-m3-slang-hlsl-semantic-tokens.patch"
+}
+if ([string]::IsNullOrWhiteSpace($FieldHoverPatchPath)) {
+    $FieldHoverPatchPath = Join-Path $projectRoot "patches\slang\0003-field-layout-hover.patch"
 }
 if ([string]::IsNullOrWhiteSpace($OutputArchive)) {
     $OutputArchive = Join-Path $projectRoot ".bundled-runtime\windows-x86_64.zip"
@@ -352,9 +356,9 @@ function Invoke-SlangdSmokeContract {
         -SemanticContract $SemanticContract 2>&1
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
-        throw "slangd $SemanticContract semantic contract smoke failed with exit code ${exitCode}:`n$($output -join "`n")"
+        throw "slangd $SemanticContract LSP contract smoke failed with exit code ${exitCode}:`n$($output -join "`n")"
     }
-    Write-Host "slangd semantic contract smoke passed: $SemanticContract"
+    Write-Host "slangd LSP contract smoke passed: $SemanticContract"
 }
 
 function Invoke-SlangGit {
@@ -597,6 +601,9 @@ if ([string]::IsNullOrWhiteSpace($LicensePath)) {
 $resolvedLicense = Resolve-RequiredFile -Path $LicensePath -Description "Slang license"
 $resolvedM2aPatch = Resolve-RequiredFile -Path $PatchPath -Description "M2a Slang patch"
 $resolvedM3Patch = Resolve-RequiredFile -Path $M3PatchPath -Description "M3 Slang patch"
+$resolvedFieldHoverPatch = Resolve-RequiredFile `
+    -Path $FieldHoverPatchPath `
+    -Description "field layout hover Slang patch"
 $resolvedMinizLicense = Resolve-RequiredFile `
     -Path (Join-Path $resolvedSlangSource "external\miniz\LICENSE") `
     -Description "miniz license"
@@ -650,7 +657,7 @@ try {
     [void] (Invoke-GitRepository `
         -Repository $patchReplayDirectory `
         -Arguments @("checkout", "--quiet", "--detach", $sourceCommit))
-    foreach ($patch in @($resolvedM2aPatch, $resolvedM3Patch)) {
+    foreach ($patch in @($resolvedM2aPatch, $resolvedM3Patch, $resolvedFieldHoverPatch)) {
         [void] (Invoke-GitRepository `
             -Repository $patchReplayDirectory `
             -Arguments @("apply", "--check", $patch))
@@ -697,7 +704,7 @@ if ($trackedDiff -cne $expectedTrackedDiff) {
         "HEAD",
         "--"
     )
-    throw "The tracked Slang source diff does not exactly match replaying the recorded M2a and M3 patches in order. Submodule worktree state is ignored, but no additional tracked superproject changes are allowed.`nTracked changes:`n$changedPaths"
+    throw "The tracked Slang source diff does not exactly match replaying the recorded M2a, M3, and field-hover patches in order. Submodule worktree state is ignored, but no additional tracked superproject changes are allowed.`nTracked changes:`n$changedPaths"
 }
 $sourceDescribe = Invoke-SlangGit -Arguments @("describe", "--tags", "--always", "--dirty")
 $sourceRepository = ConvertTo-SafeRemoteUrl -RemoteUrl (
@@ -729,6 +736,7 @@ Assert-GlslModuleCompilerTimestamp -ModulePath $resolvedGlslModule -CompilerPath
 $payloadFiles = [ordered]@{
     "0001-m2a-enhanced-semantic-tokens.patch" = $resolvedM2aPatch
     "0002-m3-slang-hlsl-semantic-tokens.patch" = $resolvedM3Patch
+    "0003-field-layout-hover.patch" = $resolvedFieldHoverPatch
     "LICENSE-slang.txt" = $resolvedLicense
     "LICENSES/lz4-distribution.txt" = $resolvedLz4DistributionLicense
     "LICENSES/lz4-lib-BSD-2-Clause.txt" = $resolvedLz4LibraryLicense
@@ -759,12 +767,13 @@ $manifestLines = @(
     '  },',
     '  "protocol": {',
     '    "major": 1,',
-    '    "minor": 1,',
-    '    "features": ["semanticTokens.m2a", "semanticTokens.m3"]',
+    '    "minor": 2,',
+    '    "features": ["semanticTokens.m2a", "semanticTokens.m3", "hover.fieldLayout.natural"]',
     '  },',
     '  "files": {',
     ('    "0001-m2a-enhanced-semantic-tokens.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0001-m2a-enhanced-semantic-tokens.patch'])),
     ('    "0002-m3-slang-hlsl-semantic-tokens.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0002-m3-slang-hlsl-semantic-tokens.patch'])),
+    ('    "0003-field-layout-hover.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0003-field-layout-hover.patch'])),
     ('    "LICENSE-slang.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSE-slang.txt'])),
     ('    "LICENSES/lz4-distribution.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSES/lz4-distribution.txt'])),
     ('    "LICENSES/lz4-lib-BSD-2-Clause.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSES/lz4-lib-BSD-2-Clause.txt'])),
@@ -794,6 +803,7 @@ try {
     $entryNames = [string[]] @(
         "0001-m2a-enhanced-semantic-tokens.patch",
         "0002-m3-slang-hlsl-semantic-tokens.patch",
+        "0003-field-layout-hover.patch",
         "LICENSE-slang.txt",
         "LICENSES/lz4-distribution.txt",
         "LICENSES/lz4-lib-BSD-2-Clause.txt",

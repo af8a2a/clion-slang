@@ -9,10 +9,11 @@ older build.
 
 ## Build Slang
 
-Use an x64 Visual Studio developer environment and the fixed Slang source revision plus both repository
-patches. The source worktree is expected to be exactly `HEAD` with
+Use an x64 Visual Studio developer environment and the fixed Slang source revision plus all three
+repository patches. The source worktree is expected to be exactly `HEAD` with
 `0001-m2a-enhanced-semantic-tokens.patch` and then
-`0002-m3-slang-hlsl-semantic-tokens.patch` applied in numeric order.
+`0002-m3-slang-hlsl-semantic-tokens.patch` and
+`0003-field-layout-hover.patch` applied in numeric order.
 Dirty submodule gitlinks are ignored because the disabled submodules do not participate in this
 minimal build, but no additional tracked superproject changes are accepted.
 
@@ -43,7 +44,8 @@ cmake -S .\.slang-m2a-source -B .\.slang-m2a-build-ninja -G Ninja `
 cmake --build .\.slang-m2a-build-ninja --target slangd --parallel
 ```
 
-After the final link, run the M3 language-server smoke test. It refreshes
+After the final link, run the M3 language-server smoke test. In addition to definition and semantic
+tokens, it validates a real field Hover response with natural size, alignment, and offset. It refreshes
 `slang-glsl-module.bin`, whose first eight bytes record the Unix mtime of the exact
 `slang-compiler.dll` used to produce it:
 
@@ -67,15 +69,17 @@ Package the version-locked executable, compiler library, and generated core modu
 
 The script rejects:
 
-- a tracked source diff that is not byte-for-byte equivalent to replaying the recorded M2a and M3
-  patches in order;
+- a tracked source diff that is not byte-for-byte equivalent to replaying the recorded M2a, M3, and
+  field-hover patches in order;
 - a non-AMD64 PE or a PE importing the dynamic MSVC/UCRT libraries (the build must use `/MT`);
 - a `slangd.exe` that does not import its matching `slang-compiler.dll`;
-- a publisher binary that fails the M3, M2a-enhanced, or stock semantic-token contract smoke test;
+- a publisher binary that fails field Hover or the M3, M2a-enhanced, or stock semantic-token
+  contract smoke test;
 - a generated GLSL module whose recorded compiler mtime differs from the supplied DLL.
 
-All three semantic contracts run automatically in isolated child PowerShell processes before the final
-module timestamp and payload hashes are read. The child process is required because the smoke script
+All three LSP contract profiles run automatically in isolated child PowerShell processes before the
+final module timestamp and payload hashes are read. Each profile validates the same field Hover in
+addition to its semantic-token negotiation. The child process is required because the smoke script
 uses `exit` to report its result.
 
 The recorded Git description uses `git describe --dirty`; the expected `-dirty` suffix denotes the
@@ -87,6 +91,7 @@ The default output is `.bundled-runtime/windows-x86_64.zip`. It contains this fi
 ```text
 0001-m2a-enhanced-semantic-tokens.patch
 0002-m3-slang-hlsl-semantic-tokens.patch
+0003-field-layout-hover.patch
 LICENSE-slang.txt
 LICENSES/lz4-distribution.txt
 LICENSES/lz4-lib-BSD-2-Clause.txt
@@ -108,9 +113,9 @@ input bytes and normalized metadata produce an identical runtime archive across 
 
 `verifyBundledSlangdArchive` opens the ZIP before resource processing and enforces the exact entry
 order, STORE method, size limit, schema 1, fixed `clion-slang-m3` profile, `windows-x64` platform,
-protocol 1.1 with the ordered `semanticTokens.m2a` and `semanticTokens.m3` feature list, exact
-manifest file set, and every payload SHA-256. Merely placing
-a file at the expected path is not sufficient.
+protocol 1.2 with the ordered `semanticTokens.m2a`, `semanticTokens.m3`, and
+`hover.fieldLayout.natural` feature list, exact manifest file set, and every payload SHA-256. Merely
+placing a file at the expected path is not sufficient.
 
 Build the constrained Marketplace artifact with:
 

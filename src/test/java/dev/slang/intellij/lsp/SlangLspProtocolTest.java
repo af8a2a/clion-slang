@@ -69,6 +69,31 @@ public class SlangLspProtocolTest {
     }
 
     @Test
+    public void preservesStructFieldLayoutHoverResponseByteForByte() throws Exception {
+        SlangLspRequestTracker tracker = new SlangLspRequestTracker();
+        ByteArrayOutputStream forwardedRequests = new ByteArrayOutputStream();
+        SlangLspProtocolOutputStream requests = new SlangLspProtocolOutputStream(forwardedRequests, tracker);
+        byte[] requestFrame = frame("""
+                {"jsonrpc":"2.0","id":"field-hover","method":"textDocument/hover","params":{
+                  "textDocument":{"uri":"file:///着色器/LightSampling.slang"},
+                  "position":{"line":3,"character":12}
+                }}
+                """.strip());
+        writeInChunks(requests, requestFrame, 2, 11, 5);
+        requests.flush();
+        assertArrayEquals(requestFrame, forwardedRequests.toByteArray());
+
+        byte[] responseFrame = frame("""
+                {"jsonrpc":"2.0","id":"field-hover","result":{
+                  "contents":{"kind":"markdown","value":"```slang\\n(field) float3 LightShapeSample.lightVector\\n```\\n\\n**Natural layout**  \\nSize: 12 bytes  \\nAlignment: 4 bytes  \\nOffset: 0 bytes\\n\\n"},
+                  "range":{"start":{"line":3,"character":11},"end":{"line":3,"character":22}}
+                }}
+                """.strip());
+
+        assertArrayEquals(responseFrame, forward(responseFrame, tracker));
+    }
+
+    @Test
     public void preservesStandardDefinitionArraysAndNullResults() throws Exception {
         SlangLspRequestTracker tracker = new SlangLspRequestTracker();
         recordDefinitionRequest(tracker, "array");
