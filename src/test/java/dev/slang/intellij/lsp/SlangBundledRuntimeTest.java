@@ -63,7 +63,7 @@ public class SlangBundledRuntimeTest {
         assertEquals(executable, runtime.resolve());
         SlangBundledRuntime.RuntimeInfo info = runtime.describe();
         assertEquals(sha256(archive), info.bundleId());
-        assertEquals("clion-slang-m2b", info.profile());
+        assertEquals("clion-slang-m3", info.profile());
         assertEquals("test-source", info.sourceDescribe());
         assertEquals("windows-x64", info.platform());
         assertEquals(info.bundleId(), runtime.getBundleId());
@@ -85,7 +85,7 @@ public class SlangBundledRuntimeTest {
         assertTrue(Files.size(executable) > 0);
         assertTrue(Files.isRegularFile(executable.getParent().resolve("slang-compiler.dll")));
         assertTrue(Files.isRegularFile(executable.getParent().resolve("slang-glsl-module.bin")));
-        assertEquals("clion-slang-m2b", info.profile());
+        assertEquals("clion-slang-m3", info.profile());
         assertEquals("windows-x64", info.platform());
         assertEquals(64, info.bundleId().length());
     }
@@ -279,14 +279,35 @@ public class SlangBundledRuntimeTest {
     public void validatesProtocolVersionAndRequiredFeature() throws Exception {
         Map<String, byte[]> files = runtimeFiles();
         Map<String, String> hashes = hashes(files);
+        String[] features = new String[]{"semanticTokens.m2a", "semanticTokens.m3"};
         byte[] wrongMajor = bundleWithProtocol(
-                1, "windows-x64", 2, 0, new String[]{"semanticTokens.m2a"}, hashes, files, Map.of()
+                1, "windows-x64", 2, 1, features, hashes, files, Map.of()
         );
         byte[] wrongMinor = bundleWithProtocol(
-                1, "windows-x64", 1, 1, new String[]{"semanticTokens.m2a"}, hashes, files, Map.of()
+                1, "windows-x64", 1, 0, features, hashes, files, Map.of()
         );
         byte[] missingFeature = bundleWithProtocol(
-                1, "windows-x64", 1, 0, new String[]{"other.feature"}, hashes, files, Map.of()
+                1, "windows-x64", 1, 1, new String[]{"semanticTokens.m2a"}, hashes, files, Map.of()
+        );
+        byte[] unexpectedFeature = bundleWithProtocol(
+                1,
+                "windows-x64",
+                1,
+                1,
+                new String[]{"semanticTokens.m2a", "semanticTokens.m3", "other.feature"},
+                hashes,
+                files,
+                Map.of()
+        );
+        byte[] reversedFeatures = bundleWithProtocol(
+                1,
+                "windows-x64",
+                1,
+                1,
+                new String[]{"semanticTokens.m3", "semanticTokens.m2a"},
+                hashes,
+                files,
+                Map.of()
         );
 
         ExecutionException majorException = assertThrows(
@@ -313,10 +334,28 @@ public class SlangBundledRuntimeTest {
                         new AtomicInteger()
                 ).resolveExecutable()
         );
+        ExecutionException unexpectedFeatureException = assertThrows(
+                ExecutionException.class,
+                () -> runtime(
+                        unexpectedFeature,
+                        temporaryFolder.newFolder("unexpected-feature-cache").toPath(),
+                        new AtomicInteger()
+                ).resolveExecutable()
+        );
+        ExecutionException reversedFeaturesException = assertThrows(
+                ExecutionException.class,
+                () -> runtime(
+                        reversedFeatures,
+                        temporaryFolder.newFolder("reversed-features-cache").toPath(),
+                        new AtomicInteger()
+                ).resolveExecutable()
+        );
 
-        assertTrue(majorException.getMessage().contains("protocol 2.0"));
-        assertTrue(minorException.getMessage().contains("protocol 1.1"));
-        assertTrue(featureException.getMessage().contains("semanticTokens.m2a"));
+        assertTrue(majorException.getMessage().contains("protocol 2.1"));
+        assertTrue(minorException.getMessage().contains("protocol 1.0"));
+        assertTrue(featureException.getMessage().contains("semanticTokens.m3"));
+        assertTrue(unexpectedFeatureException.getMessage().contains("other.feature"));
+        assertTrue(reversedFeaturesException.getMessage().contains("instead of required"));
     }
 
     @Test
@@ -327,8 +366,8 @@ public class SlangBundledRuntimeTest {
                 "windows-x64",
                 "another-client",
                 1,
-                0,
-                new String[]{"semanticTokens.m2a"},
+                1,
+                new String[]{"semanticTokens.m2a", "semanticTokens.m3"},
                 hashes(files),
                 files,
                 Map.of()
@@ -344,7 +383,7 @@ public class SlangBundledRuntimeTest {
         );
 
         assertTrue(exception.getMessage().contains("another-client"));
-        assertTrue(exception.getMessage().contains("clion-slang-m2b"));
+        assertTrue(exception.getMessage().contains("clion-slang-m3"));
     }
 
     @Test
@@ -444,8 +483,8 @@ public class SlangBundledRuntimeTest {
                 schemaVersion,
                 platform,
                 1,
-                0,
-                new String[]{"semanticTokens.m2a"},
+                1,
+                new String[]{"semanticTokens.m2a", "semanticTokens.m3"},
                 hashes,
                 files,
                 extras
@@ -465,7 +504,7 @@ public class SlangBundledRuntimeTest {
         return bundleWithProfileAndProtocol(
                 schemaVersion,
                 platform,
-                "clion-slang-m2b",
+                "clion-slang-m3",
                 protocolMajor,
                 protocolMinor,
                 protocolFeatures,

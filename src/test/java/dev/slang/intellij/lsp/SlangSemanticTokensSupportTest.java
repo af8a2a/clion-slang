@@ -26,13 +26,15 @@ public class SlangSemanticTokensSupportTest {
         List<String> tokenTypes = support.getTokenTypes();
         List<String> tokenModifiers = support.getTokenModifiers();
 
-        assertEquals(23, tokenTypes.size());
+        assertEquals(25, tokenTypes.size());
         assertEquals(tokenTypes.size(), new HashSet<>(tokenTypes).size());
         assertTrue(tokenTypes.containsAll(List.of(
                 "type", "enumMember", "variable", "parameter", "function", "property",
                 "namespace", "keyword", "macro", "string",
-                "class", "struct", "interface", "enum", "typeParameter", "method", "decorator"
+                "class", "struct", "interface", "enum", "typeParameter", "method", "decorator",
+                "slangSemantic", "slangSwizzle"
         )));
+        assertEquals(List.of("slangSemantic", "slangSwizzle"), tokenTypes.subList(23, 25));
 
         assertEquals(10, tokenModifiers.size());
         assertEquals(tokenModifiers.size(), new HashSet<>(tokenModifiers).size());
@@ -97,6 +99,12 @@ public class SlangSemanticTokensSupportTest {
         assertSame(SlangSemanticColors.STATIC_PROPERTY, color("property", "static"));
         assertSame(SlangSemanticColors.STATIC_METHOD, color("method", "static"));
         assertSame(SlangSemanticColors.IDENTIFIER, color("slangFutureToken"));
+    }
+
+    @Test
+    public void mapsM3ShaderRolesToDedicatedColors() {
+        assertSame(SlangSemanticColors.SHADER_SEMANTIC, color("slangSemantic"));
+        assertSame(SlangSemanticColors.SWIZZLE, color("slangSwizzle"));
     }
 
     private TextAttributesKey color(String tokenType, String... modifiers) {

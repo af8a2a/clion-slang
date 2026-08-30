@@ -76,14 +76,21 @@ standard LSP refinements consumed by the plugin, adds declaration/value/library 
 negotiates the enhanced generation from the client's initialize capabilities. Unsupported clients
 receive the stock legend and downgraded wire data from the same binary.
 
+M3 adds a second, append-only classifier layer for roles that the standard LSP taxonomy cannot
+express precisely. Checked `HLSLSemantic` and swizzle AST nodes publish `slangSemantic` and
+`slangSwizzle` only when the client advertises both custom names. Otherwise they fall back to
+`enumMember` and `property` while preserving all M2a refinements. No parser, checker, or codegen
+changes are required.
+
 ## Bundled runtime
 
-M2b packages the Windows x64 M2a `slangd.exe` and its matching `slang-compiler.dll` as one
-version-locked classpath archive. A schema-versioned manifest records the Slang revision, protocol
-profile, and SHA-256 of every payload. At runtime the archive itself becomes the content-addressed
-bundle ID; extraction goes through a staging directory into the IDE system cache and every cached
-file is revalidated before use. ZIP traversal, absolute/alternate-data-stream paths, symlinks,
-case-folded duplicates, undeclared files, and oversized inputs are rejected.
+M2b introduced the Windows x64 bundled runtime; M3 refreshes it with the M3 publisher. The archive
+contains `slangd.exe`, its matching `slang-compiler.dll`, and the version-locked
+`slang-glsl-module.bin`. A schema-versioned manifest records the Slang revision, protocol profile,
+and SHA-256 of every payload. At runtime the archive itself becomes the content-addressed bundle ID;
+extraction goes through a staging directory into the IDE system cache and every cached file is
+revalidated before use. ZIP traversal, absolute/alternate-data-stream paths, symlinks, case-folded
+duplicates, undeclared files, and oversized inputs are rejected.
 
 The default path is deliberately hermetic: environment variables and `PATH` are not searched. The
 current artifact declares the official Windows/x86_64 compatibility modules, so IDEs on other

@@ -1,16 +1,18 @@
 # Bundled slangd runtime
 
-Plugin version 0.2.0 (M2b) packages the patched language server instead of searching `PATH` or asking
+Plugin version 0.3.0 (M3) packages the patched language server instead of searching `PATH` or asking
 ordinary users to select an executable. This release is deliberately limited to **Windows x86_64**.
-The Gradle build adds the IntelliJ Platform 2026.1 compatibility dependencies
-`com.intellij.modules.os.windows` and `com.intellij.modules.arch.x86_64` to the generated descriptor;
-the source `plugin.xml` remains platform-neutral. The Marketplace artifact and its plugin version use
-the `windows-x86_64` suffix. Do not upload the unsuffixed archive from an older build.
+The source descriptor declares the IntelliJ Platform 2026.1 compatibility dependencies
+`com.intellij.modules.os.windows` and `com.intellij.modules.arch.x86_64`. The Marketplace artifact
+and its plugin version use the `windows-x86_64` suffix. Do not upload the unsuffixed archive from an
+older build.
 
 ## Build Slang
 
-Use an x64 Visual Studio developer environment and the fixed M2a source revision plus the repository
-patch. The source worktree is expected to be exactly `HEAD + 0001-m2a-enhanced-semantic-tokens.patch`.
+Use an x64 Visual Studio developer environment and the fixed Slang source revision plus both repository
+patches. The source worktree is expected to be exactly `HEAD` with
+`0001-m2a-enhanced-semantic-tokens.patch` and then
+`0002-m3-slang-hlsl-semantic-tokens.patch` applied in numeric order.
 Dirty submodule gitlinks are ignored because the disabled submodules do not participate in this
 minimal build, but no additional tracked superproject changes are accepted.
 
@@ -41,14 +43,14 @@ cmake -S .\.slang-m2a-source -B .\.slang-m2a-build-ninja -G Ninja `
 cmake --build .\.slang-m2a-build-ninja --target slangd --parallel
 ```
 
-After the final link, run the enhanced language-server smoke test. It refreshes
+After the final link, run the M3 language-server smoke test. It refreshes
 `slang-glsl-module.bin`, whose first eight bytes record the Unix mtime of the exact
 `slang-compiler.dll` used to produce it:
 
 ```powershell
 .\scripts\slangd-lsp-smoke.ps1 `
   -Slangd .\.slang-m2a-build-ninja\RelWithDebInfo\bin\slangd.exe `
-  -SemanticContract enhanced
+  -SemanticContract m3
 ```
 
 ## Prepare the archive
@@ -65,13 +67,14 @@ Package the version-locked executable, compiler library, and generated core modu
 
 The script rejects:
 
-- a tracked source diff that is not byte-for-byte equivalent to the recorded M2a patch;
+- a tracked source diff that is not byte-for-byte equivalent to replaying the recorded M2a and M3
+  patches in order;
 - a non-AMD64 PE or a PE importing the dynamic MSVC/UCRT libraries (the build must use `/MT`);
 - a `slangd.exe` that does not import its matching `slang-compiler.dll`;
-- a publisher binary that fails either the enhanced or stock semantic-token contract smoke test;
+- a publisher binary that fails the M3, M2a-enhanced, or stock semantic-token contract smoke test;
 - a generated GLSL module whose recorded compiler mtime differs from the supplied DLL.
 
-Both semantic contracts run automatically in isolated child PowerShell processes before the final
+All three semantic contracts run automatically in isolated child PowerShell processes before the final
 module timestamp and payload hashes are read. The child process is required because the smoke script
 uses `exit` to report its result.
 
@@ -83,6 +86,7 @@ The default output is `.bundled-runtime/windows-x86_64.zip`. It contains this fi
 
 ```text
 0001-m2a-enhanced-semantic-tokens.patch
+0002-m3-slang-hlsl-semantic-tokens.patch
 LICENSE-slang.txt
 LICENSES/lz4-distribution.txt
 LICENSES/lz4-lib-BSD-2-Clause.txt
@@ -103,8 +107,9 @@ input bytes and normalized metadata produce an identical runtime archive across 
 ## Validate and build the plugin
 
 `verifyBundledSlangdArchive` opens the ZIP before resource processing and enforces the exact entry
-order, STORE method, size limit, schema 1, fixed `clion-slang-m2b` profile, `windows-x64` platform,
-protocol 1.0/`semanticTokens.m2a`, exact manifest file set, and every payload SHA-256. Merely placing
+order, STORE method, size limit, schema 1, fixed `clion-slang-m3` profile, `windows-x64` platform,
+protocol 1.1 with the ordered `semanticTokens.m2a` and `semanticTokens.m3` feature list, exact
+manifest file set, and every payload SHA-256. Merely placing
 a file at the expected path is not sufficient.
 
 Build the constrained Marketplace artifact with:
@@ -116,10 +121,10 @@ Build the constrained Marketplace artifact with:
 The only new distribution is:
 
 ```text
-build/distributions/slang-clion-0.2.0-windows-x86_64.zip
+build/distributions/slang-clion-0.3.0-windows-x86_64.zip
 ```
 
-Its generated plugin version is `0.2.0-windows-x86_64`, and its descriptor declares both official
+Its generated plugin version is `0.3.0-windows-x86_64`, and its descriptor declares both official
 OS/architecture modules. For CI or a release build, an externally produced archive can be selected
 without bypassing validation:
 

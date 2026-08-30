@@ -46,6 +46,8 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             descriptor("Semantic//Callables//Method", SlangSemanticColors.METHOD),
             descriptor("Semantic//Callables//Static method", SlangSemanticColors.STATIC_METHOD),
             descriptor("Semantic//Callables//Built-in intrinsic", SlangSemanticColors.INTRINSIC),
+            descriptor("Semantic//Shader//Binding semantic", SlangSemanticColors.SHADER_SEMANTIC),
+            descriptor("Semantic//Shader//Swizzle", SlangSemanticColors.SWIZZLE),
             descriptor("Semantic//Macro", SlangSemanticColors.MACRO),
             descriptor("Semantic//Decorator", SlangSemanticColors.DECORATOR),
             descriptor("Semantic//Other built-in symbol", SlangSemanticColors.BUILTIN_SYMBOL),
@@ -81,6 +83,8 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             Map.entry("semanticMethod", SlangSemanticColors.METHOD),
             Map.entry("semanticStaticMethod", SlangSemanticColors.STATIC_METHOD),
             Map.entry("semanticIntrinsic", SlangSemanticColors.INTRINSIC),
+            Map.entry("semanticShaderSemantic", SlangSemanticColors.SHADER_SEMANTIC),
+            Map.entry("semanticSwizzle", SlangSemanticColors.SWIZZLE),
             Map.entry("semanticMacro", SlangSemanticColors.MACRO),
             Map.entry("semanticDecorator", SlangSemanticColors.DECORATOR),
             Map.entry("semanticBuiltinSymbol", SlangSemanticColors.BUILTIN_SYMBOL),
@@ -113,7 +117,7 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
                     float3 evaluate(float3 normal)
                     {
                         float <semanticVariable>weight</semanticVariable> =
-                            <semanticIntrinsic>max</semanticIntrinsic>(normal.z, 0.0);
+                            <semanticIntrinsic>max</semanticIntrinsic>(normal.<semanticSwizzle>z</semanticSwizzle>, 0.0);
                         return albedo * weight;
                     }
                 };
@@ -132,7 +136,8 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             /// A compact compute entry point.
             [<semanticDecorator>shader</semanticDecorator>("compute")]
             [numthreads(THREAD_COUNT, 1, 1)]
-            void <semanticFunction>main</semanticFunction>(uint3 dispatchThreadID : SV_DispatchThreadID)
+            void <semanticFunction>main</semanticFunction>(
+                uint3 dispatchThreadID : <semanticShaderSemantic>SV_DispatchThreadID</semanticShaderSemantic>)
             {
                 rendering.<semanticType>Lambert</semanticType> material;
                 material.albedo = float3(1.0, 0.5, 0.25);

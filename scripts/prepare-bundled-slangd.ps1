@@ -13,6 +13,7 @@ param(
 
     [string] $LicensePath = "",
     [string] $PatchPath = "",
+    [string] $M3PatchPath = "",
     [string] $OutputArchive = "",
     [string] $BuildConfiguration = "RelWithDebInfo",
     [string] $BuildGenerator = "Ninja"
@@ -24,6 +25,9 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($PatchPath)) {
     $PatchPath = Join-Path $projectRoot "patches\slang\0001-m2a-enhanced-semantic-tokens.patch"
+}
+if ([string]::IsNullOrWhiteSpace($M3PatchPath)) {
+    $M3PatchPath = Join-Path $projectRoot "patches\slang\0002-m3-slang-hlsl-semantic-tokens.patch"
 }
 if ([string]::IsNullOrWhiteSpace($OutputArchive)) {
     $OutputArchive = Join-Path $projectRoot ".bundled-runtime\windows-x86_64.zip"
@@ -324,7 +328,7 @@ function Invoke-SlangdSmokeContract {
         [string] $SlangdPath,
 
         [Parameter(Mandatory = $true)]
-        [ValidateSet("enhanced", "stock")]
+        [ValidateSet("m3", "enhanced", "stock")]
         [string] $SemanticContract,
 
         [Parameter(Mandatory = $true)]
@@ -364,6 +368,28 @@ function Invoke-SlangGit {
     $output = & git -c core.safecrlf=false -C $script:resolvedSlangSource @Arguments 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "git $($Arguments -join ' ') failed for Slang source '$script:resolvedSlangSource':`n$($output -join "`n")"
+    }
+    $joined = $output -join "`n"
+    if ($PreserveOutput) {
+        return $joined
+    }
+    return $joined.Trim()
+}
+
+function Invoke-GitRepository {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Repository,
+
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments,
+
+        [switch] $PreserveOutput
+    )
+
+    $output = & git -c core.safecrlf=false -C $Repository @Arguments 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "git $($Arguments -join ' ') failed for '$Repository':`n$($output -join "`n")"
     }
     $joined = $output -join "`n"
     if ($PreserveOutput) {
@@ -569,7 +595,8 @@ if ([string]::IsNullOrWhiteSpace($LicensePath)) {
     $LicensePath = Join-Path $resolvedSlangSource "LICENSE"
 }
 $resolvedLicense = Resolve-RequiredFile -Path $LicensePath -Description "Slang license"
-$resolvedPatch = Resolve-RequiredFile -Path $PatchPath -Description "M2a Slang patch"
+$resolvedM2aPatch = Resolve-RequiredFile -Path $PatchPath -Description "M2a Slang patch"
+$resolvedM3Patch = Resolve-RequiredFile -Path $M3PatchPath -Description "M3 Slang patch"
 $resolvedMinizLicense = Resolve-RequiredFile `
     -Path (Join-Path $resolvedSlangSource "external\miniz\LICENSE") `
     -Description "miniz license"
@@ -589,7 +616,7 @@ if ($null -eq $gitCommand) {
     throw "git is required to record the Slang source revision"
 }
 
-$expectedPatch = Normalize-LfText -Text ([IO.File]::ReadAllText($resolvedPatch))
+$sourceCommit = Invoke-SlangGit -Arguments @("rev-parse", "HEAD")
 $trackedDiff = Normalize-LfText -Text (Invoke-SlangGit -Arguments @(
     "diff",
     "--binary",
@@ -598,7 +625,70 @@ $trackedDiff = Normalize-LfText -Text (Invoke-SlangGit -Arguments @(
     "HEAD",
     "--"
 ) -PreserveOutput)
-if ($trackedDiff -cne $expectedPatch) {
+
+# Reconstruct the expected publisher tree from the clean source revision. The
+# patches overlap by design, so concatenating their text cannot represent the
+# final HEAD-to-working-tree diff. A shared, no-checkout clone is cheap and lets
+# git apply each reviewed layer in order before producing the canonical diff.
+$systemTempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/')
+$patchReplayDirectory = Join-Path `
+    $systemTempRoot `
+    ("clion-slang-patch-replay-" + [Guid]::NewGuid().ToString("N"))
+$expectedTrackedDiff = $null
+try {
+    $cloneOutput = & git -c core.safecrlf=false clone `
+        --quiet `
+        --shared `
+        --no-checkout `
+        -- `
+        $resolvedSlangSource `
+        $patchReplayDirectory 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to create temporary shared Slang clone:`n$($cloneOutput -join "`n")"
+    }
+
+    [void] (Invoke-GitRepository `
+        -Repository $patchReplayDirectory `
+        -Arguments @("checkout", "--quiet", "--detach", $sourceCommit))
+    foreach ($patch in @($resolvedM2aPatch, $resolvedM3Patch)) {
+        [void] (Invoke-GitRepository `
+            -Repository $patchReplayDirectory `
+            -Arguments @("apply", "--check", $patch))
+        [void] (Invoke-GitRepository `
+            -Repository $patchReplayDirectory `
+            -Arguments @("apply", $patch))
+    }
+
+    $expectedTrackedDiff = Normalize-LfText -Text (Invoke-GitRepository `
+        -Repository $patchReplayDirectory `
+        -Arguments @(
+            "diff",
+            "--binary",
+            "--no-ext-diff",
+            "--ignore-submodules=all",
+            "HEAD",
+            "--"
+        ) `
+        -PreserveOutput)
+}
+finally {
+    if (Test-Path -LiteralPath $patchReplayDirectory -PathType Container) {
+        $resolvedReplayDirectory = [IO.Path]::GetFullPath($patchReplayDirectory)
+        $resolvedReplayParent = [IO.Path]::GetFullPath(
+            (Split-Path -Parent $resolvedReplayDirectory)
+        ).TrimEnd('\', '/')
+        if ($resolvedReplayParent -cne $systemTempRoot -or
+            -not ([IO.Path]::GetFileName($resolvedReplayDirectory)).StartsWith(
+                "clion-slang-patch-replay-",
+                [StringComparison]::Ordinal
+            )) {
+            throw "Refusing to remove unexpected patch replay directory: $resolvedReplayDirectory"
+        }
+        [IO.Directory]::Delete($resolvedReplayDirectory, $true)
+    }
+}
+
+if ($trackedDiff -cne $expectedTrackedDiff) {
     $changedPaths = Invoke-SlangGit -Arguments @(
         "diff",
         "--name-status",
@@ -607,21 +697,8 @@ if ($trackedDiff -cne $expectedPatch) {
         "HEAD",
         "--"
     )
-    throw "The tracked Slang source diff does not exactly match the recorded M2a patch. Submodule worktree state is ignored, but no additional tracked superproject changes are allowed.`nTracked changes:`n$changedPaths"
+    throw "The tracked Slang source diff does not exactly match replaying the recorded M2a and M3 patches in order. Submodule worktree state is ignored, but no additional tracked superproject changes are allowed.`nTracked changes:`n$changedPaths"
 }
-
-# The exact diff comparison above is authoritative. This additional reverse-apply
-# check gives a direct diagnostic for malformed patches while tolerating CRLF
-# worktree conversion on Windows.
-[void] (Invoke-SlangGit -Arguments @(
-    "apply",
-    "--check",
-    "--reverse",
-    "--ignore-space-change",
-    $resolvedPatch
-))
-
-$sourceCommit = Invoke-SlangGit -Arguments @("rev-parse", "HEAD")
 $sourceDescribe = Invoke-SlangGit -Arguments @("describe", "--tags", "--always", "--dirty")
 $sourceRepository = ConvertTo-SafeRemoteUrl -RemoteUrl (
     Invoke-SlangGit -Arguments @("remote", "get-url", "origin")
@@ -637,6 +714,10 @@ $resolvedSmokeScript = Resolve-RequiredFile `
     -Description "slangd LSP smoke script"
 Invoke-SlangdSmokeContract `
     -SlangdPath $resolvedSlangd `
+    -SemanticContract m3 `
+    -SmokeScriptPath $resolvedSmokeScript
+Invoke-SlangdSmokeContract `
+    -SlangdPath $resolvedSlangd `
     -SemanticContract enhanced `
     -SmokeScriptPath $resolvedSmokeScript
 Invoke-SlangdSmokeContract `
@@ -646,7 +727,8 @@ Invoke-SlangdSmokeContract `
 Assert-GlslModuleCompilerTimestamp -ModulePath $resolvedGlslModule -CompilerPath $resolvedCompiler
 
 $payloadFiles = [ordered]@{
-    "0001-m2a-enhanced-semantic-tokens.patch" = $resolvedPatch
+    "0001-m2a-enhanced-semantic-tokens.patch" = $resolvedM2aPatch
+    "0002-m3-slang-hlsl-semantic-tokens.patch" = $resolvedM3Patch
     "LICENSE-slang.txt" = $resolvedLicense
     "LICENSES/lz4-distribution.txt" = $resolvedLz4DistributionLicense
     "LICENSES/lz4-lib-BSD-2-Clause.txt" = $resolvedLz4LibraryLicense
@@ -664,7 +746,7 @@ foreach ($entryName in $payloadFiles.Keys) {
 $manifestLines = @(
     '{',
     '  "schemaVersion": 1,',
-    '  "profile": "clion-slang-m2b",',
+    '  "profile": "clion-slang-m3",',
     '  "source": {',
     ('    "repository": {0},' -f (ConvertTo-JsonString $sourceRepository)),
     ('    "commit": {0},' -f (ConvertTo-JsonString $sourceCommit)),
@@ -677,11 +759,12 @@ $manifestLines = @(
     '  },',
     '  "protocol": {',
     '    "major": 1,',
-    '    "minor": 0,',
-    '    "features": ["semanticTokens.m2a"]',
+    '    "minor": 1,',
+    '    "features": ["semanticTokens.m2a", "semanticTokens.m3"]',
     '  },',
     '  "files": {',
     ('    "0001-m2a-enhanced-semantic-tokens.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0001-m2a-enhanced-semantic-tokens.patch'])),
+    ('    "0002-m3-slang-hlsl-semantic-tokens.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0002-m3-slang-hlsl-semantic-tokens.patch'])),
     ('    "LICENSE-slang.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSE-slang.txt'])),
     ('    "LICENSES/lz4-distribution.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSES/lz4-distribution.txt'])),
     ('    "LICENSES/lz4-lib-BSD-2-Clause.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSES/lz4-lib-BSD-2-Clause.txt'])),
@@ -710,6 +793,7 @@ $temporaryArchive = "$resolvedOutput.tmp-$([Guid]::NewGuid().ToString('N'))"
 try {
     $entryNames = [string[]] @(
         "0001-m2a-enhanced-semantic-tokens.patch",
+        "0002-m3-slang-hlsl-semantic-tokens.patch",
         "LICENSE-slang.txt",
         "LICENSES/lz4-distribution.txt",
         "LICENSES/lz4-lib-BSD-2-Clause.txt",

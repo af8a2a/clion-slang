@@ -1,6 +1,7 @@
 import groovy.json.JsonSlurper
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.BuildPluginTask
+import java.math.BigDecimal
 import java.security.MessageDigest
 import java.util.HexFormat
 import java.util.zip.ZipEntry
@@ -12,7 +13,7 @@ plugins {
 }
 
 group = "dev.slang.intellij"
-version = "0.2.0"
+version = "0.3.0"
 
 repositories {
     mavenCentral()
@@ -30,6 +31,7 @@ val bundledSlangdArchive = file(
 
 val bundledRuntimeEntries = listOf(
     "0001-m2a-enhanced-semantic-tokens.patch",
+    "0002-m3-slang-hlsl-semantic-tokens.patch",
     "LICENSE-slang.txt",
     "LICENSES/lz4-distribution.txt",
     "LICENSES/lz4-lib-BSD-2-Clause.txt",
@@ -60,6 +62,23 @@ val verifyBundledSlangdArchive = tasks.register("verifyBundledSlangdArchive") {
         fun requiredObject(parent: Map<*, *>, name: String): Map<*, *> =
             parent[name] as? Map<*, *>
                 ?: throw GradleException("Bundled slangd manifest field '$name' must be an object")
+        fun requiredInteger(parent: Map<*, *>, name: String): Int {
+            val value = parent[name] as? Number
+                ?: throw GradleException("Bundled slangd manifest field '$name' must be an integer")
+            return try {
+                BigDecimal(value.toString()).intValueExact()
+            } catch (exception: ArithmeticException) {
+                throw GradleException(
+                    "Bundled slangd manifest field '$name' must be an exact 32-bit integer",
+                    exception
+                )
+            } catch (exception: NumberFormatException) {
+                throw GradleException(
+                    "Bundled slangd manifest field '$name' must be an exact 32-bit integer",
+                    exception
+                )
+            }
+        }
         fun entrySha256(input: java.io.InputStream): String {
             val digest = MessageDigest.getInstance("SHA-256")
             val buffer = ByteArray(64 * 1024)
@@ -117,23 +136,23 @@ val verifyBundledSlangdArchive = tasks.register("verifyBundledSlangdArchive") {
             val manifest = JsonSlurper().parseText(manifestText) as? Map<*, *>
                 ?: throw GradleException("Bundled slangd manifest must be a JSON object")
 
-            if ((manifest["schemaVersion"] as? Number)?.toInt() != 1) {
+            if (requiredInteger(manifest, "schemaVersion") != 1) {
                 throw GradleException("Bundled slangd manifest schemaVersion must be 1")
             }
-            if (manifest["profile"] != "clion-slang-m2b") {
-                throw GradleException("Bundled slangd manifest profile must be 'clion-slang-m2b'")
+            if (manifest["profile"] != "clion-slang-m3") {
+                throw GradleException("Bundled slangd manifest profile must be 'clion-slang-m3'")
             }
             val build = requiredObject(manifest, "build")
             if (build["platform"] != "windows-x64") {
                 throw GradleException("Bundled slangd manifest build.platform must be 'windows-x64'")
             }
             val protocol = requiredObject(manifest, "protocol")
-            if ((protocol["major"] as? Number)?.toInt() != 1 ||
-                (protocol["minor"] as? Number)?.toInt() != 0 ||
-                protocol["features"] != listOf("semanticTokens.m2a")
+            if (requiredInteger(protocol, "major") != 1 ||
+                requiredInteger(protocol, "minor") != 1 ||
+                protocol["features"] != listOf("semanticTokens.m2a", "semanticTokens.m3")
             ) {
                 throw GradleException(
-                    "Bundled slangd manifest protocol must be 1.0 with only semanticTokens.m2a"
+                    "Bundled slangd manifest protocol must be 1.1 with semanticTokens.m2a and semanticTokens.m3"
                 )
             }
 

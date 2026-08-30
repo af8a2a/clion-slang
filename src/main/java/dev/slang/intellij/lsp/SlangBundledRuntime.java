@@ -32,9 +32,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -54,11 +56,14 @@ public final class SlangBundledRuntime {
     private static final String EXECUTABLE_NAME = "slangd.exe";
     private static final String COMPILER_NAME = "slang-compiler.dll";
     private static final String GLSL_MODULE_NAME = "slang-glsl-module.bin";
-    private static final String REQUIRED_PROFILE = "clion-slang-m2b";
+    private static final String REQUIRED_PROFILE = "clion-slang-m3";
     private static final int MANIFEST_SCHEMA_VERSION = 1;
     private static final int PROTOCOL_MAJOR = 1;
-    private static final int PROTOCOL_MINOR = 0;
-    private static final String REQUIRED_PROTOCOL_FEATURE = "semanticTokens.m2a";
+    private static final int PROTOCOL_MINOR = 1;
+    private static final List<String> REQUIRED_PROTOCOL_FEATURES = List.of(
+            "semanticTokens.m2a",
+            "semanticTokens.m3"
+    );
     private static final long MAX_ARCHIVE_BYTES = 128L * 1024 * 1024;
     private static final long MAX_MANIFEST_BYTES = 1024L * 1024;
     private static final long MAX_EXTRACTED_BYTES = 512L * 1024 * 1024;
@@ -239,19 +244,21 @@ public final class SlangBundledRuntime {
             );
         }
         JsonArray features = requireArray(protocol, "features");
-        boolean hasRequiredFeature = false;
+        List<String> protocolFeatures = new ArrayList<>();
         for (JsonElement feature : features) {
             if (!feature.isJsonPrimitive() || !feature.getAsJsonPrimitive().isString()) {
                 throw new IOException("Runtime manifest protocol features must contain only strings");
             }
-            if (REQUIRED_PROTOCOL_FEATURE.equals(feature.getAsString())) {
-                hasRequiredFeature = true;
+            String featureName = feature.getAsString();
+            if (protocolFeatures.contains(featureName)) {
+                throw new IOException("Runtime manifest protocol features must not contain duplicates");
             }
+            protocolFeatures.add(featureName);
         }
-        if (!hasRequiredFeature) {
+        if (!protocolFeatures.equals(REQUIRED_PROTOCOL_FEATURES)) {
             throw new IOException(
-                    "Runtime manifest protocol does not provide required feature "
-                            + REQUIRED_PROTOCOL_FEATURE
+                    "Runtime manifest protocol features are " + protocolFeatures
+                            + " instead of required " + REQUIRED_PROTOCOL_FEATURES
             );
         }
 

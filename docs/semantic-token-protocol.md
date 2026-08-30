@@ -1,8 +1,9 @@
-# Semantic token protocol baseline and M2a publisher
+# Semantic token protocol baseline, M2a publisher, and M3 shader taxonomy
 
 This document freezes the M0 semantic-token contract used by the fixture and smoke tests. It
-describes two profiles: the stock `slangd` behavior that must remain usable and the M2a enhanced
-vocabulary negotiated by the publisher patch in `patches/slang/`.
+describes three profiles: the stock `slangd` behavior that must remain usable, the M2a standard
+enhanced vocabulary, and the M3 Slang/HLSL-specific vocabulary negotiated by the publisher patches
+in `patches/slang/`.
 
 ## Stock profile
 
@@ -48,8 +49,7 @@ declaration, definition, readonly, static, defaultLibrary
 ```
 
 `deprecated` and `modification` are the next target modifiers. Further standard token types and
-modifiers are additive, negotiated refinements. Shader binding semantics and swizzles are reserved
-for a later custom/M3 profile; M0 must not invent non-standard token names for them.
+modifiers are additive, negotiated refinements. M2a deliberately uses only standard LSP names.
 
 The M2a publisher enables this generation only when the initialize request advertises every one of
 the 17 token types and all five modifiers. Missing any required name selects the stock legend,
@@ -83,6 +83,35 @@ enum closing brace as a function.
 Stock fallback maps class, struct, interface, enum, and type parameter to `type`; method to
 `function`; decorator to `type`; and every modifier bit to zero.
 
+## M3 Slang/HLSL custom profile
+
+M3 appends two compiler-derived token types after the complete M2a prefix:
+
+```text
+slangSemantic, slangSwizzle
+```
+
+It adds no modifier. The complete M3 legend therefore contains 19 token types and the same five
+modifiers as M2a. The custom names are case-sensitive protocol identifiers and are append-only.
+
+| Checked AST/source role | M3 token | M2a and stock fallback |
+| --- | --- | --- |
+| HLSL binding semantic such as `POSITION`, `SV_VertexID`, or `SV_Position` | `slangSemantic` | `enumMember` |
+| Vector or matrix component selection such as the `xyz` in `value.xyz` | `slangSwizzle` | `property` |
+
+Classification must use `HLSLSemantic` and swizzle AST nodes plus their exact source locations. It
+must not infer either role from an identifier spelling: a user field named `xyz`, for example,
+remains a property.
+
+Capability negotiation has three levels. A client advertising all 19 types and five modifiers gets
+the M3 legend. A client satisfying M2a but missing either custom name gets the 17-type M2a legend and
+portable fallbacks. A client that does not satisfy M2a gets the exact stock 10/0 legend. Missing M3
+support must never discard otherwise available M2a refinement.
+
+Attributes, intrinsic functions, and built-in resource types remain `decorator`, `function +
+defaultLibrary`, and `type + defaultLibrary` respectively. M3 does not create duplicate custom wire
+types for roles already represented accurately by the standard vocabulary.
+
 ## Wire and validation rules
 
 - The `initialize` response is authoritative. Decode token type indices and modifier bits against
@@ -98,11 +127,11 @@ Stock fallback maps class, struct, interface, enum, and type parameter to `type`
 ## Machine-readable contract
 
 `src/test/testData/lsp/semantic-tokens-contract.json` is the executable form of this document.
-`schemaVersion` is an integer. Version 2 has exactly two profiles:
+`schemaVersion` is an integer. Version 3 has exactly three profiles:
 
 - `legend.tokenTypesExact` and `tokenModifiersExact` are ordered arrays for the stock profile.
 - `legend.tokenTypesRequired` and `tokenModifiersRequired` are unordered required subsets for the
-  enhanced profile.
+  enhanced and M3 profiles.
 - Each `expectedTokens` item has string `text` and `type` fields. `modifiers`, when present, is an
   array of required modifier names; `forbiddenModifiers` lists names that must be absent. Optional
   `line` and `character` are zero-based LSP UTF-16 coordinates. Optional `minimumCount` is a
@@ -110,8 +139,10 @@ Stock fallback maps class, struct, interface, enum, and type parameter to `type`
 
 Required and forbidden modifier sets must be disjoint and contained in the profile legend. Contract
 readers reject unsupported `schemaVersion` values, missing profiles, malformed legends, and invalid
-expectation values. Unknown fields are reserved for forward-compatible metadata. A schema-shape
-change increments `schemaVersion`; changing only fixture expectations does not.
+expectation values. The `enhanced` smoke intentionally omits M3 names to exercise the middle
+fallback; the `m3` smoke advertises both custom names. Unknown fields are reserved for
+forward-compatible metadata. A schema-shape change increments `schemaVersion`; changing only
+fixture expectations does not.
 
 Every smoke result records the resolved server executable path, its SHA-256 digest, and the LSP
 `serverInfo` value. The digest identifies the launcher binary; reproducible CI must additionally
@@ -127,9 +158,10 @@ document version, or position encoding changes.
 
 ## CLion consumer
 
-The plugin advertises the complete LSP 3.17 standard token vocabulary and modifiers, then decodes
-the server-provided legend by name. Stock roles and enhanced refinements map to Slang-specific
-`TextAttributesKey` entries exposed under `Editor | Color Scheme | Slang | Semantic`.
+The plugin advertises the complete LSP 3.17 standard token vocabulary and modifiers plus the two M3
+custom types, then decodes the server-provided legend by name. Stock roles, enhanced refinements,
+shader semantics, and swizzles map to Slang-specific `TextAttributesKey` entries exposed under
+`Editor | Color Scheme | Slang | Semantic`.
 
 `defaultLibrary` takes precedence and selects built-in type, intrinsic, or other built-in symbol
 colors. `readonly` and `static` select dedicated value/member colors. Unknown future token names

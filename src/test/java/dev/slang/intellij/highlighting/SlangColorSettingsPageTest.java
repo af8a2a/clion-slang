@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -19,11 +20,15 @@ public class SlangColorSettingsPageTest {
         SlangColorSettingsPage page = new SlangColorSettingsPage();
         Map<String, TextAttributesKey> tags = page.getAdditionalHighlightingTagToDescriptorMap();
 
-        assertEquals(24, tags.size());
+        assertEquals(26, tags.size());
         assertSame(SlangSemanticColors.STRUCT, tags.get("semanticStruct"));
         assertSame(SlangSemanticColors.PARAMETER, tags.get("semanticParameter"));
         assertSame(SlangSemanticColors.INTRINSIC, tags.get("semanticIntrinsic"));
         assertSame(SlangSemanticColors.DECORATOR, tags.get("semanticDecorator"));
+        assertSame(SlangSemanticColors.SHADER_SEMANTIC, tags.get("semanticShaderSemantic"));
+        assertSame(SlangSemanticColors.SWIZZLE, tags.get("semanticSwizzle"));
+        assertNotSame(SlangSyntaxHighlighter.SEMANTIC, SlangSemanticColors.SHADER_SEMANTIC);
+        assertNotSame(SlangSemanticColors.PROPERTY, SlangSemanticColors.SWIZZLE);
 
         Set<TextAttributesKey> descriptorKeys = new HashSet<>();
         for (AttributesDescriptor descriptor : page.getAttributeDescriptors()) {
@@ -49,7 +54,8 @@ public class SlangColorSettingsPageTest {
         assertTrue(usedTags.containsAll(Arrays.asList(
                 "semanticNamespace", "semanticStruct", "semanticInterface", "semanticEnum",
                 "semanticTypeParameter", "semanticParameter", "semanticVariable",
-                "semanticProperty", "semanticFunction", "semanticIntrinsic", "semanticDecorator"
+                "semanticProperty", "semanticFunction", "semanticIntrinsic", "semanticDecorator",
+                "semanticShaderSemantic", "semanticSwizzle"
         )));
     }
 }

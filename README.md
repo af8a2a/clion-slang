@@ -9,6 +9,8 @@
 - Slang/HLSL 常用关键字、内建类型、属性、语义、预处理器、字符串、数字与注释的词法高亮
 - `slangd` Semantic Tokens 语义配色：类型、命名空间、变量、参数、字段、函数、宏等 stock
   类别，以及 class、struct、interface、enum、type parameter、method、decorator 和标准 modifiers
+- M3 Slang/HLSL 专属语义类别：绑定 semantic（`POSITION`、`SV_*`）与向量/矩阵 swizzle
+  使用独立可配置颜色，并在不支持 M3 的客户端上逐级回退到 M2a/stock 类别
 - 行注释、块注释、括号匹配、引号配对，以及包含词法/语义角色的独立配色页
 - 基于 JetBrains Native LSP API 的 project-wide `slangd` 客户端
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
@@ -31,7 +33,7 @@
 - 最低版本：CLion 2026.1.3；已按 2026.2 的保留兼容 API 设计，未设置人为 `until-build`
 - Plugin Verifier 1.410：CLion 2026.1.5（261.27258.50）与 2026.2.1（262.9437.136）均为 Compatible
 - 构建 JDK：25（输出 `--release 21` 字节码）；Gradle Wrapper 使用 Gradle 9.0.0
-- M2b 发行包目前仅支持 Windows x64，并通过 IDE 官方 OS/架构模块阻止在其他平台安装。
+- M3 发行包目前仅支持 Windows x64，并通过 IDE 官方 OS/架构模块阻止在其他平台安装。
   高级外部 `slangd` 覆盖仅用于受支持平台上的调试、兼容性验证与版本二分。
 
 项目使用 2026.1.4 之前的 Native LSP 类型名作为兼容入口。JetBrains 在 2026.1.4 重命名
@@ -58,7 +60,7 @@
    CLion 2026.1.3 基线。
 
 3. 在 CLion 中打开 **Settings | Plugins | ⚙ | Install Plugin from Disk...**，选择
-   `build/distributions/slang-clion-0.2.0-windows-x86_64.zip`。
+   `build/distributions/slang-clion-0.3.0-windows-x86_64.zip`。
 4. 默认直接使用插件内置 `slangd`。只有调试或兼容性需要时，才在
    **Settings | Languages & Frameworks | Slang** 中启用 **Use external slangd (advanced)**
    并指定 `slangd.exe` 的完整路径。
@@ -116,16 +118,20 @@ UTF-16 范围、legend 和 token 合同，而不只是检查服务器是否发�
   -Slangd 'D:\path\to\enhanced\slangd.exe' `
   -SemanticContract enhanced `
   -AsJson
+.\scripts\slangd-lsp-smoke.ps1 `
+  -Slangd 'D:\path\to\enhanced\slangd.exe' `
+  -SemanticContract m3 `
+  -AsJson
 ```
 
 JSON 输出会记录解析后的 `slangd` 路径、可执行文件 SHA-256、`serverInfo`、完整 legend 和
 解码后的 token，适合作为 CI 差分产物。协议合同与演进规则见
 [docs/semantic-token-protocol.md](docs/semantic-token-protocol.md)。
 
-M2a 的 publisher 侧实现以可重放补丁保存在
-[`patches/slang/`](patches/slang/README.md)。它增强 `slangd` 的细分类型与 modifiers，并在
-initialize 时检查客户端声明的 token vocabulary：完整支持时启用 enhanced，缺少任一项时
-自动回退 stock legend。构建和双协议验证命令见该目录说明。
+Publisher 侧实现以 M2a + M3 两层可重放补丁保存在
+[`patches/slang/`](patches/slang/README.md)。M2a 增加标准细分类型与 modifiers；M3 追加
+`slangSemantic` 和 `slangSwizzle`。Initialize 能力协商按 M3 → M2a → stock 逐级选择 legend，
+构建和三协议验证命令见该目录说明。
 
 在开发沙箱中启动 CLion：
 

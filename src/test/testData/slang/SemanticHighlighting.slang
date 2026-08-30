@@ -50,3 +50,18 @@ void contractEntry(uint3 contractDispatchId : SV_DispatchThreadID)
     contractSurface.contractMode = ContractCorpus::ContractMode.ContractWarm;
     /* 😀 */ float3 contractUtf16Color = contractSurface.contractEvaluate(float3(contractDispatchId));
 }
+
+struct ContractNamedField
+{
+    float2 xy;
+};
+
+void contractSwizzleKinds(
+    float4 contractVector,
+    float2x2 contractMatrix,
+    ContractNamedField contractNamedField)
+{
+    float2 contractVectorSwizzle = contractVector.xy;
+    float2 contractMatrixSwizzle = contractMatrix._m00_m11;
+    float2 contractNamedFieldValue = contractNamedField.xy;
+}

@@ -8,7 +8,7 @@ param(
     [int] $ExpectedTargetLine = 1,
     [int] $ExpectedTargetCharacter = 6,
     [string] $SemanticFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\SemanticHighlighting.slang"),
-    [ValidateSet("stock", "enhanced", "none")]
+    [ValidateSet("stock", "enhanced", "m3", "none")]
     [string] $SemanticContract = "stock",
     [string] $SemanticContractFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\lsp\semantic-tokens-contract.json"),
     [ValidateRange(1, 300)]
@@ -66,6 +66,9 @@ $clientSemanticTokenModifiers = @(
     "documentation",
     "defaultLibrary"
 )
+if ($SemanticContract -eq "m3") {
+    $clientSemanticTokenTypes += @("slangSemantic", "slangSwizzle")
+}
 if ($SemanticContract -eq "stock") {
     $clientSemanticTokenTypes = @(
         "type",
@@ -421,7 +424,7 @@ function Assert-SemanticContractDocument($Contract) {
         throw "semantic token contract is missing schemaVersion"
     }
     $schemaVersion = ConvertTo-LspUInt32 $schemaProperty.Value "contract schemaVersion" 0
-    if ($schemaVersion -ne 2) {
+    if ($schemaVersion -ne 3) {
         throw "unsupported semantic token contract schemaVersion: $schemaVersion"
     }
 
@@ -431,14 +434,16 @@ function Assert-SemanticContractDocument($Contract) {
     }
     Assert-JsonObject $profilesProperty.Value "semantic token contract.profiles"
     $profileNames = @($profilesProperty.Value.PSObject.Properties.Name)
-    if ($profileNames.Count -ne 2 -or
+    if ($profileNames.Count -ne 3 -or
         -not (Test-OrdinalContains $profileNames "stock") -or
-        -not (Test-OrdinalContains $profileNames "enhanced")) {
-        throw "semantic token contract.profiles must contain exactly 'stock' and 'enhanced'"
+        -not (Test-OrdinalContains $profileNames "enhanced") -or
+        -not (Test-OrdinalContains $profileNames "m3")) {
+        throw "semantic token contract.profiles must contain exactly 'stock', 'enhanced', and 'm3'"
     }
 
     Assert-SemanticContractProfile $profilesProperty.Value.stock "stock"
     Assert-SemanticContractProfile $profilesProperty.Value.enhanced "enhanced"
+    Assert-SemanticContractProfile $profilesProperty.Value.m3 "m3"
     return [int]$schemaVersion
 }
 
