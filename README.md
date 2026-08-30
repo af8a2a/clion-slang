@@ -66,9 +66,11 @@
    并指定 `slangd.exe` 的完整路径。
 5. 打开 `.slang` 或 `.slangh` 文件。Language Services 状态栏会显示 `slangd` 状态。
 
-语义颜色可在 **Settings | Editor | Color Scheme | Slang | Semantic** 中单独调整。服务器
-不可用时，插件会保留本地 Lexer 提供的基础颜色；使用 stock slangd 时显示其现有十类，
-增强版 slangd 发布更细分类和 modifiers 后会自动使用对应颜色。
+语义颜色可在 **Settings | Editor | Color Scheme | Slang | Semantic** 中单独调整。预览采用
+基于 Metallic 实际 shader 用法设计的主题无关校准模板，说明与建议的调整顺序见
+[颜色调整模板](docs/color-adjustment-template.md)。服务器不可用时，插件会保留本地 Lexer
+提供的基础颜色；使用 stock slangd 时显示其现有十类，增强版 slangd 发布更细分类和
+modifiers 后会自动使用对应颜色。
 
 本机开发时可避免下载另一份 CLion SDK：
 

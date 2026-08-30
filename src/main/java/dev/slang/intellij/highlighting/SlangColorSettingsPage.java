@@ -27,29 +27,29 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             descriptor("Attributes", SlangSyntaxHighlighter.ATTRIBUTE),
             descriptor("HLSL semantics", SlangSyntaxHighlighter.SEMANTIC),
             descriptor("Semantic//Namespace", SlangSemanticColors.NAMESPACE),
-            descriptor("Semantic//Types//General", SlangSemanticColors.TYPE),
-            descriptor("Semantic//Types//Built-in", SlangSemanticColors.BUILTIN_TYPE),
+            descriptor("Semantic//Types//General or stock fallback", SlangSemanticColors.TYPE),
+            descriptor("Semantic//Types//Built-in or resource type", SlangSemanticColors.BUILTIN_TYPE),
             descriptor("Semantic//Types//Class", SlangSemanticColors.CLASS),
             descriptor("Semantic//Types//Struct", SlangSemanticColors.STRUCT),
             descriptor("Semantic//Types//Interface", SlangSemanticColors.INTERFACE),
             descriptor("Semantic//Types//Enum", SlangSemanticColors.ENUM),
             descriptor("Semantic//Types//Type parameter", SlangSemanticColors.TYPE_PARAMETER),
             descriptor("Semantic//Values//Parameter", SlangSemanticColors.PARAMETER),
-            descriptor("Semantic//Values//Variable", SlangSemanticColors.VARIABLE),
+            descriptor("Semantic//Values//Variable or global resource", SlangSemanticColors.VARIABLE),
             descriptor("Semantic//Values//Static variable", SlangSemanticColors.STATIC_VARIABLE),
             descriptor("Semantic//Values//Read-only variable", SlangSemanticColors.READONLY_VARIABLE),
-            descriptor("Semantic//Values//Property or field", SlangSemanticColors.PROPERTY),
+            descriptor("Semantic//Values//Property or parameter-block field", SlangSemanticColors.PROPERTY),
             descriptor("Semantic//Values//Static property", SlangSemanticColors.STATIC_PROPERTY),
             descriptor("Semantic//Values//Read-only property", SlangSemanticColors.READONLY_PROPERTY),
             descriptor("Semantic//Values//Enum member", SlangSemanticColors.ENUM_MEMBER),
-            descriptor("Semantic//Callables//Function", SlangSemanticColors.FUNCTION),
+            descriptor("Semantic//Callables//Function or shader entry point", SlangSemanticColors.FUNCTION),
             descriptor("Semantic//Callables//Method", SlangSemanticColors.METHOD),
             descriptor("Semantic//Callables//Static method", SlangSemanticColors.STATIC_METHOD),
             descriptor("Semantic//Callables//Built-in intrinsic", SlangSemanticColors.INTRINSIC),
             descriptor("Semantic//Shader//Binding semantic", SlangSemanticColors.SHADER_SEMANTIC),
             descriptor("Semantic//Shader//Swizzle", SlangSemanticColors.SWIZZLE),
             descriptor("Semantic//Macro", SlangSemanticColors.MACRO),
-            descriptor("Semantic//Decorator", SlangSemanticColors.DECORATOR),
+            descriptor("Semantic//Shader//Attribute", SlangSemanticColors.DECORATOR),
             descriptor("Semantic//Other built-in symbol", SlangSemanticColors.BUILTIN_SYMBOL),
             descriptor("Semantic//Unknown identifier", SlangSemanticColors.IDENTIFIER),
             descriptor("Punctuation//Operators", SlangSyntaxHighlighter.OPERATOR),
@@ -91,57 +91,93 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             Map.entry("semanticIdentifier", SlangSemanticColors.IDENTIFIER)
     );
 
+    /**
+     * Theme-neutral calibration corpus derived from the high-frequency constructs in Metallic's
+     * first-party shaders. The main block emphasizes resources, constants, attributes, semantics,
+     * and swizzles; the compact tail keeps less common Slang roles adjustable as well.
+     */
     private static final String DEMO_TEXT = """
-            #define <semanticMacro>THREAD_COUNT</semanticMacro> 8
+            #define <semanticMacro>METALLIC_TILE_SIZE</semanticMacro> 8
 
-            namespace <semanticNamespace>rendering</semanticNamespace>
+            struct <semanticStruct>CompositePush</semanticStruct>
             {
-                enum <semanticEnum>SurfaceMode</semanticEnum>
+                uint2 <semanticProperty>extent</semanticProperty>;
+                uint <semanticProperty>outputTexture</semanticProperty>;
+                const float <semanticReadonlyProperty>exposure</semanticReadonlyProperty>;
+                static float <semanticStaticProperty>defaultExposure</semanticStaticProperty>;
+            };
+
+            [[vk::<semanticDecorator>binding</semanticDecorator>(0, 0)]]
+            <semanticBuiltinType>RaytracingAccelerationStructure</semanticBuiltinType>
+                <semanticVariable>gScene</semanticVariable>;
+            [[vk::<semanticDecorator>binding</semanticDecorator>(1, 0)]]
+            <semanticBuiltinType>Texture2D</semanticBuiltinType><float4>
+                <semanticVariable>gHistory</semanticVariable>;
+            [[vk::<semanticDecorator>binding</semanticDecorator>(2, 0)]]
+            <semanticBuiltinType>RWTexture2D</semanticBuiltinType><float4>
+                <semanticVariable>gOutput</semanticVariable>;
+
+            static const uint <semanticReadonlyVariable>kInvalidMaterial</semanticReadonlyVariable> = 0xffffffffu;
+            static uint <semanticStaticVariable>gFrameIndex</semanticStaticVariable>;
+
+            float <semanticFunction>luminance</semanticFunction>(
+                float3 <semanticParameter>color</semanticParameter>)
+            {
+                return <semanticIntrinsic>dot</semanticIntrinsic>(
+                    color.<semanticSwizzle>rgb</semanticSwizzle>, float3(0.2126, 0.7152, 0.0722));
+            }
+
+            /// Metallic-style compute pass used to calibrate the common semantic colors.
+            [<semanticDecorator>shader</semanticDecorator>("compute")]
+            [<semanticDecorator>numthreads</semanticDecorator>(METALLIC_TILE_SIZE, METALLIC_TILE_SIZE, 1)]
+            void <semanticFunction>compositeMain</semanticFunction>(
+                uint3 <semanticParameter>dispatchThreadID</semanticParameter>
+                    : <semanticShaderSemantic>SV_DispatchThreadID</semanticShaderSemantic>,
+                uniform <semanticType>CompositePush</semanticType> <semanticParameter>push</semanticParameter>)
+            {
+                uint2 <semanticVariable>pixel</semanticVariable> =
+                    dispatchThreadID.<semanticSwizzle>xy</semanticSwizzle>;
+                <semanticBuiltinType>DescriptorHandle</semanticBuiltinType><
+                    <semanticBuiltinType>RWTexture2D</semanticBuiltinType><float4>>
+                    <semanticVariable>outputHandle</semanticVariable> =
+                        DescriptorHandle<RWTexture2D<float4>>(uint2(push.outputTexture, 0));
+                <semanticBuiltinType>RWTexture2D</semanticBuiltinType><float4>
+                    <semanticVariable>output</semanticVariable> = outputHandle;
+                float3 <semanticVariable>history</semanticVariable> =
+                    gHistory.<semanticIntrinsic>Load</semanticIntrinsic>(int3(pixel, 0)).<semanticSwizzle>rgb</semanticSwizzle>;
+                float <semanticVariable>weight</semanticVariable> =
+                    <semanticIntrinsic>saturate</semanticIntrinsic>(push.exposure);
+                uint <semanticVariable>rayFlags</semanticVariable> =
+                    <semanticBuiltinSymbol>RAY_FLAG_NONE</semanticBuiltinSymbol>;
+                output[pixel] = float4(
+                    <semanticIntrinsic>lerp</semanticIntrinsic>(history, history * weight, 0.5), 1.0);
+            }
+
+            // Less common in Metallic, but retained so every supported Slang role is adjustable.
+            namespace <semanticNamespace>calibration</semanticNamespace>
+            {
+                enum <semanticEnum>CacheMode</semanticEnum>
                 {
-                    <semanticEnumMember>matte</semanticEnumMember>,
-                    glossy,
+                    <semanticEnumMember>disabled</semanticEnumMember>,
+                    enabled,
                 };
 
                 interface <semanticInterface>IMaterial</semanticInterface>
                 {
-                    <semanticBuiltinType>float3</semanticBuiltinType> <semanticMethod>evaluate</semanticMethod>(
-                        <semanticBuiltinType>float3</semanticBuiltinType> <semanticParameter>normal</semanticParameter>);
+                    float3 <semanticMethod>evaluate</semanticMethod>(float3 normal);
                 }
 
-                struct <semanticStruct>Lambert</semanticStruct> : IMaterial
+                class <semanticClass>MaterialLibrary</semanticClass>
                 {
-                    float3 <semanticProperty>albedo</semanticProperty>;
-                    static float <semanticStaticProperty>defaultScale</semanticStaticProperty>;
-                    const float <semanticReadonlyProperty>roughness</semanticReadonlyProperty>;
+                    static float3 <semanticStaticMethod>fallbackColor</semanticStaticMethod>();
+                }
 
-                    float3 evaluate(float3 normal)
-                    {
-                        float <semanticVariable>weight</semanticVariable> =
-                            <semanticIntrinsic>max</semanticIntrinsic>(normal.<semanticSwizzle>z</semanticSwizzle>, 0.0);
-                        return albedo * weight;
-                    }
-                };
-
-                class <semanticClass>MaterialLibrary</semanticClass> {}
-
-                struct Box<<semanticTypeParameter>TValue</semanticTypeParameter>>
+                struct GenericBuffer<<semanticTypeParameter>TValue</semanticTypeParameter>>
                 {
                     TValue value;
-                }
+                };
 
-                static uint <semanticStaticVariable>materialCount</semanticStaticVariable>;
-                static const uint <semanticReadonlyVariable>MAX_LIGHTS</semanticReadonlyVariable> = 8;
-            }
-
-            /// A compact compute entry point.
-            [<semanticDecorator>shader</semanticDecorator>("compute")]
-            [numthreads(THREAD_COUNT, 1, 1)]
-            void <semanticFunction>main</semanticFunction>(
-                uint3 dispatchThreadID : <semanticShaderSemantic>SV_DispatchThreadID</semanticShaderSemantic>)
-            {
-                rendering.<semanticType>Lambert</semanticType> material;
-                material.albedo = float3(1.0, 0.5, 0.25);
-                float3 color = material.evaluate(float3(dispatchThreadID));
+                float <semanticIdentifier>futureSemanticRole</semanticIdentifier>;
             }
             """;
 
