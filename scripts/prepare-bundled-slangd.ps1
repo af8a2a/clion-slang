@@ -15,6 +15,7 @@ param(
     [string] $PatchPath = "",
     [string] $M3PatchPath = "",
     [string] $FieldHoverPatchPath = "",
+    [string] $FieldHoverPresentationPatchPath = "",
     [string] $OutputArchive = "",
     [string] $BuildConfiguration = "RelWithDebInfo",
     [string] $BuildGenerator = "Ninja"
@@ -32,6 +33,9 @@ if ([string]::IsNullOrWhiteSpace($M3PatchPath)) {
 }
 if ([string]::IsNullOrWhiteSpace($FieldHoverPatchPath)) {
     $FieldHoverPatchPath = Join-Path $projectRoot "patches\slang\0003-field-layout-hover.patch"
+}
+if ([string]::IsNullOrWhiteSpace($FieldHoverPresentationPatchPath)) {
+    $FieldHoverPresentationPatchPath = Join-Path $projectRoot "patches\slang\0004-field-hover-presentation.patch"
 }
 if ([string]::IsNullOrWhiteSpace($OutputArchive)) {
     $OutputArchive = Join-Path $projectRoot ".bundled-runtime\windows-x86_64.zip"
@@ -604,6 +608,9 @@ $resolvedM3Patch = Resolve-RequiredFile -Path $M3PatchPath -Description "M3 Slan
 $resolvedFieldHoverPatch = Resolve-RequiredFile `
     -Path $FieldHoverPatchPath `
     -Description "field layout hover Slang patch"
+$resolvedFieldHoverPresentationPatch = Resolve-RequiredFile `
+    -Path $FieldHoverPresentationPatchPath `
+    -Description "field hover presentation Slang patch"
 $resolvedMinizLicense = Resolve-RequiredFile `
     -Path (Join-Path $resolvedSlangSource "external\miniz\LICENSE") `
     -Description "miniz license"
@@ -657,7 +664,12 @@ try {
     [void] (Invoke-GitRepository `
         -Repository $patchReplayDirectory `
         -Arguments @("checkout", "--quiet", "--detach", $sourceCommit))
-    foreach ($patch in @($resolvedM2aPatch, $resolvedM3Patch, $resolvedFieldHoverPatch)) {
+    foreach ($patch in @(
+        $resolvedM2aPatch,
+        $resolvedM3Patch,
+        $resolvedFieldHoverPatch,
+        $resolvedFieldHoverPresentationPatch
+    )) {
         [void] (Invoke-GitRepository `
             -Repository $patchReplayDirectory `
             -Arguments @("apply", "--check", $patch))
@@ -704,7 +716,7 @@ if ($trackedDiff -cne $expectedTrackedDiff) {
         "HEAD",
         "--"
     )
-    throw "The tracked Slang source diff does not exactly match replaying the recorded M2a, M3, and field-hover patches in order. Submodule worktree state is ignored, but no additional tracked superproject changes are allowed.`nTracked changes:`n$changedPaths"
+    throw "The tracked Slang source diff does not exactly match replaying the recorded M2a, M3, field-layout, and field-presentation patches in order. Submodule worktree state is ignored, but no additional tracked superproject changes are allowed.`nTracked changes:`n$changedPaths"
 }
 $sourceDescribe = Invoke-SlangGit -Arguments @("describe", "--tags", "--always", "--dirty")
 $sourceRepository = ConvertTo-SafeRemoteUrl -RemoteUrl (
@@ -737,6 +749,7 @@ $payloadFiles = [ordered]@{
     "0001-m2a-enhanced-semantic-tokens.patch" = $resolvedM2aPatch
     "0002-m3-slang-hlsl-semantic-tokens.patch" = $resolvedM3Patch
     "0003-field-layout-hover.patch" = $resolvedFieldHoverPatch
+    "0004-field-hover-presentation.patch" = $resolvedFieldHoverPresentationPatch
     "LICENSE-slang.txt" = $resolvedLicense
     "LICENSES/lz4-distribution.txt" = $resolvedLz4DistributionLicense
     "LICENSES/lz4-lib-BSD-2-Clause.txt" = $resolvedLz4LibraryLicense
@@ -774,6 +787,7 @@ $manifestLines = @(
     ('    "0001-m2a-enhanced-semantic-tokens.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0001-m2a-enhanced-semantic-tokens.patch'])),
     ('    "0002-m3-slang-hlsl-semantic-tokens.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0002-m3-slang-hlsl-semantic-tokens.patch'])),
     ('    "0003-field-layout-hover.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0003-field-layout-hover.patch'])),
+    ('    "0004-field-hover-presentation.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0004-field-hover-presentation.patch'])),
     ('    "LICENSE-slang.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSE-slang.txt'])),
     ('    "LICENSES/lz4-distribution.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSES/lz4-distribution.txt'])),
     ('    "LICENSES/lz4-lib-BSD-2-Clause.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSES/lz4-lib-BSD-2-Clause.txt'])),
@@ -804,6 +818,7 @@ try {
         "0001-m2a-enhanced-semantic-tokens.patch",
         "0002-m3-slang-hlsl-semantic-tokens.patch",
         "0003-field-layout-hover.patch",
+        "0004-field-hover-presentation.patch",
         "LICENSE-slang.txt",
         "LICENSES/lz4-distribution.txt",
         "LICENSES/lz4-lib-BSD-2-Clause.txt",

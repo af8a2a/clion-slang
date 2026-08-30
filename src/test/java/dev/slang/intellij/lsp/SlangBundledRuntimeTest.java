@@ -86,6 +86,7 @@ public class SlangBundledRuntimeTest {
         assertTrue(Files.isRegularFile(executable.getParent().resolve("slang-compiler.dll")));
         assertTrue(Files.isRegularFile(executable.getParent().resolve("slang-glsl-module.bin")));
         assertTrue(Files.isRegularFile(executable.getParent().resolve("0003-field-layout-hover.patch")));
+        assertTrue(Files.isRegularFile(executable.getParent().resolve("0004-field-hover-presentation.patch")));
         assertEquals("clion-slang-m3", info.profile());
         assertEquals("windows-x64", info.platform());
         assertEquals(64, info.bundleId().length());

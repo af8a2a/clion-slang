@@ -63,7 +63,7 @@
    CLion 2026.1.3 基线。
 
 3. 在 CLion 中打开 **Settings | Plugins | ⚙ | Install Plugin from Disk...**，选择
-   `build/distributions/slang-clion-0.3.0-windows-x86_64.zip`。
+   `build/distributions/slang-clion-0.3.1-windows-x86_64.zip`。
 4. 默认直接使用插件内置 `slangd`。只有调试或兼容性需要时，才在
    **Settings | Languages & Frameworks | Slang** 中启用 **Use external slangd (advanced)**
    并指定 `slangd.exe` 的完整路径。
@@ -133,10 +133,10 @@ JSON 输出会记录解析后的 `slangd` 路径、可执行文件 SHA-256、`se
 解码后的 token，适合作为 CI 差分产物。协议合同与演进规则见
 [docs/semantic-token-protocol.md](docs/semantic-token-protocol.md)。
 
-Publisher 侧实现以三层可重放补丁保存在 [`patches/slang/`](patches/slang/README.md)。M2a
-增加标准细分类型与 modifiers；M3 追加 `slangSemantic` 和 `slangSwizzle`；字段 Hover 层追加
-结构体 natural layout 信息。Initialize 能力协商按 M3 → M2a → stock 逐级选择 legend，构建
-和三协议验证命令见该目录说明。
+Publisher 侧实现以四层可重放补丁保存在 [`patches/slang/`](patches/slang/README.md)。M2a
+增加标准细分类型与 modifiers；M3 追加 `slangSemantic` 和 `slangSwizzle`；字段 Hover 的两层
+补丁依次追加 natural layout 信息和 Rider 风格的分层、着色展示。Initialize 能力协商按
+M3 → M2a → stock 逐级选择 legend，构建和三协议验证命令见该目录说明。
 
 在开发沙箱中启动 CLion：
 

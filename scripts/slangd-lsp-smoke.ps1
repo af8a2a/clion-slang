@@ -10,7 +10,7 @@ param(
     [string] $HoverFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\StructFieldHover.slang"),
     [int] $HoverLine = 14,
     [int] $HoverCharacter = 12,
-    [string] $ExpectedHoverSignature = "(field) int LightShapeSample.materialIndex",
+    [string] $ExpectedHoverSignature = "public field`nint materialIndex`n    (in struct LightShapeSample)",
     [int] $ExpectedHoverSize = 4,
     [int] $ExpectedHoverAlignment = 4,
     [int] $ExpectedHoverOffset = 40,
@@ -924,21 +924,25 @@ try {
         throw "slangd returned an invalid field hover: $($hoverResponse.result | ConvertTo-Json -Compress -Depth 10)"
     }
     $hoverValue = [string]$hoverResponse.result.contents.value
-    $hoverLines = @(
-        $hoverValue.Replace("`r`n", "`n").Replace("`r", "`n").Split("`n") |
-            ForEach-Object { $_.TrimEnd() }
-    )
-    $requiredHoverLines = @(
-        $ExpectedHoverSignature,
-        "**Natural layout**",
-        "Size: $ExpectedHoverSize bytes",
-        "Alignment: $ExpectedHoverAlignment bytes",
-        "Offset: $ExpectedHoverOffset bytes"
-    )
-    foreach ($requiredLine in $requiredHoverLines) {
-        if ($hoverLines -cnotcontains $requiredLine) {
-            throw "slangd field hover is missing exact line '$requiredLine': $hoverValue"
-        }
+    $normalizedHoverValue = $hoverValue.Replace("`r`n", "`n").Replace("`r", "`n")
+    $normalizedExpectedHoverSignature =
+        $ExpectedHoverSignature.Replace("`r`n", "`n").Replace("`r", "`n")
+    $expectedDefinition = '```slang' + "`n" + $normalizedExpectedHoverSignature + "`n" + '```'
+    $hardBreak = [char]92
+    $inlineCode = [char]96
+    $expectedLayout =
+        "**Natural layout**$hardBreak`n" +
+        "Size: $inlineCode$ExpectedHoverSize$inlineCode bytes$hardBreak`n" +
+        "Alignment: $inlineCode$ExpectedHoverAlignment$inlineCode bytes$hardBreak`n" +
+        "Offset: $inlineCode$ExpectedHoverOffset$inlineCode bytes"
+    if (-not $normalizedHoverValue.StartsWith(
+        $expectedDefinition,
+        [System.StringComparison]::Ordinal
+    )) {
+        throw "slangd field hover does not start with exact Slang definition '$expectedDefinition': $hoverValue"
+    }
+    if ($normalizedHoverValue.IndexOf($expectedLayout, [System.StringComparison]::Ordinal) -lt 0) {
+        throw "slangd field hover is missing exact layout Markdown '$expectedLayout': $hoverValue"
     }
     $hoverRange = $hoverResponse.result.range
     if ($null -eq $hoverRange -or

@@ -85,7 +85,7 @@ public class SlangLspProtocolTest {
 
         byte[] responseFrame = frame("""
                 {"jsonrpc":"2.0","id":"field-hover","result":{
-                  "contents":{"kind":"markdown","value":"```slang\\n(field) float3 LightShapeSample.lightVector\\n```\\n\\n**Natural layout**  \\nSize: 12 bytes  \\nAlignment: 4 bytes  \\nOffset: 0 bytes\\n\\n"},
+                  "contents":{"kind":"markdown","value":"```slang\\npublic field\\nfloat3 lightVector\\n    (in struct LightShapeSample)\\n```\\n\\n**Natural layout**\\\\\\nSize: `12` bytes\\\\\\nAlignment: `4` bytes\\\\\\nOffset: `0` bytes\\n\\n"},
                   "range":{"start":{"line":3,"character":11},"end":{"line":3,"character":22}}
                 }}
                 """.strip());

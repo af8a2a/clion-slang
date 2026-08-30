@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "dev.slang.intellij"
-version = "0.3.0"
+version = "0.3.1"
 
 repositories {
     mavenCentral()
@@ -33,6 +33,7 @@ val bundledRuntimeEntries = listOf(
     "0001-m2a-enhanced-semantic-tokens.patch",
     "0002-m3-slang-hlsl-semantic-tokens.patch",
     "0003-field-layout-hover.patch",
+    "0004-field-hover-presentation.patch",
     "LICENSE-slang.txt",
     "LICENSES/lz4-distribution.txt",
     "LICENSES/lz4-lib-BSD-2-Clause.txt",

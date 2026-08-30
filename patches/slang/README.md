@@ -24,8 +24,16 @@ labels the values as **Natural layout**, and omits them when the type or any pre
 indeterminate target-dependent layout. It does not add a custom LSP method or change the Hover wire
 shape.
 
+`0004-field-hover-presentation.patch` turns struct-field Hover signatures into a compact Rider-style
+three-line definition: effective visibility and field kind, specialized type and short field name,
+then the owning struct path. The opening fence is tagged `slang` so JetBrains clients can apply the
+plugin highlighter. Natural-layout rows use CommonMark backslash hard breaks because CLion trims the
+trailing spaces from Markdown lines, and their numeric values use inline code for theme-aware color.
+User-visible field modifiers such as `nointerpolation`, `centroid`, and `precise` are preserved;
+non-field declaration signatures keep their existing content and completion details are unchanged.
+
 Apply the patches in numeric order. Each layer remains separate so the semantic-token baselines and
-field-hover extension can be reproduced and reviewed independently.
+field-hover extensions can be reproduced and reviewed independently.
 
 ## Apply
 
@@ -48,6 +56,9 @@ git -C $slangSource apply $m3Patch
 $fieldHoverPatch = (Resolve-Path '.\patches\slang\0003-field-layout-hover.patch').Path
 git -C $slangSource apply --check $fieldHoverPatch
 git -C $slangSource apply $fieldHoverPatch
+$fieldHoverPresentationPatch = (Resolve-Path '.\patches\slang\0004-field-hover-presentation.patch').Path
+git -C $slangSource apply --check $fieldHoverPresentationPatch
+git -C $slangSource apply $fieldHoverPresentationPatch
 ```
 
 The verified Windows build used CMake, Ninja, and an x64 Visual Studio developer environment:
@@ -93,9 +104,10 @@ $slangd = Join-Path $buildDir 'RelWithDebInfo\bin\slangd.exe'
 ```
 
 Every smoke run also issues a real `textDocument/hover` request for a non-first struct field and
-requires the signature, **Natural layout**, size `4 bytes`, alignment `4 bytes`, offset `40 bytes`,
-and exact UTF-16 hover range. This catches regressions that accidentally report every offset as zero
-and keeps the field metadata covered independently of semantic-token legend negotiation.
+requires the exact `slang` definition block, three-line `public field` signature, CommonMark hard
+breaks, **Natural layout**, size `4 bytes`, alignment `4 bytes`, offset `40 bytes`, and exact UTF-16
+hover range. This catches both presentation regressions and offsets accidentally reported as zero,
+independently of semantic-token legend negotiation.
 
 On Windows, the M3 language-server bundle contains `slangd.exe`, its matching
 `slang-compiler.dll`, and the generated `slang-glsl-module.bin`. Build with the static MSVC runtime
