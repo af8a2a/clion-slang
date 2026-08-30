@@ -15,13 +15,23 @@ import org.jetbrains.annotations.NotNull;
 )
 public final class SlangProjectSettings implements PersistentStateComponent<SlangProjectSettings.SettingsState> {
     public static final class SettingsState {
-        public boolean autoDetectSlangd = true;
-        public String slangdPath = "";
+        public boolean useExternalSlangd;
+        public String externalSlangdPath = "";
+
+        // Kept nullable for one-way migration from the pre-M2b settings schema.
+        // New state snapshots leave both legacy fields null, so they disappear
+        // from the workspace file after the next save.
+        @Deprecated
+        public Boolean autoDetectSlangd;
+        @Deprecated
+        public String slangdPath;
 
         public SettingsState() {
         }
 
         private SettingsState(@NotNull SettingsState other) {
+            useExternalSlangd = other.useExternalSlangd;
+            externalSlangdPath = other.externalSlangdPath;
             autoDetectSlangd = other.autoDetectSlangd;
             slangdPath = other.slangdPath;
         }
@@ -41,24 +51,37 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
     @Override
     public synchronized void loadState(@NotNull SettingsState state) {
         this.state = new SettingsState(state);
-        if (this.state.slangdPath == null) {
-            this.state.slangdPath = "";
+        if (this.state.externalSlangdPath == null) {
+            this.state.externalSlangdPath = "";
         }
+
+        // The old locator always gave a non-empty slangdPath priority, even
+        // when autoDetectSlangd was true. Preserve that effective behavior;
+        // only legacy projects without an explicit path move to the bundle.
+        if (!this.state.useExternalSlangd
+                && this.state.externalSlangdPath.isBlank()
+                && this.state.slangdPath != null
+                && !this.state.slangdPath.isBlank()) {
+            this.state.useExternalSlangd = true;
+            this.state.externalSlangdPath = this.state.slangdPath;
+        }
+        this.state.autoDetectSlangd = null;
+        this.state.slangdPath = null;
     }
 
-    public synchronized boolean isAutoDetectSlangd() {
-        return state.autoDetectSlangd;
+    public synchronized boolean isUseExternalSlangd() {
+        return state.useExternalSlangd;
     }
 
-    public synchronized void setAutoDetectSlangd(boolean autoDetectSlangd) {
-        state.autoDetectSlangd = autoDetectSlangd;
+    public synchronized void setUseExternalSlangd(boolean useExternalSlangd) {
+        state.useExternalSlangd = useExternalSlangd;
     }
 
-    public synchronized @NotNull String getSlangdPath() {
-        return state.slangdPath == null ? "" : state.slangdPath;
+    public synchronized @NotNull String getExternalSlangdPath() {
+        return state.externalSlangdPath == null ? "" : state.externalSlangdPath;
     }
 
-    public synchronized void setSlangdPath(@NotNull String slangdPath) {
-        state.slangdPath = slangdPath;
+    public synchronized void setExternalSlangdPath(@NotNull String externalSlangdPath) {
+        state.externalSlangdPath = externalSlangdPath;
     }
 }

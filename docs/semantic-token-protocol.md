@@ -1,8 +1,8 @@
-# Semantic token protocol baseline
+# Semantic token protocol baseline and M2a publisher
 
 This document freezes the M0 semantic-token contract used by the fixture and smoke tests. It
-describes two profiles: the `slangd` behavior that must remain usable today and the enhanced
-vocabulary that a future publisher can negotiate.
+describes two profiles: the stock `slangd` behavior that must remain usable and the M2a enhanced
+vocabulary negotiated by the publisher patch in `patches/slang/`.
 
 ## Stock profile
 
@@ -34,8 +34,8 @@ in the decoded JSON output but deliberately excluded from role expectations.
 
 ## Enhanced profile
 
-The enhanced profile is a capability target, not a second hard-coded legend. Its required token
-types are the ten stock names plus these standard refinements:
+The enhanced profile is an atomic, capability-negotiated generation. Its token types retain the ten
+stock names at indices 0 through 9, then append these standard refinements:
 
 ```text
 class, struct, interface, enum, typeParameter, method, decorator
@@ -51,9 +51,37 @@ declaration, definition, readonly, static, defaultLibrary
 modifiers are additive, negotiated refinements. Shader binding semantics and swizzles are reserved
 for a later custom/M3 profile; M0 must not invent non-standard token names for them.
 
-Consumers treat `tokenTypesRequired` and `tokenModifiersRequired` as sets. The publisher chooses
-their wire order and may advertise additional LSP-standard entries. Expected tokens are asserted
-only after the advertised legend contains the names needed to decode them.
+The M2a publisher enables this generation only when the initialize request advertises every one of
+the 17 token types and all five modifiers. Missing any required name selects the stock legend,
+downgrades refined types to their stock counterparts, and clears all modifier bits. This prevents
+older or narrower LSP clients from receiving indices they did not declare support for.
+
+Consumers and the executable contract treat `tokenTypesRequired` and `tokenModifiersRequired` as
+sets. Expected tokens are asserted only after the advertised legend contains the names needed to
+decode them.
+
+## M2a classification rules
+
+| Resolved AST role | Enhanced token | Modifiers |
+| --- | --- | --- |
+| class / struct / interface / enum declaration | `class` / `struct` / `interface` / `enum` | `definition` when it has a body, otherwise `declaration` |
+| generic type parameter | `typeParameter` | `declaration` at its declaration only |
+| aggregate member function | `method` | `definition` when it has a body, otherwise `declaration` |
+| free function | `function` | `definition` when it has a body, otherwise `declaration` |
+| aggregate field or property | `property` | `declaration` at its declaration only |
+| parameter, local, or global variable | `parameter` / `variable` | `declaration` at its declaration only |
+| source attribute name | `decorator` | none |
+| declaration resolved to a core module or intrinsic/builtin modifier | existing role | `defaultLibrary` |
+| `let` or `const`; HLSL `static` | existing role | `readonly`; `static` |
+
+References retain the resolved token type and value modifiers but never receive `declaration` or
+`definition`. `defaultLibrary` is based on the resolved declaration and its owning core module, not
+identifier spelling. The emitter also verifies that a constructor declaration location contains an
+actual `__init` identifier, filtering an upstream enum-witness anomaly that otherwise highlights an
+enum closing brace as a function.
+
+Stock fallback maps class, struct, interface, enum, and type parameter to `type`; method to
+`function`; decorator to `type`; and every modifier bit to zero.
 
 ## Wire and validation rules
 
@@ -70,18 +98,20 @@ only after the advertised legend contains the names needed to decode them.
 ## Machine-readable contract
 
 `src/test/testData/lsp/semantic-tokens-contract.json` is the executable form of this document.
-`schemaVersion` is an integer. Version 1 has exactly two profiles:
+`schemaVersion` is an integer. Version 2 has exactly two profiles:
 
 - `legend.tokenTypesExact` and `tokenModifiersExact` are ordered arrays for the stock profile.
 - `legend.tokenTypesRequired` and `tokenModifiersRequired` are unordered required subsets for the
   enhanced profile.
 - Each `expectedTokens` item has string `text` and `type` fields. `modifiers`, when present, is an
-  array of required modifier names. Optional `line` is a zero-based LSP line number. Optional
-  `minimumCount` is a positive integer and defaults to one.
+  array of required modifier names; `forbiddenModifiers` lists names that must be absent. Optional
+  `line` and `character` are zero-based LSP UTF-16 coordinates. Optional `minimumCount` is a
+  positive integer and defaults to one.
 
-Contract readers reject unsupported `schemaVersion` values, missing profiles, malformed legends,
-and invalid expectation values. Unknown fields are reserved for forward-compatible metadata. A
-schema-shape change increments `schemaVersion`; changing only fixture expectations does not.
+Required and forbidden modifier sets must be disjoint and contained in the profile legend. Contract
+readers reject unsupported `schemaVersion` values, missing profiles, malformed legends, and invalid
+expectation values. Unknown fields are reserved for forward-compatible metadata. A schema-shape
+change increments `schemaVersion`; changing only fixture expectations does not.
 
 Every smoke result records the resolved server executable path, its SHA-256 digest, and the LSP
 `serverInfo` value. The digest identifies the launcher binary; reproducible CI must additionally

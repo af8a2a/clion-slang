@@ -11,7 +11,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.testFramework.LightVirtualFile;
 import com.intellij.util.concurrency.AppExecutorUtil;
-import dev.slang.intellij.lsp.SlangServerLocator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,14 +31,31 @@ public final class SlangSyntheticModuleFileProvider {
     private static final int WAIT_TIMEOUT_SECONDS = 12;
 
     private final Project project;
-    private final SlangServerLocator locator;
-    private final Map<String, LightVirtualFile> cache = new ConcurrentHashMap<>();
-    private final Map<String, CompletableFuture<LightVirtualFile>> inFlight = new ConcurrentHashMap<>();
+    private final ModuleLoader moduleLoader;
+    private final Map<ModuleKey, LightVirtualFile> cache = new ConcurrentHashMap<>();
+    private final Map<ModuleKey, CompletableFuture<LightVirtualFile>> inFlight = new ConcurrentHashMap<>();
     private final Map<VirtualFile, String> sourceUris = new ConcurrentHashMap<>();
+    private volatile SessionRuntime sessionRuntime;
+    private long nextGeneration;
 
-    public SlangSyntheticModuleFileProvider(@NotNull Project project, @NotNull SlangServerLocator locator) {
+    public SlangSyntheticModuleFileProvider(@NotNull Project project) {
         this.project = project;
-        this.locator = locator;
+        moduleLoader = this::loadModule;
+    }
+
+    SlangSyntheticModuleFileProvider(@NotNull Project project, @NotNull ModuleLoader moduleLoader) {
+        this.project = project;
+        this.moduleLoader = moduleLoader;
+    }
+
+    /** Associates future synthetic-module requests with a successfully started LSP session. */
+    public synchronized void activateSession(@NotNull Path executable) {
+        cache.clear();
+        sourceUris.clear();
+        sessionRuntime = new SessionRuntime(
+                executable.toAbsolutePath().normalize(),
+                ++nextGeneration
+        );
     }
 
     public @Nullable VirtualFile findFileByUri(@NotNull String uriText) {
@@ -48,12 +64,17 @@ public final class SlangSyntheticModuleFileProvider {
             return null;
         }
 
-        LightVirtualFile cached = cache.get(module);
-        if (cached != null) {
+        SessionRuntime session = sessionRuntime;
+        if (session == null) {
+            return null;
+        }
+        ModuleKey key = new ModuleKey(module, session.generation);
+        LightVirtualFile cached = cache.get(key);
+        if (cached != null && sessionRuntime == session) {
             return cached;
         }
 
-        CompletableFuture<LightVirtualFile> future = startLoading(module, uriText);
+        CompletableFuture<LightVirtualFile> future = startLoading(key, module, uriText, session);
         Application application = ApplicationManager.getApplication();
         if (application != null && application.isDispatchThread()) {
             // LspServerDescriptor.findFileByUri is synchronous. There is no native
@@ -80,45 +101,47 @@ public final class SlangSyntheticModuleFileProvider {
     }
 
     private @NotNull CompletableFuture<LightVirtualFile> startLoading(
+            @NotNull ModuleKey key,
             @NotNull String module,
-            @NotNull String uriText
+            @NotNull String uriText,
+            @NotNull SessionRuntime session
     ) {
         CompletableFuture<LightVirtualFile> newFuture = new CompletableFuture<>();
-        CompletableFuture<LightVirtualFile> existing = inFlight.putIfAbsent(module, newFuture);
+        CompletableFuture<LightVirtualFile> existing = inFlight.putIfAbsent(key, newFuture);
         if (existing != null) {
             return existing;
         }
 
         AppExecutorUtil.getAppExecutorService().execute(() -> {
             try {
-                LightVirtualFile file = loadModule(module);
-                if (file != null) {
-                    cache.put(module, file);
-                    sourceUris.put(file, uriText);
-                }
-                newFuture.complete(file);
+                LightVirtualFile file = project.isDisposed() || sessionRuntime != session
+                        ? null
+                        : moduleLoader.load(session.executable, module);
+                newFuture.complete(publishIfCurrent(key, uriText, session, file));
             } catch (Throwable throwable) {
                 newFuture.completeExceptionally(throwable);
             } finally {
-                inFlight.remove(module, newFuture);
+                inFlight.remove(key, newFuture);
             }
         });
         return newFuture;
     }
 
-    private @Nullable LightVirtualFile loadModule(@NotNull String module) {
-        if (project.isDisposed()) {
+    private synchronized @Nullable LightVirtualFile publishIfCurrent(
+            @NotNull ModuleKey key,
+            @NotNull String uriText,
+            @NotNull SessionRuntime session,
+            @Nullable LightVirtualFile file
+    ) {
+        if (file == null || sessionRuntime != session) {
             return null;
         }
+        cache.put(key, file);
+        sourceUris.put(file, uriText);
+        return file;
+    }
 
-        final Path slangd;
-        try {
-            slangd = locator.resolve(project);
-        } catch (ExecutionException exception) {
-            LOG.warn("Cannot locate slangd while loading built-in module " + module, exception);
-            return null;
-        }
-
+    private @Nullable LightVirtualFile loadModule(@NotNull Path slangd, @NotNull String module) {
         GeneralCommandLine commandLine = new GeneralCommandLine(
                 slangd.toString(),
                 "--print-builtin-module",
@@ -184,5 +207,16 @@ public final class SlangSyntheticModuleFileProvider {
     private static @NotNull String safeFileName(@NotNull String module) {
         String safe = module.replaceAll("[^A-Za-z0-9._-]", "_");
         return safe.endsWith(".slang") ? safe : safe + ".slang";
+    }
+
+    @FunctionalInterface
+    interface ModuleLoader {
+        @Nullable LightVirtualFile load(@NotNull Path executable, @NotNull String module);
+    }
+
+    private record SessionRuntime(@NotNull Path executable, long generation) {
+    }
+
+    private record ModuleKey(@NotNull String module, long generation) {
     }
 }

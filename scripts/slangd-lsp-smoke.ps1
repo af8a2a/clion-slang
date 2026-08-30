@@ -66,6 +66,21 @@ $clientSemanticTokenModifiers = @(
     "documentation",
     "defaultLibrary"
 )
+if ($SemanticContract -eq "stock") {
+    $clientSemanticTokenTypes = @(
+        "type",
+        "enumMember",
+        "variable",
+        "parameter",
+        "function",
+        "property",
+        "namespace",
+        "keyword",
+        "macro",
+        "string"
+    )
+    $clientSemanticTokenModifiers = @()
+}
 
 $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
 $startInfo.FileName = $resolvedSlangdPath
@@ -353,6 +368,14 @@ function Assert-SemanticContractProfile($Profile, [string] $ProfileName) {
             }
         }
 
+        $characterProperty = $expected.PSObject.Properties["character"]
+        if ($null -ne $characterProperty) {
+            $character = ConvertTo-LspUInt32 $characterProperty.Value "contract character" $index
+            if ($character -gt [int]::MaxValue) {
+                throw "$expectedDescription.character is too large: $character"
+            }
+        }
+
         $minimumCountProperty = $expected.PSObject.Properties["minimumCount"]
         if ($null -ne $minimumCountProperty) {
             $minimumCount = ConvertTo-LspUInt32 $minimumCountProperty.Value "contract minimumCount" $index
@@ -361,13 +384,31 @@ function Assert-SemanticContractProfile($Profile, [string] $ProfileName) {
             }
         }
 
-        $modifiersProperty = $expected.PSObject.Properties["modifiers"]
-        if ($null -ne $modifiersProperty) {
-            $expectedModifiers = @(Get-JsonStringArray $expected "modifiers" $expectedDescription $false)
-            foreach ($modifier in $expectedModifiers) {
+        $expectedModifiers = @()
+        $forbiddenModifiers = @()
+        foreach ($modifierPropertyName in @("modifiers", "forbiddenModifiers")) {
+            $modifiersProperty = $expected.PSObject.Properties[$modifierPropertyName]
+            if ($null -eq $modifiersProperty) {
+                continue
+            }
+
+            $validatedModifiers = @(
+                Get-JsonStringArray $expected $modifierPropertyName $expectedDescription $false
+            )
+            foreach ($modifier in $validatedModifiers) {
                 if (-not (Test-OrdinalContains $legendModifiers $modifier)) {
-                    throw "$expectedDescription modifier '$modifier' is absent from the profile legend"
+                    throw "$expectedDescription.$modifierPropertyName modifier '$modifier' is absent from the profile legend"
                 }
+            }
+            if ($modifierPropertyName -eq "modifiers") {
+                $expectedModifiers = @($validatedModifiers)
+            } else {
+                $forbiddenModifiers = @($validatedModifiers)
+            }
+        }
+        foreach ($modifier in $expectedModifiers) {
+            if (Test-OrdinalContains $forbiddenModifiers $modifier) {
+                throw "$expectedDescription modifier '$modifier' cannot be both required and forbidden"
             }
         }
     }
@@ -380,7 +421,7 @@ function Assert-SemanticContractDocument($Contract) {
         throw "semantic token contract is missing schemaVersion"
     }
     $schemaVersion = ConvertTo-LspUInt32 $schemaProperty.Value "contract schemaVersion" 0
-    if ($schemaVersion -ne 1) {
+    if ($schemaVersion -ne 2) {
         throw "unsupported semantic token contract schemaVersion: $schemaVersion"
     }
 
@@ -566,6 +607,16 @@ function Assert-SemanticContract(
             $expectedLine = [int]$lineValue
         }
 
+        $characterProperty = $expected.PSObject.Properties["character"]
+        $expectedCharacter = $null
+        if ($null -ne $characterProperty) {
+            $characterValue = ConvertTo-LspUInt32 $characterProperty.Value "contract character" $expectationIndex
+            if ($characterValue -gt [int]::MaxValue) {
+                throw "semantic token contract expectedTokens[$expectationIndex].character is too large: $characterValue"
+            }
+            $expectedCharacter = [int]$characterValue
+        }
+
         $minimumCountProperty = $expected.PSObject.Properties["minimumCount"]
         $minimumCount = 1
         if ($null -ne $minimumCountProperty) {
@@ -583,6 +634,14 @@ function Assert-SemanticContract(
             $requiredTokenModifiers = @($modifiersProperty.Value | ForEach-Object { [string]$_ })
         }
 
+        $forbiddenModifiersProperty = $expected.PSObject.Properties["forbiddenModifiers"]
+        $forbiddenTokenModifiers = @()
+        if ($null -ne $forbiddenModifiersProperty) {
+            $forbiddenTokenModifiers = @(
+                $forbiddenModifiersProperty.Value | ForEach-Object { [string]$_ }
+            )
+        }
+
         $actualMatches = @()
         foreach ($actual in $DecodedTokens) {
             if (-not [string]::Equals([string]$actual.Text, $text, [System.StringComparison]::Ordinal) -or
@@ -590,6 +649,9 @@ function Assert-SemanticContract(
                 continue
             }
             if ($null -ne $expectedLine -and $actual.Line -ne $expectedLine) {
+                continue
+            }
+            if ($null -ne $expectedCharacter -and $actual.Character -ne $expectedCharacter) {
                 continue
             }
             if ($modifiersSpecified -and $requiredTokenModifiers.Count -eq 0 -and $actual.Modifiers.Count -ne 0) {
@@ -603,13 +665,26 @@ function Assert-SemanticContract(
                     break
                 }
             }
-            if ($hasRequiredModifiers) {
+            $hasForbiddenModifier = $false
+            foreach ($forbiddenModifier in $forbiddenTokenModifiers) {
+                if (Test-OrdinalContains @($actual.Modifiers) $forbiddenModifier) {
+                    $hasForbiddenModifier = $true
+                    break
+                }
+            }
+            if ($hasRequiredModifiers -and -not $hasForbiddenModifier) {
                 $actualMatches += $actual
             }
         }
 
         if ($actualMatches.Count -lt $minimumCount) {
-            $lineDescription = if ($null -eq $expectedLine) { "any line" } else { "line $expectedLine" }
+            $positionDescription = if ($null -eq $expectedLine) {
+                "any position"
+            } elseif ($null -eq $expectedCharacter) {
+                "line $expectedLine"
+            } else {
+                "position $expectedLine`:$expectedCharacter"
+            }
             $modifierDescription = if (-not $modifiersSpecified) {
                 "any modifiers"
             } elseif ($requiredTokenModifiers.Count -eq 0) {
@@ -617,14 +692,21 @@ function Assert-SemanticContract(
             } else {
                 "required modifiers [$($requiredTokenModifiers -join ', ')]"
             }
-            throw "semantic token contract expected at least $minimumCount occurrence(s) of '$text' as '$type' on $lineDescription with $modifierDescription, got $($actualMatches.Count)"
+            $forbiddenDescription = if ($forbiddenTokenModifiers.Count -eq 0) {
+                ""
+            } else {
+                " and forbidden modifiers [$($forbiddenTokenModifiers -join ', ')]"
+            }
+            throw "semantic token contract expected at least $minimumCount occurrence(s) of '$text' as '$type' at $positionDescription with $modifierDescription$forbiddenDescription, got $($actualMatches.Count)"
         }
 
         $matches.Add([pscustomobject][ordered]@{
             Text = $text
             Type = $type
             Line = $expectedLine
+            Character = $expectedCharacter
             Modifiers = if ($modifiersSpecified) { @($requiredTokenModifiers) } else { $null }
+            ForbiddenModifiers = @($forbiddenTokenModifiers)
             MinimumCount = $minimumCount
             ActualCount = $actualMatches.Count
         })

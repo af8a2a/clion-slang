@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "profiles": {
     "stock": {
       "legend": {
@@ -58,17 +58,23 @@
         ]
       },
       "expectedTokens": [
-        { "text": "ContractReference", "type": "class", "line": 11, "modifiers": ["definition"] },
-        { "text": "ContractBox", "type": "struct", "line": 16, "modifiers": ["definition"] },
-        { "text": "TContractValue", "type": "typeParameter", "line": 16 },
-        { "text": "IContractSurface", "type": "interface", "line": 21, "modifiers": ["definition"] },
-        { "text": "ContractMode", "type": "enum", "line": 5, "modifiers": ["definition"] },
-        { "text": "contractEvaluate", "type": "method", "line": 23, "modifiers": ["declaration"] },
-        { "text": "contractEvaluate", "type": "method", "line": 31, "modifiers": ["definition"] },
-        { "text": "contractTint", "type": "property", "line": 28, "modifiers": ["declaration"] },
-        { "text": "CONTRACT_THREAD_COUNT", "type": "variable", "line": 40, "modifiers": ["readonly", "static"] },
-        { "text": "max", "type": "function", "line": 36, "modifiers": ["defaultLibrary"] },
-        { "text": "shader", "type": "decorator", "line": 43 }
+        { "text": "ContractReference", "type": "class", "line": 11, "character": 10, "modifiers": ["definition"], "forbiddenModifiers": ["declaration"] },
+        { "text": "ContractBox", "type": "struct", "line": 16, "character": 11, "modifiers": ["definition"], "forbiddenModifiers": ["declaration"] },
+        { "text": "TContractValue", "type": "typeParameter", "line": 16, "character": 23, "modifiers": ["declaration"], "forbiddenModifiers": ["definition"] },
+        { "text": "TContractValue", "type": "typeParameter", "line": 18, "character": 8, "forbiddenModifiers": ["declaration", "definition"] },
+        { "text": "IContractSurface", "type": "interface", "line": 21, "character": 14, "modifiers": ["definition"], "forbiddenModifiers": ["declaration"] },
+        { "text": "IContractSurface", "type": "interface", "line": 26, "character": 29, "forbiddenModifiers": ["declaration", "definition"] },
+        { "text": "ContractMode", "type": "enum", "line": 5, "character": 9, "modifiers": ["definition"], "forbiddenModifiers": ["declaration"] },
+        { "text": "float3", "type": "type", "line": 28, "character": 8, "modifiers": ["defaultLibrary"], "forbiddenModifiers": ["declaration", "definition"] },
+        { "text": "contractEvaluate", "type": "method", "line": 23, "character": 15, "modifiers": ["declaration"], "forbiddenModifiers": ["definition"] },
+        { "text": "contractEvaluate", "type": "method", "line": 31, "character": 15, "modifiers": ["definition"], "forbiddenModifiers": ["declaration"] },
+        { "text": "contractEvaluate", "type": "method", "line": 50, "character": 57, "forbiddenModifiers": ["declaration", "definition"] },
+        { "text": "contractTint", "type": "property", "line": 28, "character": 15, "modifiers": ["declaration"], "forbiddenModifiers": ["definition"] },
+        { "text": "CONTRACT_THREAD_COUNT", "type": "variable", "line": 40, "character": 22, "modifiers": ["declaration", "readonly", "static"], "forbiddenModifiers": ["definition"] },
+        { "text": "max", "type": "function", "line": 36, "character": 34, "modifiers": ["defaultLibrary"], "forbiddenModifiers": ["declaration", "definition"] },
+        { "text": "shader", "type": "decorator", "line": 43, "character": 1, "forbiddenModifiers": ["declaration", "definition"] },
+        { "text": "numthreads", "type": "decorator", "line": 44, "character": 1, "forbiddenModifiers": ["declaration", "definition"] },
+        { "text": "contractEntry", "type": "function", "line": 45, "character": 5, "modifiers": ["definition"], "forbiddenModifiers": ["declaration"] }
       ]
     }
   }

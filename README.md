@@ -1,14 +1,14 @@
 # Slang Language Support for CLion
 
-一个面向 C++/CMake + Slang 项目的 CLion 插件。它把 CLion 的原生 LSP 客户端连接到官方
-`slangd`，同时保留不依赖外部进程的轻量词法高亮。
+一个面向 C++/CMake + Slang 项目的 CLion 插件。它把 CLion 的原生 LSP 客户端连接到随插件
+发布的增强版 `slangd`，同时保留不依赖外部进程的轻量词法高亮。
 
 ## 已实现
 
 - `.slang` / `.slangh` 文件类型和图标
 - Slang/HLSL 常用关键字、内建类型、属性、语义、预处理器、字符串、数字与注释的词法高亮
 - `slangd` Semantic Tokens 语义配色：类型、命名空间、变量、参数、字段、函数、宏等 stock
-  类别，以及 struct、interface、enum、type parameter、method、decorator 和标准 modifiers
+  类别，以及 class、struct、interface、enum、type parameter、method、decorator 和标准 modifiers
 - 行注释、块注释、括号匹配、引号配对，以及包含词法/语义角色的独立配色页
 - 基于 JetBrains Native LSP API 的 project-wide `slangd` 客户端
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
@@ -16,7 +16,8 @@
 - Ctrl+左键、Ctrl+B 与 Ctrl+悬停的定义导航；插件会直接复用当前 `slangd` 会话，规避
   CLion 2026.1 原生 LSP 在 Ctrl+鼠标路径中不发起 Definition 请求的问题，并兼容部分
   `slangd` 版本将单个定义返回为 `Location` 而非标准数组的响应形态
-- `slangd` 查找顺序：项目设置的显式路径、`SLANGD_PATH`、`VULKAN_SDK`、`PATH`
+- Windows x64 内置 `slangd`：校验清单与 SHA-256 后安装到 IDE system cache；项目设置可显式
+  启用高级外部覆盖，但不会隐式扫描 `SLANGD_PATH`、`VULKAN_SDK` 或 `PATH`
 - `slangdconfig.json` 的 `workspace/configuration` 映射与 `${workspaceFolder}` 展开
 - `slang-synth://<module>` 内建模块跳转，内容由
   `slangd --print-builtin-module <module>` 生成并缓存
@@ -30,14 +31,16 @@
 - 最低版本：CLion 2026.1.3；已按 2026.2 的保留兼容 API 设计，未设置人为 `until-build`
 - Plugin Verifier 1.410：CLion 2026.1.5（261.27258.50）与 2026.2.1（262.9437.136）均为 Compatible
 - 构建 JDK：25（输出 `--release 21` 字节码）；Gradle Wrapper 使用 Gradle 9.0.0
-- 运行时需要可用的 `slangd`。插件当前不捆绑 Slang 二进制。
+- M2b 发行包目前仅支持 Windows x64，并通过 IDE 官方 OS/架构模块阻止在其他平台安装。
+  高级外部 `slangd` 覆盖仅用于受支持平台上的调试、兼容性验证与版本二分。
 
 项目使用 2026.1.4 之前的 Native LSP 类型名作为兼容入口。JetBrains 在 2026.1.4 重命名
 了这些 API，但保留了旧类型供已有插件继续运行。
 
 ## 安装与使用
 
-1. 准备与项目 Slang 编译器版本一致的 `slangd`。Slang SDK 或 Vulkan SDK 通常会提供它。
+1. 从源码构建时，先按 [内置 slangd 运行时说明](docs/bundled-slangd.md) 生成
+   `.bundled-runtime/windows-x86_64.zip`。直接安装发行 ZIP 的用户无需此步骤。
 2. 构建插件：
 
    ```powershell
@@ -55,9 +58,10 @@
    CLion 2026.1.3 基线。
 
 3. 在 CLion 中打开 **Settings | Plugins | ⚙ | Install Plugin from Disk...**，选择
-   `build/distributions/` 下生成的 ZIP。
-4. 在 **Settings | Languages & Frameworks | Slang** 中启用自动发现，或指定
-   `slangd` / `slangd.exe` 的完整路径。
+   `build/distributions/slang-clion-0.2.0-windows-x86_64.zip`。
+4. 默认直接使用插件内置 `slangd`。只有调试或兼容性需要时，才在
+   **Settings | Languages & Frameworks | Slang** 中启用 **Use external slangd (advanced)**
+   并指定 `slangd.exe` 的完整路径。
 5. 打开 `.slang` 或 `.slangh` 文件。Language Services 状态栏会显示 `slangd` 状态。
 
 语义颜色可在 **Settings | Editor | Color Scheme | Slang | Semantic** 中单独调整。服务器
@@ -108,12 +112,20 @@ UTF-16 范围、legend 和 token 合同，而不只是检查服务器是否发�
 默认执行当前官方服务器的 `stock` 合同；增强版服务器可使用：
 
 ```powershell
-.\scripts\slangd-lsp-smoke.ps1 -SemanticContract enhanced -AsJson
+.\scripts\slangd-lsp-smoke.ps1 `
+  -Slangd 'D:\path\to\enhanced\slangd.exe' `
+  -SemanticContract enhanced `
+  -AsJson
 ```
 
 JSON 输出会记录解析后的 `slangd` 路径、可执行文件 SHA-256、`serverInfo`、完整 legend 和
 解码后的 token，适合作为 CI 差分产物。协议合同与演进规则见
 [docs/semantic-token-protocol.md](docs/semantic-token-protocol.md)。
+
+M2a 的 publisher 侧实现以可重放补丁保存在
+[`patches/slang/`](patches/slang/README.md)。它增强 `slangd` 的细分类型与 modifiers，并在
+initialize 时检查客户端声明的 token vocabulary：完整支持时启用 enhanced，缺少任一项时
+自动回退 stock legend。构建和双协议验证命令见该目录说明。
 
 在开发沙箱中启动 CLion：
 
@@ -125,7 +137,8 @@ JSON 输出会记录解析后的 `slangd` 路径、可执行文件 SHA-256、`se
 
 - 默认不接管 `.hlsl` / `.hlsli`，避免与 CLion 未来或现有 HLSL 支持冲突。
 - 不包含完整 PSI，因此本地结构重构等深度 IntelliJ 语言功能由 LSP 能力决定。
-- 不捆绑各平台 `slangd`，也尚未实现 Compile、Reflection 或 Playground 工具窗口。
+- 内置 `slangd` 暂只有 Windows x64 变体；也尚未实现 Compile、Reflection 或 Playground
+  工具窗口。
 - `slang-synth` 首次生成大型内建模块时可能有可感知延迟，后续访问会命中缓存。
 
 架构与后续计划见 [docs/architecture.md](docs/architecture.md)。

@@ -7,114 +7,68 @@ import dev.slang.intellij.settings.SlangProjectSettings;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
-/** Resolves the slangd executable without starting a process. */
+/** Resolves the bundled slangd or an explicitly enabled external override. */
 public final class SlangServerLocator {
     private static final List<String> EXECUTABLE_NAMES = SystemInfo.isWindows
             ? List.of("slangd.exe", "slangd")
             : List.of("slangd", "slangd.exe");
 
-    private final Map<String, String> environment;
+    private final BundledResolver bundledResolver;
 
     public SlangServerLocator() {
-        this(System.getenv());
+        bundledResolver = BundledRuntimeHolder.INSTANCE::resolve;
     }
 
-    SlangServerLocator(@NotNull Map<String, String> environment) {
-        this.environment = environment;
+    SlangServerLocator(@NotNull BundledResolver bundledResolver) {
+        this.bundledResolver = bundledResolver;
     }
 
-    /**
-     * Resolution order is the manually configured path, SLANGD_PATH, VULKAN_SDK,
-     * then every directory in PATH. Manual mode deliberately does not fall back:
-     * a typo in an explicit path should be visible instead of silently using a
-     * different SDK installation.
-     */
+    /** The plugin-controlled runtime is the default for every project. */
     public @NotNull Path resolve(@NotNull Project project) throws ExecutionException {
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
-        return resolve(project, settings.getSlangdPath(), settings.isAutoDetectSlangd());
-    }
-
-    /** Resolves using values that have not necessarily been persisted yet (used by the settings preview). */
-    public @NotNull Path resolve(
-            @NotNull Project project,
-            @Nullable String configuredPath,
-            boolean autoDetect
-    ) throws ExecutionException {
-        String configured = configuredPath == null ? "" : configuredPath.trim();
-        if (!configured.isEmpty()) {
-            Path resolved = resolveConfiguredPath(configured, project);
-            if (resolved == null) {
-                throw new ExecutionException(
-                        "The configured Slang language server does not exist or is not a file: " + configured
-                );
-            }
-            return resolved;
-        }
-        if (!autoDetect) {
-            throw new ExecutionException(
-                    "Slang language server auto-detection is disabled, but no slangd path is configured. "
-                            + "Set it in Settings | Languages & Frameworks | Slang."
-            );
-        }
-
-        Set<Path> candidates = new LinkedHashSet<>();
-        List<String> inspectedSources = new ArrayList<>();
-
-        String slangdPath = getEnvironment("SLANGD_PATH");
-        if (slangdPath != null && !slangdPath.isBlank()) {
-            inspectedSources.add("SLANGD_PATH=" + slangdPath);
-            addPathOrDirectory(candidates, slangdPath, null);
-        }
-
-        String vulkanSdk = getEnvironment("VULKAN_SDK");
-        if (vulkanSdk != null && !vulkanSdk.isBlank()) {
-            inspectedSources.add("VULKAN_SDK=" + vulkanSdk);
-            addDirectory(candidates, safePath(vulkanSdk), "Bin");
-            addDirectory(candidates, safePath(vulkanSdk), "bin");
-        }
-
-        String pathValue = getEnvironment("PATH");
-        if (pathValue != null && !pathValue.isBlank()) {
-            inspectedSources.add("PATH");
-            for (String entry : pathValue.split(java.util.regex.Pattern.quote(File.pathSeparator))) {
-                if (!entry.isBlank()) {
-                    addDirectory(candidates, safePath(stripMatchingQuotes(entry.trim())), null);
-                }
-            }
-        }
-
-        for (Path candidate : candidates) {
-            Path executable = normalizeExecutable(candidate);
-            if (executable != null) {
-                return executable;
-            }
-        }
-
-        String sources = inspectedSources.isEmpty()
-                ? "none of SLANGD_PATH, VULKAN_SDK, or PATH was set"
-                : String.join(", ", inspectedSources);
-        throw new ExecutionException(
-                "Cannot find the Slang language server executable (slangd). Checked " + sources + ". "
-                        + "Install Slang/the Vulkan SDK or configure slangd in "
-                        + "Settings | Languages & Frameworks | Slang."
+        return resolve(
+                project,
+                settings.getExternalSlangdPath(),
+                settings.isUseExternalSlangd()
         );
     }
 
-    private @Nullable Path resolveConfiguredPath(@NotNull String value, @NotNull Project project) {
-        String unquoted = stripMatchingQuotes(value);
-        Path path = safePath(unquoted);
+    /** Resolves unpersisted settings values for the Settings preview and tests. */
+    public @NotNull Path resolve(
+            @NotNull Project project,
+            @Nullable String externalPath,
+            boolean useExternal
+    ) throws ExecutionException {
+        if (!useExternal) {
+            return bundledResolver.resolve();
+        }
+
+        String configured = externalPath == null ? "" : externalPath.trim();
+        if (configured.isEmpty()) {
+            throw new ExecutionException(
+                    "External slangd override is enabled, but no executable is configured. "
+                            + "Select it in Settings | Languages & Frameworks | Slang."
+            );
+        }
+
+        Path resolved = resolveConfiguredPath(configured, project);
+        if (resolved == null) {
+            throw new ExecutionException(
+                    "The configured external Slang language server does not exist or is not a file: "
+                            + configured
+            );
+        }
+        return resolved;
+    }
+
+    private static @Nullable Path resolveConfiguredPath(@NotNull String value, @NotNull Project project) {
+        Path path = safePath(stripMatchingQuotes(value));
         if (path == null) {
             return null;
         }
@@ -127,66 +81,23 @@ public final class SlangServerLocator {
             }
         }
 
-        Path executable = normalizeExecutable(path);
-        if (executable != null) {
-            return executable;
-        }
-        if (Files.isDirectory(path)) {
-            for (String name : EXECUTABLE_NAMES) {
-                executable = normalizeExecutable(path.resolve(name));
-                if (executable != null) {
-                    return executable;
+        try {
+            Path normalized = path.toAbsolutePath().normalize();
+            if (Files.isRegularFile(normalized)) {
+                return normalized;
+            }
+            if (Files.isDirectory(normalized)) {
+                for (String executableName : EXECUTABLE_NAMES) {
+                    Path candidate = normalized.resolve(executableName);
+                    if (Files.isRegularFile(candidate)) {
+                        return candidate;
+                    }
                 }
             }
-        }
-        return null;
-    }
-
-    private void addPathOrDirectory(@NotNull Set<Path> candidates, @NotNull String value, @Nullable Path relativeTo) {
-        Path path = safePath(stripMatchingQuotes(value.trim()));
-        if (path == null) {
-            return;
-        }
-        if (!path.isAbsolute() && relativeTo != null) {
-            path = relativeTo.resolve(path);
-        }
-        candidates.add(path);
-        for (String name : EXECUTABLE_NAMES) {
-            candidates.add(path.resolve(name));
-        }
-    }
-
-    private void addDirectory(@NotNull Set<Path> candidates, @Nullable Path root, @Nullable String child) {
-        if (root == null) {
-            return;
-        }
-        Path directory = child == null ? root : root.resolve(child);
-        for (String name : EXECUTABLE_NAMES) {
-            candidates.add(directory.resolve(name));
-        }
-    }
-
-    private static @Nullable Path normalizeExecutable(@NotNull Path candidate) {
-        try {
-            Path normalized = candidate.toAbsolutePath().normalize();
-            return Files.isRegularFile(normalized) ? normalized : null;
+            return null;
         } catch (InvalidPathException | SecurityException ignored) {
             return null;
         }
-    }
-
-    private @Nullable String getEnvironment(@NotNull String name) {
-        String direct = environment.get(name);
-        if (direct != null || !SystemInfo.isWindows) {
-            return direct;
-        }
-        String lowerName = name.toLowerCase(Locale.ROOT);
-        for (Map.Entry<String, String> entry : environment.entrySet()) {
-            if (entry.getKey().toLowerCase(Locale.ROOT).equals(lowerName)) {
-                return entry.getValue();
-            }
-        }
-        return null;
     }
 
     private static @Nullable Path safePath(@NotNull String value) {
@@ -206,5 +117,15 @@ public final class SlangServerLocator {
             }
         }
         return value;
+    }
+
+    @FunctionalInterface
+    interface BundledResolver {
+        @NotNull Path resolve() throws ExecutionException;
+    }
+
+    /** One verified bundle per plugin classloader, shared by every project locator. */
+    private static final class BundledRuntimeHolder {
+        private static final SlangBundledRuntime INSTANCE = new SlangBundledRuntime();
     }
 }

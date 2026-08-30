@@ -2,6 +2,9 @@
 .gradle-user-home/
 .idea/
 .intellijPlatform/
+.slang-m2a-source/
+.slang-m2a-build*/
+.bundled-runtime/
 .tmp-gradle/
 build/
 out/
