@@ -2,6 +2,7 @@ package dev.slang.intellij.lsp;
 
 import com.intellij.lang.Language;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
+import com.intellij.platform.lsp.api.customization.LspFindReferencesSupport;
 import com.intellij.psi.PsiFile;
 import dev.slang.intellij.highlighting.SlangSemanticColors;
 import dev.slang.intellij.highlighting.SlangSyntaxHighlighter;
@@ -52,6 +53,14 @@ public class SlangSemanticTokensSupportTest {
     @Test
     public void customizationPublishesTheSlangSemanticSupport() {
         assertSame(support, new SlangLspCustomization().getSemanticTokensCustomizer());
+    }
+
+    @Test
+    public void customizationRetainsTheDefaultFindReferencesSupport() {
+        assertTrue(
+                new SlangLspCustomization().getFindReferencesCustomizer()
+                        instanceof LspFindReferencesSupport
+        );
     }
 
     @Test

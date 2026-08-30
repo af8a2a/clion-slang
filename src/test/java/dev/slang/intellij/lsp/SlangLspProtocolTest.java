@@ -94,6 +94,37 @@ public class SlangLspProtocolTest {
     }
 
     @Test
+    public void preservesFindReferencesLocationArraysByteForByte() throws Exception {
+        SlangLspRequestTracker tracker = new SlangLspRequestTracker();
+        ByteArrayOutputStream forwardedRequests = new ByteArrayOutputStream();
+        SlangLspProtocolOutputStream requests = new SlangLspProtocolOutputStream(
+                forwardedRequests,
+                tracker
+        );
+        byte[] requestFrame = frame("""
+                {"jsonrpc":"2.0","id":"field-references","method":"textDocument/references","params":{
+                  "textDocument":{"uri":"file:///着色器/Usage.slang"},
+                  "position":{"line":8,"character":12},
+                  "context":{"includeDeclaration":true}
+                }}
+                """.strip());
+        writeInChunks(requests, requestFrame, 3, 7, 19, 2);
+        requests.flush();
+        assertArrayEquals(requestFrame, forwardedRequests.toByteArray());
+
+        byte[] responseFrame = frame("""
+                {"jsonrpc":"2.0","id":"field-references","result":[
+                  {"uri":"file:///着色器/Usage.slang","range":{
+                    "start":{"line":2,"character":9},"end":{"line":2,"character":16}}},
+                  {"uri":"file:///着色器/Usage.slang","range":{
+                    "start":{"line":8,"character":11},"end":{"line":8,"character":18}}}
+                ]}
+                """.strip());
+
+        assertArrayEquals(responseFrame, forward(responseFrame, tracker));
+    }
+
+    @Test
     public void preservesStandardDefinitionArraysAndNullResults() throws Exception {
         SlangLspRequestTracker tracker = new SlangLspRequestTracker();
         recordDefinitionRequest(tracker, "array");

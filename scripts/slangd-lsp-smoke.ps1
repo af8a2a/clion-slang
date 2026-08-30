@@ -7,6 +7,14 @@ param(
     [string] $ExpectedTargetFileName = "Definition.slang",
     [int] $ExpectedTargetLine = 1,
     [int] $ExpectedTargetCharacter = 6,
+    [int] $ReferenceLine = 1,
+    [int] $ReferenceCharacter = 19,
+    [int] $ExpectedReferenceDeclarationLine = 1,
+    [int] $ExpectedReferenceDeclarationCharacter = 18,
+    [int] $ExpectedReferenceUsageLine = 3,
+    [int] $ExpectedReferenceUsageCharacter = 11,
+    [int] $ExpectedReferenceLength = 5,
+    [string] $ReferenceEdgeFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\ReferenceEdgeCases.slang"),
     [string] $HoverFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\StructFieldHover.slang"),
     [int] $HoverLine = 14,
     [int] $HoverCharacter = 12,
@@ -14,6 +22,8 @@ param(
     [int] $ExpectedHoverSize = 4,
     [int] $ExpectedHoverAlignment = 4,
     [int] $ExpectedHoverOffset = 40,
+    [int] $ExpectedFieldDeclarationLine = 7,
+    [int] $ExpectedFieldDeclarationCharacter = 8,
     [int] $ExpectedHoverRangeStart = 11,
     [int] $ExpectedHoverRangeEnd = 24,
     [string] $SemanticFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\SemanticHighlighting.slang"),
@@ -734,6 +744,9 @@ try {
     $definitionPath = (Resolve-Path -LiteralPath $DefinitionFile).Path
     $definitionUri = ([System.Uri]$definitionPath).AbsoluteUri
     $definitionText = [System.IO.File]::ReadAllText($definitionPath)
+    $referenceEdgePath = (Resolve-Path -LiteralPath $ReferenceEdgeFile).Path
+    $referenceEdgeUri = ([System.Uri]$referenceEdgePath).AbsoluteUri
+    $referenceEdgeText = [System.IO.File]::ReadAllText($referenceEdgePath)
     $hoverPath = (Resolve-Path -LiteralPath $HoverFile).Path
     $hoverUri = ([System.Uri]$hoverPath).AbsoluteUri
     $hoverText = [System.IO.File]::ReadAllText($hoverPath)
@@ -766,6 +779,7 @@ try {
                 workspace = @{ configuration = $true; workspaceFolders = $true }
                 textDocument = @{
                     definition = @{ linkSupport = $true }
+                    references = @{ dynamicRegistration = $true }
                     hover = @{ contentFormat = @("markdown", "plaintext") }
                     semanticTokens = @{
                         dynamicRegistration = $false
@@ -789,7 +803,13 @@ try {
     }
 
     $capabilities = $initialize.result.capabilities
-    $required = @("completionProvider", "hoverProvider", "definitionProvider", "semanticTokensProvider")
+    $required = @(
+        "completionProvider",
+        "hoverProvider",
+        "definitionProvider",
+        "referencesProvider",
+        "semanticTokensProvider"
+    )
     foreach ($name in $required) {
         if ($null -eq $capabilities.$name -or $capabilities.$name -eq $false) {
             throw "slangd initialize response is missing required capability: $name"
@@ -866,6 +886,22 @@ try {
             }
         }
     }
+    if (-not [string]::Equals($referenceEdgeUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($referenceEdgeUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($referenceEdgeUri, $hoverUri, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Send-LspMessage @{
+            jsonrpc = "2.0"
+            method = "textDocument/didOpen"
+            params = @{
+                textDocument = @{
+                    uri = $referenceEdgeUri
+                    languageId = "slang"
+                    version = 1
+                    text = $referenceEdgeText
+                }
+            }
+        }
+    }
 
     Send-LspMessage @{
         jsonrpc = "2.0"
@@ -902,6 +938,188 @@ try {
         $targetRange.start.line -ne $ExpectedTargetLine -or
         $targetRange.start.character -ne $ExpectedTargetCharacter) {
         throw "slangd returned the wrong definition target: $targetUri at $($targetRange.start.line):$($targetRange.start.character)"
+    }
+
+    Send-LspMessage @{
+        jsonrpc = "2.0"
+        id = 20
+        method = "textDocument/references"
+        params = @{
+            textDocument = @{ uri = $definitionUri }
+            position = @{ line = $ReferenceLine; character = $ReferenceCharacter }
+            context = @{ includeDeclaration = $true }
+        }
+    }
+    $referencesWithDeclaration = Read-LspResponse 20
+    $referenceItems = @($referencesWithDeclaration.result)
+    if ($referenceItems.Count -ne 2) {
+        throw "slangd returned $($referenceItems.Count) references instead of the declaration and one semantic use: $($referencesWithDeclaration.result | ConvertTo-Json -Compress -Depth 10)"
+    }
+    $expectedReferenceStarts = @(
+        @($ExpectedReferenceDeclarationLine, $ExpectedReferenceDeclarationCharacter),
+        @($ExpectedReferenceUsageLine, $ExpectedReferenceUsageCharacter)
+    )
+    for ($index = 0; $index -lt $referenceItems.Count; $index++) {
+        $item = $referenceItems[$index]
+        $expectedStart = $expectedReferenceStarts[$index]
+        $itemPath = ([System.Uri]$item.uri).LocalPath
+        if ($itemPath -match '^/[A-Za-z]:/') {
+            $itemPath = $itemPath.Substring(1)
+        }
+        $itemPath = [System.IO.Path]::GetFullPath($itemPath)
+        if (-not [string]::Equals(
+                $itemPath,
+                $definitionPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            ) -or
+            $null -eq $item.range -or
+            $item.range.start.line -ne $expectedStart[0] -or
+            $item.range.start.character -ne $expectedStart[1] -or
+            $item.range.end.line -ne $expectedStart[0] -or
+            $item.range.end.character -ne ($expectedStart[1] + $ExpectedReferenceLength)) {
+            throw "slangd returned an invalid semantic reference at index $index`: $($item | ConvertTo-Json -Compress -Depth 10)"
+        }
+    }
+
+    Send-LspMessage @{
+        jsonrpc = "2.0"
+        id = 21
+        method = "textDocument/references"
+        params = @{
+            textDocument = @{ uri = $definitionUri }
+            position = @{ line = $ReferenceLine; character = $ReferenceCharacter }
+            context = @{ includeDeclaration = $false }
+        }
+    }
+    $referencesWithoutDeclaration = Read-LspResponse 21
+    $usageOnlyItems = @($referencesWithoutDeclaration.result)
+    if ($usageOnlyItems.Count -ne 1 -or
+        $usageOnlyItems[0].range.start.line -ne $ExpectedReferenceUsageLine -or
+        $usageOnlyItems[0].range.start.character -ne $ExpectedReferenceUsageCharacter) {
+        throw "slangd did not honor references context.includeDeclaration=false: $($referencesWithoutDeclaration.result | ConvertTo-Json -Compress -Depth 10)"
+    }
+
+    Send-LspMessage @{
+        jsonrpc = "2.0"
+        id = 22
+        method = "textDocument/references"
+        params = @{
+            textDocument = @{ uri = $hoverUri }
+            position = @{ line = $HoverLine; character = $HoverCharacter }
+            context = @{ includeDeclaration = $true }
+        }
+    }
+    $fieldReferencesResponse = Read-LspResponse 22
+    $fieldReferenceItems = @($fieldReferencesResponse.result)
+    if ($fieldReferenceItems.Count -ne 2 -or
+        $fieldReferenceItems[0].range.start.line -ne $ExpectedFieldDeclarationLine -or
+        $fieldReferenceItems[0].range.start.character -ne $ExpectedFieldDeclarationCharacter -or
+        $fieldReferenceItems[0].range.end.character -ne
+            ($ExpectedFieldDeclarationCharacter + ($ExpectedHoverRangeEnd - $ExpectedHoverRangeStart)) -or
+        $fieldReferenceItems[1].range.start.line -ne $HoverLine -or
+        $fieldReferenceItems[1].range.start.character -ne $ExpectedHoverRangeStart -or
+        $fieldReferenceItems[1].range.end.character -ne $ExpectedHoverRangeEnd) {
+        throw "slangd returned invalid struct-field references: $($fieldReferencesResponse.result | ConvertTo-Json -Compress -Depth 10)"
+    }
+
+    $edgeReferenceCases = @(
+        [pscustomobject]@{
+            Id = 23
+            Name = "AddressOfExpr"
+            PositionLine = 4
+            PositionCharacter = 32
+            DeclarationLine = 0
+            DeclarationCharacter = 16
+            UsageLine = 4
+            UsageCharacter = 31
+            Length = 13
+        },
+        [pscustomobject]@{
+            Id = 24
+            Name = "DetachExpr"
+            PositionLine = 15
+            PositionCharacter = 24
+            DeclarationLine = 13
+            DeclarationCharacter = 30
+            UsageLine = 15
+            UsageCharacter = 23
+            Length = 14
+        },
+        [pscustomobject]@{
+            Id = 25
+            Name = "CompileTimeForBody"
+            PositionLine = 24
+            PositionCharacter = 19
+            DeclarationLine = 19
+            DeclarationCharacter = 33
+            UsageLine = 24
+            UsageCharacter = 18
+            Length = 17
+        },
+        [pscustomobject]@{
+            Id = 26
+            Name = "CompileTimeForVariable"
+            PositionLine = 22
+            PositionCharacter = 11
+            DeclarationLine = 22
+            DeclarationCharacter = 10
+            UsageLine = 24
+            UsageCharacter = 38
+            Length = 5
+        }
+    )
+    $edgeReferenceCounts = [ordered]@{}
+    foreach ($edgeCase in $edgeReferenceCases) {
+        Send-LspMessage @{
+            jsonrpc = "2.0"
+            id = $edgeCase.Id
+            method = "textDocument/references"
+            params = @{
+                textDocument = @{ uri = $referenceEdgeUri }
+                position = @{
+                    line = $edgeCase.PositionLine
+                    character = $edgeCase.PositionCharacter
+                }
+                context = @{ includeDeclaration = $true }
+            }
+        }
+        $edgeResponse = Read-LspResponse $edgeCase.Id
+        $edgeItems = @($edgeResponse.result)
+        if ($edgeItems.Count -ne 2) {
+            throw "slangd returned $($edgeItems.Count) references for $($edgeCase.Name) instead of two: $($edgeResponse.result | ConvertTo-Json -Compress -Depth 10)"
+        }
+        $edgeExpectedStarts = @(
+            [pscustomobject]@{
+                Line = $edgeCase.DeclarationLine
+                Character = $edgeCase.DeclarationCharacter
+            },
+            [pscustomobject]@{
+                Line = $edgeCase.UsageLine
+                Character = $edgeCase.UsageCharacter
+            }
+        )
+        for ($index = 0; $index -lt $edgeItems.Count; $index++) {
+            $item = $edgeItems[$index]
+            $expectedStart = $edgeExpectedStarts[$index]
+            $itemPath = ([System.Uri]$item.uri).LocalPath
+            if ($itemPath -match '^/[A-Za-z]:/') {
+                $itemPath = $itemPath.Substring(1)
+            }
+            $itemPath = [System.IO.Path]::GetFullPath($itemPath)
+            if (-not [string]::Equals(
+                    $itemPath,
+                    $referenceEdgePath,
+                    [System.StringComparison]::OrdinalIgnoreCase
+                ) -or
+                $null -eq $item.range -or
+                $item.range.start.line -ne $expectedStart.Line -or
+                $item.range.start.character -ne $expectedStart.Character -or
+                $item.range.end.line -ne $expectedStart.Line -or
+                $item.range.end.character -ne ($expectedStart.Character + $edgeCase.Length)) {
+                throw "slangd returned an invalid $($edgeCase.Name) reference at index $index`: $($item | ConvertTo-Json -Compress -Depth 10)"
+            }
+        }
+        $edgeReferenceCounts[$edgeCase.Name] = $edgeItems.Count
     }
 
     Send-LspMessage @{
@@ -1033,6 +1251,13 @@ try {
         }
         Definition = "$targetUri`:$($targetRange.start.line + 1)"
         DefinitionWireShape = $definitionWireShape
+        References = [pscustomobject][ordered]@{
+            IncludeDeclarationCount = $referenceItems.Count
+            ExcludeDeclarationCount = $usageOnlyItems.Count
+            FieldCount = $fieldReferenceItems.Count
+            TraversalCases = [pscustomobject]$edgeReferenceCounts
+            Scope = "document"
+        }
         SemanticTokens = [pscustomobject][ordered]@{
             Full = $fullProperty.Value
             Range = $rangeSupported

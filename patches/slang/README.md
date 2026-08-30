@@ -32,6 +32,17 @@ trailing spaces from Markdown lines, and their numeric values use inline code fo
 User-visible field modifiers such as `nointerpolation`, `centroid`, and `precise` are preserved;
 non-field declaration signatures keep their existing content and completion details are unchanged.
 
+`0005-document-local-references.patch` adds the standard `textDocument/references` request and
+advertises `referencesProvider`. It resolves the variable at the caret through Slang's checked AST,
+then compares declaration identity while scanning the current document. This covers parameters,
+locals, globals, and struct fields without conflating same-named declarations or shadowed locals.
+`context.includeDeclaration` is honored exactly and duplicate AST paths are collapsed. The first
+version is deliberately document-local: separately loaded root modules do not share stable `Decl*`
+identity, so cross-document results require a source-location symbol key and workspace indexing.
+The patch also completes the language-server walkers for address-of and compiler-generated detach
+expressions, compile-time loops, intrinsic-asm arguments, and GPU foreach nodes; otherwise references
+inside those constructs would be silently omitted.
+
 Apply the patches in numeric order. Each layer remains separate so the semantic-token baselines and
 field-hover extensions can be reproduced and reviewed independently.
 
@@ -59,6 +70,9 @@ git -C $slangSource apply $fieldHoverPatch
 $fieldHoverPresentationPatch = (Resolve-Path '.\patches\slang\0004-field-hover-presentation.patch').Path
 git -C $slangSource apply --check $fieldHoverPresentationPatch
 git -C $slangSource apply $fieldHoverPresentationPatch
+$referencesPatch = (Resolve-Path '.\patches\slang\0005-document-local-references.patch').Path
+git -C $slangSource apply --check $referencesPatch
+git -C $slangSource apply $referencesPatch
 ```
 
 The verified Windows build used CMake, Ninja, and an x64 Visual Studio developer environment:
@@ -108,6 +122,11 @@ requires the exact `slang` definition block, three-line `public field` signature
 breaks, **Natural layout**, size `4 bytes`, alignment `4 bytes`, offset `40 bytes`, and exact UTF-16
 hover range. This catches both presentation regressions and offsets accidentally reported as zero,
 independently of semantic-token legend negotiation.
+
+The same run requires `referencesProvider: true`, then queries both a shadowed parameter and a
+struct field. It checks exact UTF-16 `Location[]` ranges, declaration inclusion/exclusion, stable
+source ordering, and that same-spelled declarations are not reported as usages. Dedicated cases
+also cover `AddressOfExpr`, compiler-generated `DetachExpr`, and compile-time-loop variables/bodies.
 
 On Windows, the M3 language-server bundle contains `slangd.exe`, its matching
 `slang-compiler.dll`, and the generated `slang-glsl-module.bin`. Build with the static MSVC runtime

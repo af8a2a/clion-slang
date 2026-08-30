@@ -1,6 +1,6 @@
 # Bundled slangd runtime
 
-Plugin version 0.3.1 (M3) packages the patched language server instead of searching `PATH` or asking
+Plugin version 0.4.0 packages the patched language server instead of searching `PATH` or asking
 ordinary users to select an executable. This release is deliberately limited to **Windows x86_64**.
 The source descriptor declares the IntelliJ Platform 2026.1 compatibility dependencies
 `com.intellij.modules.os.windows` and `com.intellij.modules.arch.x86_64`. The Marketplace artifact
@@ -9,12 +9,13 @@ older build.
 
 ## Build Slang
 
-Use an x64 Visual Studio developer environment and the fixed Slang source revision plus all four
+Use an x64 Visual Studio developer environment and the fixed Slang source revision plus all five
 repository patches. The source worktree is expected to be exactly `HEAD` with
 `0001-m2a-enhanced-semantic-tokens.patch` and then
 `0002-m3-slang-hlsl-semantic-tokens.patch` and
 `0003-field-layout-hover.patch` and
-`0004-field-hover-presentation.patch` applied in numeric order.
+`0004-field-hover-presentation.patch` and
+`0005-document-local-references.patch` applied in numeric order.
 Dirty submodule gitlinks are ignored because the disabled submodules do not participate in this
 minimal build, but no additional tracked superproject changes are accepted.
 
@@ -46,7 +47,8 @@ cmake --build .\.slang-m2a-build-ninja --target slangd --parallel
 ```
 
 After the final link, run the M3 language-server smoke test. In addition to definition and semantic
-tokens, it validates a real field Hover response with natural size, alignment, and offset. It refreshes
+tokens, it validates document-local variable/field References, AST-wrapper and compile-time-loop
+reference traversal, plus a real field Hover response with natural size, alignment, and offset. It refreshes
 `slang-glsl-module.bin`, whose first eight bytes record the Unix mtime of the exact
 `slang-compiler.dll` used to produce it:
 
@@ -71,16 +73,16 @@ Package the version-locked executable, compiler library, and generated core modu
 The script rejects:
 
 - a tracked source diff that is not byte-for-byte equivalent to replaying the recorded M2a, M3,
-  field-layout, and field-presentation patches in order;
+  field-layout, field-presentation, and document-local references patches in order;
 - a non-AMD64 PE or a PE importing the dynamic MSVC/UCRT libraries (the build must use `/MT`);
 - a `slangd.exe` that does not import its matching `slang-compiler.dll`;
-- a publisher binary that fails field Hover or the M3, M2a-enhanced, or stock semantic-token
+- a publisher binary that fails References, field Hover, or the M3, M2a-enhanced, or stock semantic-token
   contract smoke test;
 - a generated GLSL module whose recorded compiler mtime differs from the supplied DLL.
 
 All three LSP contract profiles run automatically in isolated child PowerShell processes before the
-final module timestamp and payload hashes are read. Each profile validates the same field Hover in
-addition to its semantic-token negotiation. The child process is required because the smoke script
+final module timestamp and payload hashes are read. Each profile validates the same References and
+field Hover behavior in addition to its semantic-token negotiation. The child process is required because the smoke script
 uses `exit` to report its result.
 
 The recorded Git description uses `git describe --dirty`; the expected `-dirty` suffix denotes the
@@ -94,6 +96,7 @@ The default output is `.bundled-runtime/windows-x86_64.zip`. It contains this fi
 0002-m3-slang-hlsl-semantic-tokens.patch
 0003-field-layout-hover.patch
 0004-field-hover-presentation.patch
+0005-document-local-references.patch
 LICENSE-slang.txt
 LICENSES/lz4-distribution.txt
 LICENSES/lz4-lib-BSD-2-Clause.txt
@@ -115,8 +118,9 @@ input bytes and normalized metadata produce an identical runtime archive across 
 
 `verifyBundledSlangdArchive` opens the ZIP before resource processing and enforces the exact entry
 order, STORE method, size limit, schema 1, fixed `clion-slang-m3` profile, `windows-x64` platform,
-protocol 1.2 with the ordered `semanticTokens.m2a`, `semanticTokens.m3`, and
-`hover.fieldLayout.natural` feature list, exact manifest file set, and every payload SHA-256. Merely
+protocol 1.3 with the ordered `semanticTokens.m2a`, `semanticTokens.m3`,
+`hover.fieldLayout.natural`, and `references.documentLocal` feature list, exact manifest file set,
+and every payload SHA-256. Merely
 placing a file at the expected path is not sufficient.
 
 Build the constrained Marketplace artifact with:
@@ -128,10 +132,10 @@ Build the constrained Marketplace artifact with:
 The only new distribution is:
 
 ```text
-build/distributions/slang-clion-0.3.1-windows-x86_64.zip
+build/distributions/slang-clion-0.4.0-windows-x86_64.zip
 ```
 
-Its generated plugin version is `0.3.1-windows-x86_64`, and its descriptor declares both official
+Its generated plugin version is `0.4.0-windows-x86_64`, and its descriptor declares both official
 OS/architecture modules. For CI or a release build, an externally produced archive can be selected
 without bypassing validation:
 

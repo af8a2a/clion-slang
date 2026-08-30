@@ -1,0 +1,455 @@
+diff --git a/source/compiler-core/slang-language-server-protocol.cpp b/source/compiler-core/slang-language-server-protocol.cpp
+index 79525913e7542680e33b38ef4693399db2e119c6..ae7a9e0929c1be21513e32492c29847fe477802b 100644
+--- a/source/compiler-core/slang-language-server-protocol.cpp
++++ b/source/compiler-core/slang-language-server-protocol.cpp
+@@ -262,6 +262,7 @@ static const StructRttiInfo _makeServerCapabilitiesRtti()
+     builder.addField("documentFormattingProvider", &obj.documentFormattingProvider);
+     builder.addField("documentRangeFormattingProvider", &obj.documentRangeFormattingProvider);
+     builder.addField("definitionProvider", &obj.definitionProvider);
++    builder.addField("referencesProvider", &obj.referencesProvider);
+     builder.addField("completionProvider", &obj.completionProvider);
+     builder.addField("semanticTokensProvider", &obj.semanticTokensProvider);
+     builder.addField("signatureHelpProvider", &obj.signatureHelpProvider);
+@@ -284,6 +285,7 @@ static const StructRttiInfo _makeVSServerCapabilitiesRtti()
+     builder.addField("documentFormattingProvider", &obj.documentFormattingProvider);
+     builder.addField("documentRangeFormattingProvider", &obj.documentRangeFormattingProvider);
+     builder.addField("definitionProvider", &obj.definitionProvider);
++    builder.addField("referencesProvider", &obj.referencesProvider);
+     builder.addField("completionProvider", &obj.completionProvider);
+     builder.addField("semanticTokensProvider", &obj.semanticTokensProvider);
+     builder.addField("signatureHelpProvider", &obj.signatureHelpProvider);
+@@ -538,6 +540,33 @@ const StructRttiInfo DefinitionParams::g_rttiInfo = _makeDefinitionParamsRtti();
+ const UnownedStringSlice DefinitionParams::methodName =
+     UnownedStringSlice::fromLiteral("textDocument/definition");
+ 
++static const StructRttiInfo _makeReferenceContextRtti()
++{
++    ReferenceContext obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::ReferenceContext", nullptr);
++    builder.addField("includeDeclaration", &obj.includeDeclaration);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo ReferenceContext::g_rttiInfo = _makeReferenceContextRtti();
++
++static const StructRttiInfo _makeReferenceParamsRtti()
++{
++    ReferenceParams obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::ReferenceParams",
++        &WorkDoneProgressParams::g_rttiInfo);
++    builder.addField("textDocument", &obj.textDocument);
++    builder.addField("position", &obj.position);
++    builder.addField("context", &obj.context);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo ReferenceParams::g_rttiInfo = _makeReferenceParamsRtti();
++const UnownedStringSlice ReferenceParams::methodName =
++    UnownedStringSlice::fromLiteral("textDocument/references");
++
+ static const StructRttiInfo _makeCompletionParamsRtti()
+ {
+     CompletionParams obj;
+diff --git a/source/compiler-core/slang-language-server-protocol.h b/source/compiler-core/slang-language-server-protocol.h
+index b6e8a52fcf1d9844462b5db9bb5ee38adcdd497a..f4e0338dca9e7e511251a29ec5b76183e1ef67d9 100644
+--- a/source/compiler-core/slang-language-server-protocol.h
++++ b/source/compiler-core/slang-language-server-protocol.h
+@@ -286,6 +286,7 @@ struct ServerCapabilities
+     TextDocumentSyncOptions textDocumentSync;
+     bool hoverProvider = false;
+     bool definitionProvider = false;
++    bool referencesProvider = false;
+     bool documentSymbolProvider = false;
+     bool documentFormattingProvider = false;
+     bool documentRangeFormattingProvider = false;
+@@ -502,6 +503,19 @@ struct DefinitionParams : WorkDoneProgressParams, TextDocumentPositionParams
+     static const UnownedStringSlice methodName;
+ };
+ 
++struct ReferenceContext
++{
++    bool includeDeclaration = false;
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct ReferenceParams : WorkDoneProgressParams, TextDocumentPositionParams
++{
++    ReferenceContext context;
++    static const StructRttiInfo g_rttiInfo;
++    static const UnownedStringSlice methodName;
++};
++
+ struct MarkupContent
+ {
+     /**
+diff --git a/source/slang/slang-ast-iterator.h b/source/slang/slang-ast-iterator.h
+index 74c4e3463632d7968ef9d7047555c1359f5d1368..41095c52d42a2f1643c069ee99770e631a83b70d 100644
+--- a/source/slang/slang-ast-iterator.h
++++ b/source/slang/slang-ast-iterator.h
+@@ -256,7 +256,11 @@ struct ASTIterator
+             iterator->maybeDispatchCallback(expr);
+         }
+         void visitReturnValExpr(ReturnValExpr* expr) { iterator->maybeDispatchCallback(expr); }
+-        void visitAddressOfExpr(AddressOfExpr* expr) { iterator->maybeDispatchCallback(expr); }
++        void visitAddressOfExpr(AddressOfExpr* expr)
++        {
++            iterator->maybeDispatchCallback(expr);
++            dispatchIfNotNull(expr->arg);
++        }
+ 
+         void visitAndTypeExpr(AndTypeExpr* expr)
+         {
+@@ -332,7 +336,11 @@ struct ASTIterator
+             }
+         }
+ 
+-        void visitDetachExpr(DetachExpr* expr) { iterator->maybeDispatchCallback(expr); }
++        void visitDetachExpr(DetachExpr* expr)
++        {
++            iterator->maybeDispatchCallback(expr);
++            dispatchIfNotNull(expr->inner);
++        }
+     };
+ 
+     struct ASTIteratorStmtVisitor : public StmtVisitor<ASTIteratorStmtVisitor>
+@@ -398,6 +406,11 @@ struct ASTIterator
+         void visitCompileTimeForStmt(CompileTimeForStmt* stmt)
+         {
+             iterator->maybeDispatchCallback(stmt);
++            if (stmt->varDecl)
++                iterator->visitDecl(stmt->varDecl);
++            iterator->visitExpr(stmt->rangeBeginExpr);
++            iterator->visitExpr(stmt->rangeEndExpr);
++            dispatchIfNotNull(stmt->body);
+         }
+ 
+         void visitSwitchStmt(SwitchStmt* stmt)
+@@ -426,7 +439,12 @@ struct ASTIterator
+             iterator->visitStmt(stmt->body);
+         }
+ 
+-        void visitIntrinsicAsmStmt(IntrinsicAsmStmt*) {}
++        void visitIntrinsicAsmStmt(IntrinsicAsmStmt* stmt)
++        {
++            iterator->maybeDispatchCallback(stmt);
++            for (auto arg : stmt->args)
++                iterator->visitExpr(arg);
++        }
+ 
+         void visitDefaultStmt(DefaultStmt* stmt) { iterator->maybeDispatchCallback(stmt); }
+ 
+@@ -477,7 +495,15 @@ struct ASTIterator
+             dispatchIfNotNull(stmt->statement);
+         }
+ 
+-        void visitGpuForeachStmt(GpuForeachStmt* stmt) { iterator->maybeDispatchCallback(stmt); }
++        void visitGpuForeachStmt(GpuForeachStmt* stmt)
++        {
++            iterator->maybeDispatchCallback(stmt);
++            iterator->visitExpr(stmt->device);
++            iterator->visitExpr(stmt->gridDims);
++            if (stmt->dispatchThreadID)
++                iterator->visitDecl(stmt->dispatchThreadID);
++            iterator->visitExpr(stmt->kernelCall);
++        }
+ 
+         void visitExpressionStmt(ExpressionStmt* stmt)
+         {
+diff --git a/source/slang/slang-language-server-ast-lookup.cpp b/source/slang/slang-language-server-ast-lookup.cpp
+index dd3495b4cf7a00b676a1dae341deff892cb4960c..5b10ca7bd188a628ab916227af1f6eb7863cbd03 100644
+--- a/source/slang/slang-language-server-ast-lookup.cpp
++++ b/source/slang/slang-language-server-ast-lookup.cpp
+@@ -269,6 +269,7 @@ public:
+     }
+ 
+     bool visitDerefExpr(DerefExpr* expr) { return dispatchIfNotNull(expr->base); }
++    bool visitAddressOfExpr(AddressOfExpr* expr) { return dispatchIfNotNull(expr->arg); }
+     bool visitMatrixSwizzleExpr(MatrixSwizzleExpr* expr)
+     {
+         if (_isLocInRange(context, expr->memberOpLoc, 0))
+@@ -576,6 +577,7 @@ public:
+     {
+         return dispatchIfNotNull(expr->innerExpr);
+     }
++    bool visitDetachExpr(DetachExpr* expr) { return dispatchIfNotNull(expr->inner); }
+ };
+ 
+ struct ASTLookupStmtVisitor : public StmtVisitor<ASTLookupStmtVisitor, bool>
+@@ -648,7 +650,16 @@ struct ASTLookupStmtVisitor : public StmtVisitor<ASTLookupStmtVisitor, bool>
+         return dispatchIfNotNull(stmt->statement);
+     }
+ 
+-    bool visitCompileTimeForStmt(CompileTimeForStmt*) { return false; }
++    bool visitCompileTimeForStmt(CompileTimeForStmt* stmt)
++    {
++        if (_findAstNodeImpl(*context, stmt->varDecl))
++            return true;
++        if (checkExpr(stmt->rangeBeginExpr))
++            return true;
++        if (checkExpr(stmt->rangeEndExpr))
++            return true;
++        return dispatchIfNotNull(stmt->body);
++    }
+ 
+     bool visitSwitchStmt(SwitchStmt* stmt)
+     {
+@@ -669,7 +680,13 @@ struct ASTLookupStmtVisitor : public StmtVisitor<ASTLookupStmtVisitor, bool>
+ 
+     bool visitTargetCaseStmt(TargetCaseStmt* stmt) { return dispatchIfNotNull(stmt->body); }
+ 
+-    bool visitIntrinsicAsmStmt(IntrinsicAsmStmt*) { return false; }
++    bool visitIntrinsicAsmStmt(IntrinsicAsmStmt* stmt)
++    {
++        for (auto arg : stmt->args)
++            if (checkExpr(arg))
++                return true;
++        return false;
++    }
+ 
+     bool visitDefaultStmt(DefaultStmt*) { return false; }
+ 
+@@ -710,7 +727,16 @@ struct ASTLookupStmtVisitor : public StmtVisitor<ASTLookupStmtVisitor, bool>
+         return dispatchIfNotNull(stmt->statement);
+     }
+ 
+-    bool visitGpuForeachStmt(GpuForeachStmt*) { return false; }
++    bool visitGpuForeachStmt(GpuForeachStmt* stmt)
++    {
++        if (checkExpr(stmt->device))
++            return true;
++        if (checkExpr(stmt->gridDims))
++            return true;
++        if (_findAstNodeImpl(*context, stmt->dispatchThreadID))
++            return true;
++        return checkExpr(stmt->kernelCall);
++    }
+ 
+     bool visitExpressionStmt(ExpressionStmt* stmt) { return checkExpr(stmt->expression); }
+ };
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index d45f895185b4ca26594fab145092f590d7080104..d8759f6b4afef43113efabddc7074b9c2fc58e8f 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -14,6 +14,7 @@
+ #include "../core/slang-secure-crt.h"
+ #include "../core/slang-string-util.h"
+ #include "slang-ast-natural-layout.h"
++#include "slang-ast-iterator.h"
+ #include "slang-ast-print.h"
+ #include "slang-check-impl.h"
+ #include "slang-com-helper.h"
+@@ -195,6 +196,7 @@ SlangResult LanguageServer::parseNextMessage()
+                     caps.workspace.workspaceFolders.changeNotifications = false;
+                     caps.hoverProvider = true;
+                     caps.definitionProvider = true;
++                    caps.referencesProvider = true;
+                     caps.documentSymbolProvider = true;
+                     caps.inlayHintProvider.resolveProvider = false;
+                     caps.documentFormattingProvider = true;
+@@ -1404,6 +1406,149 @@ LanguageServerResult<List<LanguageServerProtocol::Location>> LanguageServerCore:
+     }
+ }
+ 
++SlangResult LanguageServer::findReferences(
++    const LanguageServerProtocol::ReferenceParams& args,
++    const JSONValue& responseId)
++{
++    auto result = m_core.findReferences(args);
++    removePendingModuleToUpdateDiagnostics(args.textDocument.uri);
++
++    if (SLANG_FAILED(result.returnCode) || result.isNull)
++    {
++        m_connection->sendResult(NullResponse::get(), responseId);
++        return SLANG_OK;
++    }
++    m_connection->sendResult(&result.result, responseId);
++    return SLANG_OK;
++}
++
++LanguageServerResult<List<LanguageServerProtocol::Location>> LanguageServerCore::findReferences(
++    const LanguageServerProtocol::ReferenceParams& args)
++{
++    String canonicalPath = uriToCanonicalPath(args.textDocument.uri);
++    RefPtr<DocumentVersion> doc;
++    if (!m_workspace->openedDocuments.tryGetValue(canonicalPath, doc))
++    {
++        return std::nullopt;
++    }
++
++    Index line, col;
++    doc->zeroBasedUTF16LocToOneBasedUTF8Loc(args.position.line, args.position.character, line, col);
++
++    auto version = m_workspace->getCurrentVersion();
++    SLANG_AST_BUILDER_RAII(version->linkage->getASTBuilder());
++
++    Module* parsedModule = version->getOrLoadModule(canonicalPath);
++    if (!parsedModule)
++    {
++        return std::nullopt;
++    }
++
++    auto sourceManager = version->linkage->getSourceManager();
++    auto findResult = findASTNodesAt(
++        doc.Ptr(),
++        sourceManager,
++        parsedModule->getModuleDecl(),
++        ASTLookupType::Decl,
++        canonicalPath.getUnownedSlice(),
++        line,
++        col);
++    if (findResult.getCount() == 0 || findResult[0].path.getCount() == 0)
++    {
++        return std::nullopt;
++    }
++
++    Decl* targetDecl = nullptr;
++    auto leafNode = findResult[0].path.getLast();
++    if (auto declRefExpr = as<DeclRefExpr>(leafNode))
++    {
++        targetDecl = declRefExpr->declRef.getDecl();
++    }
++    else if (auto decl = as<Decl>(leafNode))
++    {
++        targetDecl = decl;
++    }
++
++    if (!as<VarDeclBase>(targetDecl) || !targetDecl->getName() ||
++        targetDecl->findModifier<SynthesizedModifier>() ||
++        targetDecl->findModifier<ImplicitParameterGroupElementTypeModifier>())
++    {
++        return std::nullopt;
++    }
++
++    List<Location> results;
++    auto appendLocation = [&](SourceLoc sourceLoc, Name* name)
++    {
++        if (!name)
++            return;
++
++        auto humaneLoc = sourceManager->getHumaneLoc(sourceLoc, SourceLocType::Actual);
++        if (!humaneLoc.pathInfo.hasFoundPath() ||
++            !humaneLoc.pathInfo.foundPath.getUnownedSlice().endsWithCaseInsensitive(
++                canonicalPath.getUnownedSlice()))
++        {
++            return;
++        }
++
++        Location location;
++        location.uri = URI::fromLocalFilePath(canonicalPath.getUnownedSlice()).uri;
++        doc->oneBasedUTF8LocToZeroBasedUTF16Loc(
++            humaneLoc.line,
++            humaneLoc.column,
++            location.range.start.line,
++            location.range.start.character);
++        location.range.end = location.range.start;
++        location.range.end.character +=
++            (int)UTF8Util::calcUTF16CharCount(name->text.getUnownedSlice());
++
++        for (const auto& existing : results)
++        {
++            if (existing.range.start.line == location.range.start.line &&
++                existing.range.start.character == location.range.start.character &&
++                existing.range.end.line == location.range.end.line &&
++                existing.range.end.character == location.range.end.character)
++            {
++                return;
++            }
++        }
++        results.add(_Move(location));
++    };
++
++    iterateASTWithLanguageServerFilter(
++        canonicalPath.getUnownedSlice(),
++        sourceManager,
++        parsedModule->getModuleDecl(),
++        [&](SyntaxNode* node)
++        {
++            if (args.context.includeDeclaration && node == targetDecl)
++            {
++                appendLocation(targetDecl->getNameLoc(), targetDecl->getName());
++            }
++            else if (auto declRefExpr = as<DeclRefExpr>(node))
++            {
++                if (declRefExpr->declRef.getDecl() == targetDecl)
++                {
++                    auto name = declRefExpr->name;
++                    if (!name)
++                        name = declRefExpr->declRef.getName();
++                    appendLocation(declRefExpr->loc, name);
++                }
++            }
++        });
++
++    std::sort(
++        results.begin(),
++        results.end(),
++        [](const Location& left, const Location& right)
++        {
++            if (left.range.start.line != right.range.start.line)
++                return left.range.start.line < right.range.start.line;
++            return left.range.start.character < right.range.start.character;
++        });
++
++    return results;
++}
++
+ template<typename Func>
+ struct Deferred
+ {
+@@ -2904,6 +3049,12 @@ SlangResult LanguageServer::queueJSONCall(JSONRPCCall call)
+         SLANG_RETURN_ON_FAIL(m_connection->toNativeArgsOrSendError(call.params, &args, call.id));
+         cmd.definitionArgs = args;
+     }
++    else if (call.method == ReferenceParams::methodName)
++    {
++        ReferenceParams args;
++        SLANG_RETURN_ON_FAIL(m_connection->toNativeArgsOrSendError(call.params, &args, call.id));
++        cmd.referenceArgs = args;
++    }
+     else if (call.method == CompletionParams::methodName)
+     {
+         CompletionParams args;
+@@ -3026,6 +3177,10 @@ SlangResult LanguageServer::runCommand(Command& call)
+         {
+             return gotoDefinition(call.definitionArgs.get(), call.id);
+         }
++        else if (call.method == ReferenceParams::methodName)
++        {
++            return findReferences(call.referenceArgs.get(), call.id);
++        }
+         else if (call.method == CompletionParams::methodName)
+         {
+             return completion(call.completionArgs.get(), call.id);
+diff --git a/source/slang/slang-language-server.h b/source/slang/slang-language-server.h
+index d256d8f95a07bf38a31a3b7cd230882607109acf..91ac3cedbbb38e0570d21aa82d91855616c8964d 100644
+--- a/source/slang/slang-language-server.h
++++ b/source/slang/slang-language-server.h
+@@ -70,6 +70,7 @@ struct Command
+     Optional<LanguageServerProtocol::DidChangeConfigurationParams> changeConfigArgs;
+     Optional<LanguageServerProtocol::SignatureHelpParams> signatureHelpArgs;
+     Optional<LanguageServerProtocol::DefinitionParams> definitionArgs;
++    Optional<LanguageServerProtocol::ReferenceParams> referenceArgs;
+     Optional<LanguageServerProtocol::SemanticTokensParams> semanticTokenArgs;
+     Optional<LanguageServerProtocol::HoverParams> hoverArgs;
+     Optional<LanguageServerProtocol::DidOpenTextDocumentParams> openDocArgs;
+@@ -123,6 +124,8 @@ public:
+         const LanguageServerProtocol::HoverParams& args);
+     LanguageServerResult<List<LanguageServerProtocol::Location>> gotoDefinition(
+         const LanguageServerProtocol::DefinitionParams& args);
++    LanguageServerResult<List<LanguageServerProtocol::Location>> findReferences(
++        const LanguageServerProtocol::ReferenceParams& args);
+ 
+     LanguageServerResult<CompletionResult> completion(
+         const LanguageServerProtocol::CompletionParams& args);
+@@ -217,6 +220,9 @@ public:
+     SlangResult gotoDefinition(
+         const LanguageServerProtocol::DefinitionParams& args,
+         const JSONValue& responseId);
++    SlangResult findReferences(
++        const LanguageServerProtocol::ReferenceParams& args,
++        const JSONValue& responseId);
+     SlangResult completion(
+         const LanguageServerProtocol::CompletionParams& args,
+         const JSONValue& responseId);

@@ -90,6 +90,14 @@ alignment rule. The result is explicitly labelled **Natural layout** because it 
 resource layout such as cbuffer or std430. If a pointer, resource, unresolved generic, or preceding
 field makes the layout indeterminate, the metadata is omitted instead of reporting a guessed zero.
 
+The fifth publisher patch implements standard `textDocument/references` for variables. It resolves
+the caret to a checked `VarDeclBase` and scans the requesting module for `DeclRefExpr` nodes that
+refer to that exact declaration, so fields and shadowed locals remain distinct. Results are
+document-local in protocol 1.3; cross-document lookup needs a persistent declaration key because
+the current workspace creates a fresh root module for each opened document. The patch also fills
+language-server AST recursion for address-of and detach wrappers, compile-time loops, intrinsic-asm
+arguments, and GPU foreach nodes so valid references inside those constructs are not skipped.
+
 ## Bundled runtime
 
 M2b introduced the Windows x64 bundled runtime; M3 refreshes it with the M3 publisher. The archive

@@ -87,6 +87,7 @@ public class SlangBundledRuntimeTest {
         assertTrue(Files.isRegularFile(executable.getParent().resolve("slang-glsl-module.bin")));
         assertTrue(Files.isRegularFile(executable.getParent().resolve("0003-field-layout-hover.patch")));
         assertTrue(Files.isRegularFile(executable.getParent().resolve("0004-field-hover-presentation.patch")));
+        assertTrue(Files.isRegularFile(executable.getParent().resolve("0005-document-local-references.patch")));
         assertEquals("clion-slang-m3", info.profile());
         assertEquals("windows-x64", info.platform());
         assertEquals(64, info.bundleId().length());
@@ -284,10 +285,11 @@ public class SlangBundledRuntimeTest {
         String[] features = new String[]{
                 "semanticTokens.m2a",
                 "semanticTokens.m3",
-                "hover.fieldLayout.natural"
+                "hover.fieldLayout.natural",
+                "references.documentLocal"
         };
         byte[] wrongMajor = bundleWithProtocol(
-                1, "windows-x64", 2, 2, features, hashes, files, Map.of()
+                1, "windows-x64", 2, 3, features, hashes, files, Map.of()
         );
         byte[] wrongMinor = bundleWithProtocol(
                 1, "windows-x64", 1, 1, features, hashes, files, Map.of()
@@ -296,8 +298,12 @@ public class SlangBundledRuntimeTest {
                 1,
                 "windows-x64",
                 1,
-                2,
-                new String[]{"semanticTokens.m2a", "semanticTokens.m3"},
+                3,
+                new String[]{
+                        "semanticTokens.m2a",
+                        "semanticTokens.m3",
+                        "hover.fieldLayout.natural"
+                },
                 hashes,
                 files,
                 Map.of()
@@ -306,11 +312,12 @@ public class SlangBundledRuntimeTest {
                 1,
                 "windows-x64",
                 1,
-                2,
+                3,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
                         "hover.fieldLayout.natural",
+                        "references.documentLocal",
                         "other.feature"
                 },
                 hashes,
@@ -321,11 +328,12 @@ public class SlangBundledRuntimeTest {
                 1,
                 "windows-x64",
                 1,
-                2,
+                3,
                 new String[]{
                         "semanticTokens.m3",
                         "semanticTokens.m2a",
-                        "hover.fieldLayout.natural"
+                        "hover.fieldLayout.natural",
+                        "references.documentLocal"
                 },
                 hashes,
                 files,
@@ -335,12 +343,13 @@ public class SlangBundledRuntimeTest {
                 1,
                 "windows-x64",
                 1,
-                2,
+                3,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
                         "hover.fieldLayout.natural",
-                        "hover.fieldLayout.natural"
+                        "references.documentLocal",
+                        "references.documentLocal"
                 },
                 hashes,
                 files,
@@ -396,9 +405,9 @@ public class SlangBundledRuntimeTest {
                 ).resolveExecutable()
         );
 
-        assertTrue(majorException.getMessage().contains("protocol 2.2"));
+        assertTrue(majorException.getMessage().contains("protocol 2.3"));
         assertTrue(minorException.getMessage().contains("protocol 1.1"));
-        assertTrue(featureException.getMessage().contains("hover.fieldLayout.natural"));
+        assertTrue(featureException.getMessage().contains("references.documentLocal"));
         assertTrue(unexpectedFeatureException.getMessage().contains("other.feature"));
         assertTrue(reversedFeaturesException.getMessage().contains("instead of required"));
         assertTrue(duplicateFeaturesException.getMessage().contains("must not contain duplicates"));
@@ -412,11 +421,12 @@ public class SlangBundledRuntimeTest {
                 "windows-x64",
                 "another-client",
                 1,
-                2,
+                3,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
-                        "hover.fieldLayout.natural"
+                        "hover.fieldLayout.natural",
+                        "references.documentLocal"
                 },
                 hashes(files),
                 files,
@@ -533,11 +543,12 @@ public class SlangBundledRuntimeTest {
                 schemaVersion,
                 platform,
                 1,
-                2,
+                3,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
-                        "hover.fieldLayout.natural"
+                        "hover.fieldLayout.natural",
+                        "references.documentLocal"
                 },
                 hashes,
                 files,

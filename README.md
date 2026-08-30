@@ -21,6 +21,9 @@
 - Ctrl+左键、Ctrl+B 与 Ctrl+悬停的定义导航；插件会直接复用当前 `slangd` 会话，规避
   CLion 2026.1 原生 LSP 在 Ctrl+鼠标路径中不发起 Definition 请求的问题，并兼容部分
   `slangd` 版本将单个定义返回为 `Location` 而非标准数组的响应形态
+- 变量“查找用法”与“高级查找用法”：内置 `slangd` 发布标准 `textDocument/references`，
+  CLion 自动提供右键菜单与 Alt+F7；当前可靠范围是同一文档内的参数、局部/全局变量和
+  结构体字段，基于解析后的声明身份排除同名遮蔽，并支持声明包含/排除
 - Windows x64 内置 `slangd`：校验清单与 SHA-256 后安装到 IDE system cache；项目设置可显式
   启用高级外部覆盖，但不会隐式扫描 `SLANGD_PATH`、`VULKAN_SDK` 或 `PATH`
 - `slangdconfig.json` 的 `workspace/configuration` 映射与 `${workspaceFolder}` 展开
@@ -63,7 +66,7 @@
    CLion 2026.1.3 基线。
 
 3. 在 CLion 中打开 **Settings | Plugins | ⚙ | Install Plugin from Disk...**，选择
-   `build/distributions/slang-clion-0.3.1-windows-x86_64.zip`。
+   `build/distributions/slang-clion-0.4.0-windows-x86_64.zip`。
 4. 默认直接使用插件内置 `slangd`。只有调试或兼容性需要时，才在
    **Settings | Languages & Frameworks | Slang** 中启用 **Use external slangd (advanced)**
    并指定 `slangd.exe` 的完整路径。
@@ -113,8 +116,10 @@ slangc -no-codegen .\src\test\testData\slang\Basic.slang
 .\scripts\slangd-lsp-smoke.ps1
 ```
 
-`slangd-lsp-smoke.ps1` 会打开仓库内的定义夹具并断言调用点准确返回 `twice` 的声明位置，
-同时打开语义高亮语料、调用 `textDocument/semanticTokens/full`、解码相对五元组并校验
+`slangd-lsp-smoke.ps1` 会打开仓库内的定义夹具，断言调用点准确返回 `twice` 的声明位置，
+并检查同名遮蔽参数和结构体字段的 References、声明包含/排除与精确 UTF-16 范围，同时覆盖
+`__getAddress`、编译器生成的 detach 节点和 `$for` 编译期循环；随后
+打开语义高亮语料、调用 `textDocument/semanticTokens/full`、解码相对五元组并校验
 UTF-16 范围、legend 和 token 合同，而不只是检查服务器是否发布了对应 capability。
 默认执行当前官方服务器的 `stock` 合同；增强版服务器可使用：
 
@@ -133,10 +138,11 @@ JSON 输出会记录解析后的 `slangd` 路径、可执行文件 SHA-256、`se
 解码后的 token，适合作为 CI 差分产物。协议合同与演进规则见
 [docs/semantic-token-protocol.md](docs/semantic-token-protocol.md)。
 
-Publisher 侧实现以四层可重放补丁保存在 [`patches/slang/`](patches/slang/README.md)。M2a
+Publisher 侧实现以五层可重放补丁保存在 [`patches/slang/`](patches/slang/README.md)。M2a
 增加标准细分类型与 modifiers；M3 追加 `slangSemantic` 和 `slangSwizzle`；字段 Hover 的两层
-补丁依次追加 natural layout 信息和 Rider 风格的分层、着色展示。Initialize 能力协商按
-M3 → M2a → stock 逐级选择 legend，构建和三协议验证命令见该目录说明。
+补丁依次追加 natural layout 信息和 Rider 风格的分层、着色展示；第五层加入文档内语义
+References。Initialize 能力协商按 M3 → M2a → stock 逐级选择 legend，构建和三协议验证
+命令见该目录说明。
 
 在开发沙箱中启动 CLion：
 
@@ -148,6 +154,7 @@ M3 → M2a → stock 逐级选择 legend，构建和三协议验证命令见该�
 
 - 默认不接管 `.hlsl` / `.hlsli`，避免与 CLion 未来或现有 HLSL 支持冲突。
 - 不包含完整 PSI，因此本地结构重构等深度 IntelliJ 语言功能由 LSP 能力决定。
+- 变量查找用法当前只返回请求文档内的结果；跨 import/include 的工程级索引留待后续阶段。
 - 内置 `slangd` 暂只有 Windows x64 变体；也尚未实现 Compile、Reflection 或 Playground
   工具窗口。
 - `slang-synth` 首次生成大型内建模块时可能有可感知延迟，后续访问会命中缓存。
