@@ -50,6 +50,14 @@ same checked declaration identity, UTF-16 conversion, ordering, and deduplicatio
 wire kind is `Text`, allowing CLion to apply its normal read-usage background without inventing a
 plugin-specific color.
 
+`0007-rider-function-hover.patch` expands standard function Hover Markdown into a Rider-style
+definition. It adds a **Function** category, prints the return type before the function name, and
+puts each parameter on its own indented line while preserving parameter modifiers, default values,
+documentation, differentiability notes, and the existing definition location. Resource element
+types keep their source-facing HLSL spelling, for example `Texture2DArray<float4>` rather than the
+canonical `Texture2DArray<vector<float,4>>`. Non-function Hover and completion signatures are not
+changed.
+
 Apply the patches in numeric order. Each layer remains separate so the semantic-token baselines and
 field-hover extensions can be reproduced and reviewed independently.
 
@@ -83,6 +91,9 @@ git -C $slangSource apply $referencesPatch
 $documentHighlightsPatch = (Resolve-Path '.\patches\slang\0006-document-variable-highlights.patch').Path
 git -C $slangSource apply --check $documentHighlightsPatch
 git -C $slangSource apply $documentHighlightsPatch
+$functionHoverPatch = (Resolve-Path '.\patches\slang\0007-rider-function-hover.patch').Path
+git -C $slangSource apply --check $functionHoverPatch
+git -C $slangSource apply $functionHoverPatch
 ```
 
 The verified Windows build used CMake, Ninja, and an x64 Visual Studio developer environment:
@@ -140,6 +151,10 @@ also cover `AddressOfExpr`, compiler-generated `DetachExpr`, and compile-time-lo
 
 The same run requires `documentHighlightProvider: true` and verifies that the standard highlight
 array contains those declaration/use ranges without URI fields and with `DocumentHighlightKind.Text`.
+
+It also verifies a real function Hover byte-for-byte: the **Function** category, `slang` fence,
+source-facing resource/vector types, one parameter per line, definition location, and exact UTF-16
+identifier range must all match the fixture.
 
 On Windows, the M3 language-server bundle contains `slangd.exe`, its matching
 `slang-compiler.dll`, and the generated `slang-glsl-module.bin`. Build with the static MSVC runtime

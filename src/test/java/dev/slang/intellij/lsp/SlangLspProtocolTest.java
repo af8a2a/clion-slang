@@ -94,6 +94,34 @@ public class SlangLspProtocolTest {
     }
 
     @Test
+    public void preservesExpandedFunctionHoverResponseByteForByte() throws Exception {
+        SlangLspRequestTracker tracker = new SlangLspRequestTracker();
+        ByteArrayOutputStream forwardedRequests = new ByteArrayOutputStream();
+        SlangLspProtocolOutputStream requests = new SlangLspProtocolOutputStream(
+                forwardedRequests,
+                tracker
+        );
+        byte[] requestFrame = frame("""
+                {"jsonrpc":"2.0","id":"function-hover","method":"textDocument/hover","params":{
+                  "textDocument":{"uri":"file:///着色器/PathTracingMaterials.slang"},
+                  "position":{"line":16,"character":13}
+                }}
+                """.strip());
+        writeInChunks(requests, requestFrame, 3, 17, 4, 9);
+        requests.flush();
+        assertArrayEquals(requestFrame, forwardedRequests.toByteArray());
+
+        byte[] responseFrame = frame("""
+                {"jsonrpc":"2.0","id":"function-hover","result":{
+                  "contents":{"kind":"markdown","value":"**Function**\\n\\n```slang\\nfloat4 SampleAtlas(\\n    Texture2DArray<float4> atlas,\\n    SamplerState atlasSampler,\\n    uint index,\\n    float2 uv,\\n    float2 scale,\\n    float2 offset,\\n    bool pointFilterMode\\n)\\n```\\nDefined in 着色器/PathTracingMaterials.slang(1)\\n"},
+                  "range":{"start":{"line":16,"character":11},"end":{"line":16,"character":22}}
+                }}
+                """.strip());
+
+        assertArrayEquals(responseFrame, forward(responseFrame, tracker));
+    }
+
+    @Test
     public void preservesFindReferencesLocationArraysByteForByte() throws Exception {
         SlangLspRequestTracker tracker = new SlangLspRequestTracker();
         ByteArrayOutputStream forwardedRequests = new ByteArrayOutputStream();

@@ -59,13 +59,14 @@ public final class SlangBundledRuntime {
     private static final String REQUIRED_PROFILE = "clion-slang-m3";
     private static final int MANIFEST_SCHEMA_VERSION = 1;
     private static final int PROTOCOL_MAJOR = 1;
-    private static final int PROTOCOL_MINOR = 4;
+    private static final int PROTOCOL_MINOR = 5;
     private static final List<String> REQUIRED_PROTOCOL_FEATURES = List.of(
             "semanticTokens.m2a",
             "semanticTokens.m3",
             "hover.fieldLayout.natural",
             "references.documentLocal",
-            "documentHighlight.documentLocal"
+            "documentHighlight.documentLocal",
+            "hover.functionSignature.rider"
     );
     private static final long MAX_ARCHIVE_BYTES = 128L * 1024 * 1024;
     private static final long MAX_MANIFEST_BYTES = 1024L * 1024;

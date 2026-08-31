@@ -103,6 +103,12 @@ declaration-identity scan and advances the bundled contract to protocol 1.4. The
 the Native LSP document-highlight gate because CLion's default support only opts in TEXT/TextMate
 PSI; returned `Text` highlights then flow through the IDE's standard read-usage background styling.
 
+The seventh publisher patch advances the bundled contract to protocol 1.5 and specializes standard
+function Hover presentation. Slang's checked declaration remains the semantic source, but the
+signature is rendered in source-facing HLSL order with one parameter per line and a function
+category header. The change is an AST-printer option used only by Hover, so Completion and other
+declaration signatures retain their previous compact form.
+
 ## Bundled runtime
 
 M2b introduced the Windows x64 bundled runtime; M3 refreshes it with the M3 publisher. The archive

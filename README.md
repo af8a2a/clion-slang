@@ -18,6 +18,8 @@
   Inlay Hints、Formatting 等标准能力（实际能力取决于所用 `slangd`）
 - 结构体字段 Hover 展示字段类型、所属结构体，以及 Slang `sizeof` / `alignof` 语义下的
   natural layout 大小、对齐和偏移；目标相关或无法确定的布局会安全省略
+- 函数 Hover 采用 Rider 风格的信息展开：显示函数类别、HLSL/Slang 源码形式的返回类型与
+  函数名、逐行参数列表和定义位置，并保留参数修饰符、默认值及函数文档
 - Ctrl+左键、Ctrl+B 与 Ctrl+悬停的定义导航；插件会直接复用当前 `slangd` 会话，规避
   CLion 2026.1 原生 LSP 在 Ctrl+鼠标路径中不发起 Definition 请求的问题，并兼容部分
   `slangd` 版本将单个定义返回为 `Location` 而非标准数组的响应形态
@@ -69,7 +71,7 @@
    CLion 2026.1.3 基线。
 
 3. 在 CLion 中打开 **Settings | Plugins | ⚙ | Install Plugin from Disk...**，选择
-   `build/distributions/slang-clion-0.5.0-windows-x86_64.zip`。
+   `build/distributions/slang-clion-0.6.0-windows-x86_64.zip`。
 4. 默认直接使用插件内置 `slangd`。只有调试或兼容性需要时，才在
    **Settings | Languages & Frameworks | Slang** 中启用 **Use external slangd (advanced)**
    并指定 `slangd.exe` 的完整路径。

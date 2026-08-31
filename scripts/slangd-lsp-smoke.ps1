@@ -26,6 +26,12 @@ param(
     [int] $ExpectedFieldDeclarationCharacter = 8,
     [int] $ExpectedHoverRangeStart = 11,
     [int] $ExpectedHoverRangeEnd = 24,
+    [string] $FunctionHoverFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\FunctionHover.slang"),
+    [int] $FunctionHoverLine = 16,
+    [int] $FunctionHoverCharacter = 13,
+    [string] $ExpectedFunctionHoverSignature = "float4 SampleAtlas(`n    Texture2DArray<float4> atlas,`n    SamplerState atlasSampler,`n    uint index,`n    float2 uv,`n    float2 scale,`n    float2 offset,`n    bool pointFilterMode`n)",
+    [int] $ExpectedFunctionHoverRangeStart = 11,
+    [int] $ExpectedFunctionHoverRangeEnd = 22,
     [string] $SemanticFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\SemanticHighlighting.slang"),
     [ValidateSet("stock", "enhanced", "m3", "none")]
     [string] $SemanticContract = "stock",
@@ -750,6 +756,9 @@ try {
     $hoverPath = (Resolve-Path -LiteralPath $HoverFile).Path
     $hoverUri = ([System.Uri]$hoverPath).AbsoluteUri
     $hoverText = [System.IO.File]::ReadAllText($hoverPath)
+    $functionHoverPath = (Resolve-Path -LiteralPath $FunctionHoverFile).Path
+    $functionHoverUri = ([System.Uri]$functionHoverPath).AbsoluteUri
+    $functionHoverText = [System.IO.File]::ReadAllText($functionHoverPath)
     $semanticPath = (Resolve-Path -LiteralPath $SemanticFile).Path
     $semanticUri = ([System.Uri]$semanticPath).AbsoluteUri
     $semanticText = [System.IO.File]::ReadAllText($semanticPath)
@@ -814,7 +823,8 @@ try {
     )
     foreach ($name in $required) {
         if ($null -eq $capabilities.$name -or $capabilities.$name -eq $false) {
-            throw "slangd initialize response is missing required capability: $name"
+            $capabilityJson = $capabilities | ConvertTo-Json -Compress -Depth 10
+            throw "slangd initialize response is missing required capability: $name. Capabilities: $capabilityJson"
         }
     }
 
@@ -900,6 +910,23 @@ try {
                     languageId = "slang"
                     version = 1
                     text = $referenceEdgeText
+                }
+            }
+        }
+    }
+    if (-not [string]::Equals($functionHoverUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($functionHoverUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($functionHoverUri, $hoverUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($functionHoverUri, $referenceEdgeUri, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Send-LspMessage @{
+            jsonrpc = "2.0"
+            method = "textDocument/didOpen"
+            params = @{
+                textDocument = @{
+                    uri = $functionHoverUri
+                    languageId = "slang"
+                    version = 1
+                    text = $functionHoverText
                 }
             }
         }
@@ -1203,6 +1230,52 @@ try {
 
     Send-LspMessage @{
         jsonrpc = "2.0"
+        id = 28
+        method = "textDocument/hover"
+        params = @{
+            textDocument = @{ uri = $functionHoverUri }
+            position = @{ line = $FunctionHoverLine; character = $FunctionHoverCharacter }
+        }
+    }
+    $functionHoverResponse = Read-LspResponse 28
+    if ($null -eq $functionHoverResponse.result -or
+        $null -eq $functionHoverResponse.result.contents -or
+        -not [string]::Equals(
+            [string]$functionHoverResponse.result.contents.kind,
+            "markdown",
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+        throw "slangd returned an invalid function hover: $($functionHoverResponse.result | ConvertTo-Json -Compress -Depth 10)"
+    }
+    $functionHoverValue = ([string]$functionHoverResponse.result.contents.value).
+        Replace("`r`n", "`n").Replace("`r", "`n")
+    $normalizedFunctionSignature = $ExpectedFunctionHoverSignature.
+        Replace("`r`n", "`n").Replace("`r", "`n")
+    $expectedFunctionDefinition =
+        "**Function**`n`n" + '```slang' + "`n" + $normalizedFunctionSignature + "`n" + '```'
+    if (-not $functionHoverValue.StartsWith(
+        $expectedFunctionDefinition,
+        [System.StringComparison]::Ordinal
+    )) {
+        throw "slangd function hover does not start with exact expanded definition '$expectedFunctionDefinition': $functionHoverValue"
+    }
+    if ($functionHoverValue.IndexOf(
+        "FunctionHover.slang(1)",
+        [System.StringComparison]::OrdinalIgnoreCase
+    ) -lt 0) {
+        throw "slangd function hover is missing its definition location: $functionHoverValue"
+    }
+    $functionHoverRange = $functionHoverResponse.result.range
+    if ($null -eq $functionHoverRange -or
+        $functionHoverRange.start.line -ne $FunctionHoverLine -or
+        $functionHoverRange.start.character -ne $ExpectedFunctionHoverRangeStart -or
+        $functionHoverRange.end.line -ne $FunctionHoverLine -or
+        $functionHoverRange.end.character -ne $ExpectedFunctionHoverRangeEnd) {
+        throw "slangd returned the wrong function hover range: $($functionHoverRange | ConvertTo-Json -Compress -Depth 5)"
+    }
+
+    Send-LspMessage @{
+        jsonrpc = "2.0"
         id = 4
         method = "textDocument/semanticTokens/full"
         params = @{
@@ -1244,6 +1317,15 @@ try {
             params = @{ textDocument = @{ uri = $hoverUri } }
         }
     }
+    if (-not [string]::Equals($functionHoverUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($functionHoverUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not [string]::Equals($functionHoverUri, $hoverUri, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Send-LspMessage @{
+            jsonrpc = "2.0"
+            method = "textDocument/didClose"
+            params = @{ textDocument = @{ uri = $functionHoverUri } }
+        }
+    }
     Send-LspMessage @{ jsonrpc = "2.0"; id = 5; method = "shutdown"; params = $null }
     $shutdown = Read-LspResponse 5
     if ($shutdown.id -ne 5) {
@@ -1278,6 +1360,11 @@ try {
             Alignment = $ExpectedHoverAlignment
             Offset = $ExpectedHoverOffset
             Range = "$HoverLine`:$ExpectedHoverRangeStart-$HoverLine`:$ExpectedHoverRangeEnd"
+        }
+        FunctionHover = [pscustomobject][ordered]@{
+            Signature = $ExpectedFunctionHoverSignature
+            Range = "$FunctionHoverLine`:$ExpectedFunctionHoverRangeStart-$FunctionHoverLine`:$ExpectedFunctionHoverRangeEnd"
+            Definition = "FunctionHover.slang:1"
         }
         Definition = "$targetUri`:$($targetRange.start.line + 1)"
         DefinitionWireShape = $definitionWireShape

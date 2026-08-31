@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "dev.slang.intellij"
-version = "0.5.0"
+version = "0.6.0"
 
 repositories {
     mavenCentral()
@@ -36,6 +36,7 @@ val bundledRuntimeEntries = listOf(
     "0004-field-hover-presentation.patch",
     "0005-document-local-references.patch",
     "0006-document-variable-highlights.patch",
+    "0007-rider-function-hover.patch",
     "LICENSE-slang.txt",
     "LICENSES/lz4-distribution.txt",
     "LICENSES/lz4-lib-BSD-2-Clause.txt",
@@ -152,19 +153,20 @@ val verifyBundledSlangdArchive = tasks.register("verifyBundledSlangdArchive") {
             }
             val protocol = requiredObject(manifest, "protocol")
             if (requiredInteger(protocol, "major") != 1 ||
-                requiredInteger(protocol, "minor") != 4 ||
+                requiredInteger(protocol, "minor") != 5 ||
                 protocol["features"] != listOf(
                     "semanticTokens.m2a",
                     "semanticTokens.m3",
                     "hover.fieldLayout.natural",
                     "references.documentLocal",
                     "documentHighlight.documentLocal",
+                    "hover.functionSignature.rider",
                 )
             ) {
                 throw GradleException(
-                    "Bundled slangd manifest protocol must be 1.4 with semanticTokens.m2a, " +
+                    "Bundled slangd manifest protocol must be 1.5 with semanticTokens.m2a, " +
                         "semanticTokens.m3, hover.fieldLayout.natural, references.documentLocal, " +
-                        "and documentHighlight.documentLocal"
+                        "documentHighlight.documentLocal, and hover.functionSignature.rider"
                 )
             }
 

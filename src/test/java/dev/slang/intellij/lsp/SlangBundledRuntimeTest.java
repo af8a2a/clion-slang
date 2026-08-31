@@ -89,6 +89,7 @@ public class SlangBundledRuntimeTest {
         assertTrue(Files.isRegularFile(executable.getParent().resolve("0004-field-hover-presentation.patch")));
         assertTrue(Files.isRegularFile(executable.getParent().resolve("0005-document-local-references.patch")));
         assertTrue(Files.isRegularFile(executable.getParent().resolve("0006-document-variable-highlights.patch")));
+        assertTrue(Files.isRegularFile(executable.getParent().resolve("0007-rider-function-hover.patch")));
         assertEquals("clion-slang-m3", info.profile());
         assertEquals("windows-x64", info.platform());
         assertEquals(64, info.bundleId().length());
@@ -288,10 +289,11 @@ public class SlangBundledRuntimeTest {
                 "semanticTokens.m3",
                 "hover.fieldLayout.natural",
                 "references.documentLocal",
-                "documentHighlight.documentLocal"
+                "documentHighlight.documentLocal",
+                "hover.functionSignature.rider"
         };
         byte[] wrongMajor = bundleWithProtocol(
-                1, "windows-x64", 2, 4, features, hashes, files, Map.of()
+                1, "windows-x64", 2, 5, features, hashes, files, Map.of()
         );
         byte[] wrongMinor = bundleWithProtocol(
                 1, "windows-x64", 1, 1, features, hashes, files, Map.of()
@@ -300,12 +302,13 @@ public class SlangBundledRuntimeTest {
                 1,
                 "windows-x64",
                 1,
-                4,
+                5,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
                         "hover.fieldLayout.natural",
-                        "references.documentLocal"
+                        "references.documentLocal",
+                        "documentHighlight.documentLocal"
                 },
                 hashes,
                 files,
@@ -315,13 +318,14 @@ public class SlangBundledRuntimeTest {
                 1,
                 "windows-x64",
                 1,
-                4,
+                5,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
                         "hover.fieldLayout.natural",
                         "references.documentLocal",
                         "documentHighlight.documentLocal",
+                        "hover.functionSignature.rider",
                         "other.feature"
                 },
                 hashes,
@@ -332,13 +336,14 @@ public class SlangBundledRuntimeTest {
                 1,
                 "windows-x64",
                 1,
-                4,
+                5,
                 new String[]{
                         "semanticTokens.m3",
                         "semanticTokens.m2a",
                         "hover.fieldLayout.natural",
                         "references.documentLocal",
-                        "documentHighlight.documentLocal"
+                        "documentHighlight.documentLocal",
+                        "hover.functionSignature.rider"
                 },
                 hashes,
                 files,
@@ -348,13 +353,14 @@ public class SlangBundledRuntimeTest {
                 1,
                 "windows-x64",
                 1,
-                4,
+                5,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
                         "hover.fieldLayout.natural",
                         "references.documentLocal",
                         "documentHighlight.documentLocal",
+                        "hover.functionSignature.rider",
                         "references.documentLocal"
                 },
                 hashes,
@@ -411,9 +417,9 @@ public class SlangBundledRuntimeTest {
                 ).resolveExecutable()
         );
 
-        assertTrue(majorException.getMessage().contains("protocol 2.4"));
+        assertTrue(majorException.getMessage().contains("protocol 2.5"));
         assertTrue(minorException.getMessage().contains("protocol 1.1"));
-        assertTrue(featureException.getMessage().contains("documentHighlight.documentLocal"));
+        assertTrue(featureException.getMessage().contains("hover.functionSignature.rider"));
         assertTrue(unexpectedFeatureException.getMessage().contains("other.feature"));
         assertTrue(reversedFeaturesException.getMessage().contains("instead of required"));
         assertTrue(duplicateFeaturesException.getMessage().contains("must not contain duplicates"));
@@ -427,13 +433,14 @@ public class SlangBundledRuntimeTest {
                 "windows-x64",
                 "another-client",
                 1,
-                4,
+                5,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
                         "hover.fieldLayout.natural",
                         "references.documentLocal",
-                        "documentHighlight.documentLocal"
+                        "documentHighlight.documentLocal",
+                        "hover.functionSignature.rider"
                 },
                 hashes(files),
                 files,
@@ -550,13 +557,14 @@ public class SlangBundledRuntimeTest {
                 schemaVersion,
                 platform,
                 1,
-                4,
+                5,
                 new String[]{
                         "semanticTokens.m2a",
                         "semanticTokens.m3",
                         "hover.fieldLayout.natural",
                         "references.documentLocal",
-                        "documentHighlight.documentLocal"
+                        "documentHighlight.documentLocal",
+                        "hover.functionSignature.rider"
                 },
                 hashes,
                 files,
