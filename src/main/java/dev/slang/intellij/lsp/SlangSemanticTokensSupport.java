@@ -7,7 +7,6 @@ import dev.slang.intellij.highlighting.SlangSemanticColors;
 import dev.slang.intellij.highlighting.SlangSyntaxHighlighter;
 import dev.slang.intellij.lang.SlangLanguage;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -38,10 +37,7 @@ public final class SlangSemanticTokensSupport extends LspSemanticTokensSupport {
             "number",
             "regexp",
             "operator",
-            "decorator",
-            // M3 Slang/HLSL-specific roles. Keep these stable for capability negotiation.
-            "slangSemantic",
-            "slangSwizzle"
+            "decorator"
     );
 
     private static final List<String> TOKEN_MODIFIERS = List.of(
@@ -80,11 +76,6 @@ public final class SlangSemanticTokensSupport extends LspSemanticTokensSupport {
             @NotNull String tokenType,
             @NotNull List<String> modifiers
     ) {
-        TextAttributesKey slangSpecificColor = slangSpecificColor(tokenType);
-        if (slangSpecificColor != null) {
-            return slangSpecificColor;
-        }
-
         if (modifiers.contains("defaultLibrary")) {
             if (isTypeToken(tokenType)) {
                 return SlangSemanticColors.BUILTIN_TYPE;
@@ -128,14 +119,6 @@ public final class SlangSemanticTokensSupport extends LspSemanticTokensSupport {
         return switch (tokenType) {
             case "type", "class", "enum", "interface", "struct", "typeParameter" -> true;
             default -> false;
-        };
-    }
-
-    private static @Nullable TextAttributesKey slangSpecificColor(String tokenType) {
-        return switch (tokenType) {
-            case "slangSemantic" -> SlangSemanticColors.SHADER_SEMANTIC;
-            case "slangSwizzle" -> SlangSemanticColors.SWIZZLE;
-            default -> null;
         };
     }
 

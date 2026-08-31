@@ -7,33 +7,8 @@ param(
     [string] $ExpectedTargetFileName = "Definition.slang",
     [int] $ExpectedTargetLine = 1,
     [int] $ExpectedTargetCharacter = 6,
-    [int] $ReferenceLine = 1,
-    [int] $ReferenceCharacter = 19,
-    [int] $ExpectedReferenceDeclarationLine = 1,
-    [int] $ExpectedReferenceDeclarationCharacter = 18,
-    [int] $ExpectedReferenceUsageLine = 3,
-    [int] $ExpectedReferenceUsageCharacter = 11,
-    [int] $ExpectedReferenceLength = 5,
-    [string] $ReferenceEdgeFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\ReferenceEdgeCases.slang"),
-    [string] $HoverFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\StructFieldHover.slang"),
-    [int] $HoverLine = 14,
-    [int] $HoverCharacter = 12,
-    [string] $ExpectedHoverSignature = "public field`nint materialIndex`n    (in struct LightShapeSample)",
-    [int] $ExpectedHoverSize = 4,
-    [int] $ExpectedHoverAlignment = 4,
-    [int] $ExpectedHoverOffset = 40,
-    [int] $ExpectedFieldDeclarationLine = 7,
-    [int] $ExpectedFieldDeclarationCharacter = 8,
-    [int] $ExpectedHoverRangeStart = 11,
-    [int] $ExpectedHoverRangeEnd = 24,
-    [string] $FunctionHoverFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\FunctionHover.slang"),
-    [int] $FunctionHoverLine = 16,
-    [int] $FunctionHoverCharacter = 13,
-    [string] $ExpectedFunctionHoverSignature = "float4 SampleAtlas(`n    Texture2DArray<float4> atlas,`n    SamplerState atlasSampler,`n    uint index,`n    float2 uv,`n    float2 scale,`n    float2 offset,`n    bool pointFilterMode`n)",
-    [int] $ExpectedFunctionHoverRangeStart = 11,
-    [int] $ExpectedFunctionHoverRangeEnd = 22,
     [string] $SemanticFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\slang\SemanticHighlighting.slang"),
-    [ValidateSet("stock", "enhanced", "m3", "none")]
+    [ValidateSet("stock", "enhanced", "none")]
     [string] $SemanticContract = "stock",
     [string] $SemanticContractFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "src\test\testData\lsp\semantic-tokens-contract.json"),
     [ValidateRange(1, 300)]
@@ -91,24 +66,6 @@ $clientSemanticTokenModifiers = @(
     "documentation",
     "defaultLibrary"
 )
-if ($SemanticContract -eq "m3") {
-    $clientSemanticTokenTypes += @("slangSemantic", "slangSwizzle")
-}
-if ($SemanticContract -eq "stock") {
-    $clientSemanticTokenTypes = @(
-        "type",
-        "enumMember",
-        "variable",
-        "parameter",
-        "function",
-        "property",
-        "namespace",
-        "keyword",
-        "macro",
-        "string"
-    )
-    $clientSemanticTokenModifiers = @()
-}
 
 $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
 $startInfo.FileName = $resolvedSlangdPath
@@ -396,14 +353,6 @@ function Assert-SemanticContractProfile($Profile, [string] $ProfileName) {
             }
         }
 
-        $characterProperty = $expected.PSObject.Properties["character"]
-        if ($null -ne $characterProperty) {
-            $character = ConvertTo-LspUInt32 $characterProperty.Value "contract character" $index
-            if ($character -gt [int]::MaxValue) {
-                throw "$expectedDescription.character is too large: $character"
-            }
-        }
-
         $minimumCountProperty = $expected.PSObject.Properties["minimumCount"]
         if ($null -ne $minimumCountProperty) {
             $minimumCount = ConvertTo-LspUInt32 $minimumCountProperty.Value "contract minimumCount" $index
@@ -412,31 +361,13 @@ function Assert-SemanticContractProfile($Profile, [string] $ProfileName) {
             }
         }
 
-        $expectedModifiers = @()
-        $forbiddenModifiers = @()
-        foreach ($modifierPropertyName in @("modifiers", "forbiddenModifiers")) {
-            $modifiersProperty = $expected.PSObject.Properties[$modifierPropertyName]
-            if ($null -eq $modifiersProperty) {
-                continue
-            }
-
-            $validatedModifiers = @(
-                Get-JsonStringArray $expected $modifierPropertyName $expectedDescription $false
-            )
-            foreach ($modifier in $validatedModifiers) {
+        $modifiersProperty = $expected.PSObject.Properties["modifiers"]
+        if ($null -ne $modifiersProperty) {
+            $expectedModifiers = @(Get-JsonStringArray $expected "modifiers" $expectedDescription $false)
+            foreach ($modifier in $expectedModifiers) {
                 if (-not (Test-OrdinalContains $legendModifiers $modifier)) {
-                    throw "$expectedDescription.$modifierPropertyName modifier '$modifier' is absent from the profile legend"
+                    throw "$expectedDescription modifier '$modifier' is absent from the profile legend"
                 }
-            }
-            if ($modifierPropertyName -eq "modifiers") {
-                $expectedModifiers = @($validatedModifiers)
-            } else {
-                $forbiddenModifiers = @($validatedModifiers)
-            }
-        }
-        foreach ($modifier in $expectedModifiers) {
-            if (Test-OrdinalContains $forbiddenModifiers $modifier) {
-                throw "$expectedDescription modifier '$modifier' cannot be both required and forbidden"
             }
         }
     }
@@ -449,7 +380,7 @@ function Assert-SemanticContractDocument($Contract) {
         throw "semantic token contract is missing schemaVersion"
     }
     $schemaVersion = ConvertTo-LspUInt32 $schemaProperty.Value "contract schemaVersion" 0
-    if ($schemaVersion -ne 3) {
+    if ($schemaVersion -ne 1) {
         throw "unsupported semantic token contract schemaVersion: $schemaVersion"
     }
 
@@ -459,16 +390,14 @@ function Assert-SemanticContractDocument($Contract) {
     }
     Assert-JsonObject $profilesProperty.Value "semantic token contract.profiles"
     $profileNames = @($profilesProperty.Value.PSObject.Properties.Name)
-    if ($profileNames.Count -ne 3 -or
+    if ($profileNames.Count -ne 2 -or
         -not (Test-OrdinalContains $profileNames "stock") -or
-        -not (Test-OrdinalContains $profileNames "enhanced") -or
-        -not (Test-OrdinalContains $profileNames "m3")) {
-        throw "semantic token contract.profiles must contain exactly 'stock', 'enhanced', and 'm3'"
+        -not (Test-OrdinalContains $profileNames "enhanced")) {
+        throw "semantic token contract.profiles must contain exactly 'stock' and 'enhanced'"
     }
 
     Assert-SemanticContractProfile $profilesProperty.Value.stock "stock"
     Assert-SemanticContractProfile $profilesProperty.Value.enhanced "enhanced"
-    Assert-SemanticContractProfile $profilesProperty.Value.m3 "m3"
     return [int]$schemaVersion
 }
 
@@ -637,16 +566,6 @@ function Assert-SemanticContract(
             $expectedLine = [int]$lineValue
         }
 
-        $characterProperty = $expected.PSObject.Properties["character"]
-        $expectedCharacter = $null
-        if ($null -ne $characterProperty) {
-            $characterValue = ConvertTo-LspUInt32 $characterProperty.Value "contract character" $expectationIndex
-            if ($characterValue -gt [int]::MaxValue) {
-                throw "semantic token contract expectedTokens[$expectationIndex].character is too large: $characterValue"
-            }
-            $expectedCharacter = [int]$characterValue
-        }
-
         $minimumCountProperty = $expected.PSObject.Properties["minimumCount"]
         $minimumCount = 1
         if ($null -ne $minimumCountProperty) {
@@ -664,14 +583,6 @@ function Assert-SemanticContract(
             $requiredTokenModifiers = @($modifiersProperty.Value | ForEach-Object { [string]$_ })
         }
 
-        $forbiddenModifiersProperty = $expected.PSObject.Properties["forbiddenModifiers"]
-        $forbiddenTokenModifiers = @()
-        if ($null -ne $forbiddenModifiersProperty) {
-            $forbiddenTokenModifiers = @(
-                $forbiddenModifiersProperty.Value | ForEach-Object { [string]$_ }
-            )
-        }
-
         $actualMatches = @()
         foreach ($actual in $DecodedTokens) {
             if (-not [string]::Equals([string]$actual.Text, $text, [System.StringComparison]::Ordinal) -or
@@ -679,9 +590,6 @@ function Assert-SemanticContract(
                 continue
             }
             if ($null -ne $expectedLine -and $actual.Line -ne $expectedLine) {
-                continue
-            }
-            if ($null -ne $expectedCharacter -and $actual.Character -ne $expectedCharacter) {
                 continue
             }
             if ($modifiersSpecified -and $requiredTokenModifiers.Count -eq 0 -and $actual.Modifiers.Count -ne 0) {
@@ -695,26 +603,13 @@ function Assert-SemanticContract(
                     break
                 }
             }
-            $hasForbiddenModifier = $false
-            foreach ($forbiddenModifier in $forbiddenTokenModifiers) {
-                if (Test-OrdinalContains @($actual.Modifiers) $forbiddenModifier) {
-                    $hasForbiddenModifier = $true
-                    break
-                }
-            }
-            if ($hasRequiredModifiers -and -not $hasForbiddenModifier) {
+            if ($hasRequiredModifiers) {
                 $actualMatches += $actual
             }
         }
 
         if ($actualMatches.Count -lt $minimumCount) {
-            $positionDescription = if ($null -eq $expectedLine) {
-                "any position"
-            } elseif ($null -eq $expectedCharacter) {
-                "line $expectedLine"
-            } else {
-                "position $expectedLine`:$expectedCharacter"
-            }
+            $lineDescription = if ($null -eq $expectedLine) { "any line" } else { "line $expectedLine" }
             $modifierDescription = if (-not $modifiersSpecified) {
                 "any modifiers"
             } elseif ($requiredTokenModifiers.Count -eq 0) {
@@ -722,21 +617,14 @@ function Assert-SemanticContract(
             } else {
                 "required modifiers [$($requiredTokenModifiers -join ', ')]"
             }
-            $forbiddenDescription = if ($forbiddenTokenModifiers.Count -eq 0) {
-                ""
-            } else {
-                " and forbidden modifiers [$($forbiddenTokenModifiers -join ', ')]"
-            }
-            throw "semantic token contract expected at least $minimumCount occurrence(s) of '$text' as '$type' at $positionDescription with $modifierDescription$forbiddenDescription, got $($actualMatches.Count)"
+            throw "semantic token contract expected at least $minimumCount occurrence(s) of '$text' as '$type' on $lineDescription with $modifierDescription, got $($actualMatches.Count)"
         }
 
         $matches.Add([pscustomobject][ordered]@{
             Text = $text
             Type = $type
             Line = $expectedLine
-            Character = $expectedCharacter
             Modifiers = if ($modifiersSpecified) { @($requiredTokenModifiers) } else { $null }
-            ForbiddenModifiers = @($forbiddenTokenModifiers)
             MinimumCount = $minimumCount
             ActualCount = $actualMatches.Count
         })
@@ -750,15 +638,6 @@ try {
     $definitionPath = (Resolve-Path -LiteralPath $DefinitionFile).Path
     $definitionUri = ([System.Uri]$definitionPath).AbsoluteUri
     $definitionText = [System.IO.File]::ReadAllText($definitionPath)
-    $referenceEdgePath = (Resolve-Path -LiteralPath $ReferenceEdgeFile).Path
-    $referenceEdgeUri = ([System.Uri]$referenceEdgePath).AbsoluteUri
-    $referenceEdgeText = [System.IO.File]::ReadAllText($referenceEdgePath)
-    $hoverPath = (Resolve-Path -LiteralPath $HoverFile).Path
-    $hoverUri = ([System.Uri]$hoverPath).AbsoluteUri
-    $hoverText = [System.IO.File]::ReadAllText($hoverPath)
-    $functionHoverPath = (Resolve-Path -LiteralPath $FunctionHoverFile).Path
-    $functionHoverUri = ([System.Uri]$functionHoverPath).AbsoluteUri
-    $functionHoverText = [System.IO.File]::ReadAllText($functionHoverPath)
     $semanticPath = (Resolve-Path -LiteralPath $SemanticFile).Path
     $semanticUri = ([System.Uri]$semanticPath).AbsoluteUri
     $semanticText = [System.IO.File]::ReadAllText($semanticPath)
@@ -788,9 +667,6 @@ try {
                 workspace = @{ configuration = $true; workspaceFolders = $true }
                 textDocument = @{
                     definition = @{ linkSupport = $true }
-                    references = @{ dynamicRegistration = $true }
-                    documentHighlight = @{ dynamicRegistration = $true }
-                    hover = @{ contentFormat = @("markdown", "plaintext") }
                     semanticTokens = @{
                         dynamicRegistration = $false
                         requests = @{ range = $false; full = $true }
@@ -813,18 +689,10 @@ try {
     }
 
     $capabilities = $initialize.result.capabilities
-    $required = @(
-        "completionProvider",
-        "hoverProvider",
-        "definitionProvider",
-        "referencesProvider",
-        "documentHighlightProvider",
-        "semanticTokensProvider"
-    )
+    $required = @("completionProvider", "hoverProvider", "definitionProvider", "semanticTokensProvider")
     foreach ($name in $required) {
         if ($null -eq $capabilities.$name -or $capabilities.$name -eq $false) {
-            $capabilityJson = $capabilities | ConvertTo-Json -Compress -Depth 10
-            throw "slangd initialize response is missing required capability: $name. Capabilities: $capabilityJson"
+            throw "slangd initialize response is missing required capability: $name"
         }
     }
 
@@ -883,54 +751,6 @@ try {
             }
         }
     }
-    if (-not [string]::Equals($hoverUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($hoverUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase)) {
-        Send-LspMessage @{
-            jsonrpc = "2.0"
-            method = "textDocument/didOpen"
-            params = @{
-                textDocument = @{
-                    uri = $hoverUri
-                    languageId = "slang"
-                    version = 1
-                    text = $hoverText
-                }
-            }
-        }
-    }
-    if (-not [string]::Equals($referenceEdgeUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($referenceEdgeUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($referenceEdgeUri, $hoverUri, [System.StringComparison]::OrdinalIgnoreCase)) {
-        Send-LspMessage @{
-            jsonrpc = "2.0"
-            method = "textDocument/didOpen"
-            params = @{
-                textDocument = @{
-                    uri = $referenceEdgeUri
-                    languageId = "slang"
-                    version = 1
-                    text = $referenceEdgeText
-                }
-            }
-        }
-    }
-    if (-not [string]::Equals($functionHoverUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($functionHoverUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($functionHoverUri, $hoverUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($functionHoverUri, $referenceEdgeUri, [System.StringComparison]::OrdinalIgnoreCase)) {
-        Send-LspMessage @{
-            jsonrpc = "2.0"
-            method = "textDocument/didOpen"
-            params = @{
-                textDocument = @{
-                    uri = $functionHoverUri
-                    languageId = "slang"
-                    version = 1
-                    text = $functionHoverText
-                }
-            }
-        }
-    }
 
     Send-LspMessage @{
         jsonrpc = "2.0"
@@ -971,318 +791,13 @@ try {
 
     Send-LspMessage @{
         jsonrpc = "2.0"
-        id = 20
-        method = "textDocument/references"
-        params = @{
-            textDocument = @{ uri = $definitionUri }
-            position = @{ line = $ReferenceLine; character = $ReferenceCharacter }
-            context = @{ includeDeclaration = $true }
-        }
-    }
-    $referencesWithDeclaration = Read-LspResponse 20
-    $referenceItems = @($referencesWithDeclaration.result)
-    if ($referenceItems.Count -ne 2) {
-        throw "slangd returned $($referenceItems.Count) references instead of the declaration and one semantic use: $($referencesWithDeclaration.result | ConvertTo-Json -Compress -Depth 10)"
-    }
-    $expectedReferenceStarts = @(
-        @($ExpectedReferenceDeclarationLine, $ExpectedReferenceDeclarationCharacter),
-        @($ExpectedReferenceUsageLine, $ExpectedReferenceUsageCharacter)
-    )
-    for ($index = 0; $index -lt $referenceItems.Count; $index++) {
-        $item = $referenceItems[$index]
-        $expectedStart = $expectedReferenceStarts[$index]
-        $itemPath = ([System.Uri]$item.uri).LocalPath
-        if ($itemPath -match '^/[A-Za-z]:/') {
-            $itemPath = $itemPath.Substring(1)
-        }
-        $itemPath = [System.IO.Path]::GetFullPath($itemPath)
-        if (-not [string]::Equals(
-                $itemPath,
-                $definitionPath,
-                [System.StringComparison]::OrdinalIgnoreCase
-            ) -or
-            $null -eq $item.range -or
-            $item.range.start.line -ne $expectedStart[0] -or
-            $item.range.start.character -ne $expectedStart[1] -or
-            $item.range.end.line -ne $expectedStart[0] -or
-            $item.range.end.character -ne ($expectedStart[1] + $ExpectedReferenceLength)) {
-            throw "slangd returned an invalid semantic reference at index $index`: $($item | ConvertTo-Json -Compress -Depth 10)"
-        }
-    }
-
-    Send-LspMessage @{
-        jsonrpc = "2.0"
-        id = 21
-        method = "textDocument/references"
-        params = @{
-            textDocument = @{ uri = $definitionUri }
-            position = @{ line = $ReferenceLine; character = $ReferenceCharacter }
-            context = @{ includeDeclaration = $false }
-        }
-    }
-    $referencesWithoutDeclaration = Read-LspResponse 21
-    $usageOnlyItems = @($referencesWithoutDeclaration.result)
-    if ($usageOnlyItems.Count -ne 1 -or
-        $usageOnlyItems[0].range.start.line -ne $ExpectedReferenceUsageLine -or
-        $usageOnlyItems[0].range.start.character -ne $ExpectedReferenceUsageCharacter) {
-        throw "slangd did not honor references context.includeDeclaration=false: $($referencesWithoutDeclaration.result | ConvertTo-Json -Compress -Depth 10)"
-    }
-
-    Send-LspMessage @{
-        jsonrpc = "2.0"
-        id = 22
-        method = "textDocument/references"
-        params = @{
-            textDocument = @{ uri = $hoverUri }
-            position = @{ line = $HoverLine; character = $HoverCharacter }
-            context = @{ includeDeclaration = $true }
-        }
-    }
-    $fieldReferencesResponse = Read-LspResponse 22
-    $fieldReferenceItems = @($fieldReferencesResponse.result)
-    if ($fieldReferenceItems.Count -ne 2 -or
-        $fieldReferenceItems[0].range.start.line -ne $ExpectedFieldDeclarationLine -or
-        $fieldReferenceItems[0].range.start.character -ne $ExpectedFieldDeclarationCharacter -or
-        $fieldReferenceItems[0].range.end.character -ne
-            ($ExpectedFieldDeclarationCharacter + ($ExpectedHoverRangeEnd - $ExpectedHoverRangeStart)) -or
-        $fieldReferenceItems[1].range.start.line -ne $HoverLine -or
-        $fieldReferenceItems[1].range.start.character -ne $ExpectedHoverRangeStart -or
-        $fieldReferenceItems[1].range.end.character -ne $ExpectedHoverRangeEnd) {
-        throw "slangd returned invalid struct-field references: $($fieldReferencesResponse.result | ConvertTo-Json -Compress -Depth 10)"
-    }
-
-    Send-LspMessage @{
-        jsonrpc = "2.0"
-        id = 27
-        method = "textDocument/documentHighlight"
-        params = @{
-            textDocument = @{ uri = $definitionUri }
-            position = @{ line = $ReferenceLine; character = $ReferenceCharacter }
-        }
-    }
-    $documentHighlightsResponse = Read-LspResponse 27
-    $documentHighlightItems = @($documentHighlightsResponse.result)
-    if ($documentHighlightItems.Count -ne $referenceItems.Count) {
-        throw "slangd returned $($documentHighlightItems.Count) document highlights instead of $($referenceItems.Count): $($documentHighlightsResponse.result | ConvertTo-Json -Compress -Depth 10)"
-    }
-    for ($index = 0; $index -lt $documentHighlightItems.Count; $index++) {
-        $highlight = $documentHighlightItems[$index]
-        $reference = $referenceItems[$index]
-        if ($null -eq $highlight.range -or
-            $highlight.kind -ne 1 -or
-            $null -ne $highlight.PSObject.Properties["uri"] -or
-            $highlight.range.start.line -ne $reference.range.start.line -or
-            $highlight.range.start.character -ne $reference.range.start.character -or
-            $highlight.range.end.line -ne $reference.range.end.line -or
-            $highlight.range.end.character -ne $reference.range.end.character) {
-            throw "slangd returned an invalid document highlight at index $index`: $($highlight | ConvertTo-Json -Compress -Depth 10)"
-        }
-    }
-
-    $edgeReferenceCases = @(
-        [pscustomobject]@{
-            Id = 23
-            Name = "AddressOfExpr"
-            PositionLine = 4
-            PositionCharacter = 32
-            DeclarationLine = 0
-            DeclarationCharacter = 16
-            UsageLine = 4
-            UsageCharacter = 31
-            Length = 13
-        },
-        [pscustomobject]@{
-            Id = 24
-            Name = "DetachExpr"
-            PositionLine = 15
-            PositionCharacter = 24
-            DeclarationLine = 13
-            DeclarationCharacter = 30
-            UsageLine = 15
-            UsageCharacter = 23
-            Length = 14
-        },
-        [pscustomobject]@{
-            Id = 25
-            Name = "CompileTimeForBody"
-            PositionLine = 24
-            PositionCharacter = 19
-            DeclarationLine = 19
-            DeclarationCharacter = 33
-            UsageLine = 24
-            UsageCharacter = 18
-            Length = 17
-        },
-        [pscustomobject]@{
-            Id = 26
-            Name = "CompileTimeForVariable"
-            PositionLine = 22
-            PositionCharacter = 11
-            DeclarationLine = 22
-            DeclarationCharacter = 10
-            UsageLine = 24
-            UsageCharacter = 38
-            Length = 5
-        }
-    )
-    $edgeReferenceCounts = [ordered]@{}
-    foreach ($edgeCase in $edgeReferenceCases) {
-        Send-LspMessage @{
-            jsonrpc = "2.0"
-            id = $edgeCase.Id
-            method = "textDocument/references"
-            params = @{
-                textDocument = @{ uri = $referenceEdgeUri }
-                position = @{
-                    line = $edgeCase.PositionLine
-                    character = $edgeCase.PositionCharacter
-                }
-                context = @{ includeDeclaration = $true }
-            }
-        }
-        $edgeResponse = Read-LspResponse $edgeCase.Id
-        $edgeItems = @($edgeResponse.result)
-        if ($edgeItems.Count -ne 2) {
-            throw "slangd returned $($edgeItems.Count) references for $($edgeCase.Name) instead of two: $($edgeResponse.result | ConvertTo-Json -Compress -Depth 10)"
-        }
-        $edgeExpectedStarts = @(
-            [pscustomobject]@{
-                Line = $edgeCase.DeclarationLine
-                Character = $edgeCase.DeclarationCharacter
-            },
-            [pscustomobject]@{
-                Line = $edgeCase.UsageLine
-                Character = $edgeCase.UsageCharacter
-            }
-        )
-        for ($index = 0; $index -lt $edgeItems.Count; $index++) {
-            $item = $edgeItems[$index]
-            $expectedStart = $edgeExpectedStarts[$index]
-            $itemPath = ([System.Uri]$item.uri).LocalPath
-            if ($itemPath -match '^/[A-Za-z]:/') {
-                $itemPath = $itemPath.Substring(1)
-            }
-            $itemPath = [System.IO.Path]::GetFullPath($itemPath)
-            if (-not [string]::Equals(
-                    $itemPath,
-                    $referenceEdgePath,
-                    [System.StringComparison]::OrdinalIgnoreCase
-                ) -or
-                $null -eq $item.range -or
-                $item.range.start.line -ne $expectedStart.Line -or
-                $item.range.start.character -ne $expectedStart.Character -or
-                $item.range.end.line -ne $expectedStart.Line -or
-                $item.range.end.character -ne ($expectedStart.Character + $edgeCase.Length)) {
-                throw "slangd returned an invalid $($edgeCase.Name) reference at index $index`: $($item | ConvertTo-Json -Compress -Depth 10)"
-            }
-        }
-        $edgeReferenceCounts[$edgeCase.Name] = $edgeItems.Count
-    }
-
-    Send-LspMessage @{
-        jsonrpc = "2.0"
         id = 3
-        method = "textDocument/hover"
-        params = @{
-            textDocument = @{ uri = $hoverUri }
-            position = @{ line = $HoverLine; character = $HoverCharacter }
-        }
-    }
-    $hoverResponse = Read-LspResponse 3
-    if ($null -eq $hoverResponse.result -or
-        $null -eq $hoverResponse.result.contents -or
-        -not [string]::Equals(
-            [string]$hoverResponse.result.contents.kind,
-            "markdown",
-            [System.StringComparison]::OrdinalIgnoreCase
-        )) {
-        throw "slangd returned an invalid field hover: $($hoverResponse.result | ConvertTo-Json -Compress -Depth 10)"
-    }
-    $hoverValue = [string]$hoverResponse.result.contents.value
-    $normalizedHoverValue = $hoverValue.Replace("`r`n", "`n").Replace("`r", "`n")
-    $normalizedExpectedHoverSignature =
-        $ExpectedHoverSignature.Replace("`r`n", "`n").Replace("`r", "`n")
-    $expectedDefinition = '```slang' + "`n" + $normalizedExpectedHoverSignature + "`n" + '```'
-    $hardBreak = [char]92
-    $inlineCode = [char]96
-    $expectedLayout =
-        "**Natural layout**$hardBreak`n" +
-        "Size: $inlineCode$ExpectedHoverSize$inlineCode bytes$hardBreak`n" +
-        "Alignment: $inlineCode$ExpectedHoverAlignment$inlineCode bytes$hardBreak`n" +
-        "Offset: $inlineCode$ExpectedHoverOffset$inlineCode bytes"
-    if (-not $normalizedHoverValue.StartsWith(
-        $expectedDefinition,
-        [System.StringComparison]::Ordinal
-    )) {
-        throw "slangd field hover does not start with exact Slang definition '$expectedDefinition': $hoverValue"
-    }
-    if ($normalizedHoverValue.IndexOf($expectedLayout, [System.StringComparison]::Ordinal) -lt 0) {
-        throw "slangd field hover is missing exact layout Markdown '$expectedLayout': $hoverValue"
-    }
-    $hoverRange = $hoverResponse.result.range
-    if ($null -eq $hoverRange -or
-        $hoverRange.start.line -ne $HoverLine -or
-        $hoverRange.start.character -ne $ExpectedHoverRangeStart -or
-        $hoverRange.end.line -ne $HoverLine -or
-        $hoverRange.end.character -ne $ExpectedHoverRangeEnd) {
-        throw "slangd returned the wrong hover range: $($hoverRange | ConvertTo-Json -Compress -Depth 5)"
-    }
-
-    Send-LspMessage @{
-        jsonrpc = "2.0"
-        id = 28
-        method = "textDocument/hover"
-        params = @{
-            textDocument = @{ uri = $functionHoverUri }
-            position = @{ line = $FunctionHoverLine; character = $FunctionHoverCharacter }
-        }
-    }
-    $functionHoverResponse = Read-LspResponse 28
-    if ($null -eq $functionHoverResponse.result -or
-        $null -eq $functionHoverResponse.result.contents -or
-        -not [string]::Equals(
-            [string]$functionHoverResponse.result.contents.kind,
-            "markdown",
-            [System.StringComparison]::OrdinalIgnoreCase
-        )) {
-        throw "slangd returned an invalid function hover: $($functionHoverResponse.result | ConvertTo-Json -Compress -Depth 10)"
-    }
-    $functionHoverValue = ([string]$functionHoverResponse.result.contents.value).
-        Replace("`r`n", "`n").Replace("`r", "`n")
-    $normalizedFunctionSignature = $ExpectedFunctionHoverSignature.
-        Replace("`r`n", "`n").Replace("`r", "`n")
-    $expectedFunctionDefinition =
-        "**Function**`n`n" + '```slang' + "`n" + $normalizedFunctionSignature + "`n" + '```'
-    if (-not $functionHoverValue.StartsWith(
-        $expectedFunctionDefinition,
-        [System.StringComparison]::Ordinal
-    )) {
-        throw "slangd function hover does not start with exact expanded definition '$expectedFunctionDefinition': $functionHoverValue"
-    }
-    if ($functionHoverValue.IndexOf(
-        "FunctionHover.slang(1)",
-        [System.StringComparison]::OrdinalIgnoreCase
-    ) -lt 0) {
-        throw "slangd function hover is missing its definition location: $functionHoverValue"
-    }
-    $functionHoverRange = $functionHoverResponse.result.range
-    if ($null -eq $functionHoverRange -or
-        $functionHoverRange.start.line -ne $FunctionHoverLine -or
-        $functionHoverRange.start.character -ne $ExpectedFunctionHoverRangeStart -or
-        $functionHoverRange.end.line -ne $FunctionHoverLine -or
-        $functionHoverRange.end.character -ne $ExpectedFunctionHoverRangeEnd) {
-        throw "slangd returned the wrong function hover range: $($functionHoverRange | ConvertTo-Json -Compress -Depth 5)"
-    }
-
-    Send-LspMessage @{
-        jsonrpc = "2.0"
-        id = 4
         method = "textDocument/semanticTokens/full"
         params = @{
             textDocument = @{ uri = $semanticUri }
         }
     }
-    $semanticResponse = Read-LspResponse 4
+    $semanticResponse = Read-LspResponse 3
     if ($null -eq $semanticResponse.result -or $null -eq $semanticResponse.result.data) {
         throw "slangd returned no semanticTokens/full data for $semanticUri"
     }
@@ -1309,26 +824,9 @@ try {
             params = @{ textDocument = @{ uri = $semanticUri } }
         }
     }
-    if (-not [string]::Equals($hoverUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($hoverUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase)) {
-        Send-LspMessage @{
-            jsonrpc = "2.0"
-            method = "textDocument/didClose"
-            params = @{ textDocument = @{ uri = $hoverUri } }
-        }
-    }
-    if (-not [string]::Equals($functionHoverUri, $definitionUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($functionHoverUri, $semanticUri, [System.StringComparison]::OrdinalIgnoreCase) -and
-        -not [string]::Equals($functionHoverUri, $hoverUri, [System.StringComparison]::OrdinalIgnoreCase)) {
-        Send-LspMessage @{
-            jsonrpc = "2.0"
-            method = "textDocument/didClose"
-            params = @{ textDocument = @{ uri = $functionHoverUri } }
-        }
-    }
-    Send-LspMessage @{ jsonrpc = "2.0"; id = 5; method = "shutdown"; params = $null }
-    $shutdown = Read-LspResponse 5
-    if ($shutdown.id -ne 5) {
+    Send-LspMessage @{ jsonrpc = "2.0"; id = 4; method = "shutdown"; params = $null }
+    $shutdown = Read-LspResponse 4
+    if ($shutdown.id -ne 4) {
         throw "slangd returned an invalid shutdown response"
     }
     Send-LspMessage @{ jsonrpc = "2.0"; method = "exit"; params = $null }
@@ -1354,32 +852,8 @@ try {
         PositionEncoding = $positionEncoding.ToLowerInvariant()
         Completion = $true
         Hover = $true
-        FieldHover = [pscustomobject][ordered]@{
-            Signature = $ExpectedHoverSignature
-            Size = $ExpectedHoverSize
-            Alignment = $ExpectedHoverAlignment
-            Offset = $ExpectedHoverOffset
-            Range = "$HoverLine`:$ExpectedHoverRangeStart-$HoverLine`:$ExpectedHoverRangeEnd"
-        }
-        FunctionHover = [pscustomobject][ordered]@{
-            Signature = $ExpectedFunctionHoverSignature
-            Range = "$FunctionHoverLine`:$ExpectedFunctionHoverRangeStart-$FunctionHoverLine`:$ExpectedFunctionHoverRangeEnd"
-            Definition = "FunctionHover.slang:1"
-        }
         Definition = "$targetUri`:$($targetRange.start.line + 1)"
         DefinitionWireShape = $definitionWireShape
-        References = [pscustomobject][ordered]@{
-            IncludeDeclarationCount = $referenceItems.Count
-            ExcludeDeclarationCount = $usageOnlyItems.Count
-            FieldCount = $fieldReferenceItems.Count
-            TraversalCases = [pscustomobject]$edgeReferenceCounts
-            Scope = "document"
-        }
-        DocumentHighlights = [pscustomobject][ordered]@{
-            Count = $documentHighlightItems.Count
-            Kind = "text"
-            Scope = "document"
-        }
         SemanticTokens = [pscustomobject][ordered]@{
             Full = $fullProperty.Value
             Range = $rangeSupported

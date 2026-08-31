@@ -51,11 +51,6 @@ public final class SlangSemanticColors {
     public static final TextAttributesKey INTRINSIC = key(
             "SLANG.SEMANTIC.INTRINSIC", DefaultLanguageHighlighterColors.PREDEFINED_SYMBOL);
 
-    public static final TextAttributesKey SHADER_SEMANTIC = key(
-            "SLANG.SEMANTIC.SHADER_SEMANTIC", SlangSyntaxHighlighter.SEMANTIC);
-    public static final TextAttributesKey SWIZZLE = key(
-            "SLANG.SEMANTIC.SWIZZLE", DefaultLanguageHighlighterColors.INSTANCE_FIELD);
-
     public static final TextAttributesKey MACRO = key(
             "SLANG.SEMANTIC.MACRO", DefaultLanguageHighlighterColors.PREDEFINED_SYMBOL);
     public static final TextAttributesKey DECORATOR = key(

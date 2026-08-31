@@ -1,98 +1,91 @@
 # Slang Language Support for CLion
 
-一个面向 C++/CMake + Slang 项目的 CLion 插件。它把 CLion 的原生 LSP 客户端连接到随插件
-发布的增强版 `slangd`，同时保留不依赖外部进程的轻量词法高亮。
+A CLion plugin for C++/CMake projects that use Slang. It connects CLion's native LSP client to the
+official `slangd` server while retaining lightweight lexical highlighting that does not depend on
+an external process.
 
-## 已实现
+## Features
 
-- `.slang` / `.slangh` 文件类型和图标
-- Slang/HLSL 常用关键字、内建类型、属性、语义、预处理器、字符串、数字与注释的词法高亮
-- `slangd` Semantic Tokens 语义配色：类型、命名空间、变量、参数、字段、函数、宏等 stock
-  类别，以及 class、struct、interface、enum、type parameter、method、decorator 和标准 modifiers
-- M3 Slang/HLSL 专属语义类别：绑定 semantic（`POSITION`、`SV_*`）与向量/矩阵 swizzle
-  使用独立可配置颜色，并在不支持 M3 的客户端上逐级回退到 M2a/stock 类别
-- 行注释、块注释、括号匹配、引号配对，以及包含词法/语义角色的独立配色页
-- 连续整行注释和多行块注释折叠；摘要会跳过分隔线并显示首个有意义的注释行
-- 基于 JetBrains Native LSP API 的 project-wide `slangd` 客户端
-- Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
-  Inlay Hints、Formatting 等标准能力（实际能力取决于所用 `slangd`）
-- 结构体字段 Hover 展示字段类型、所属结构体，以及 Slang `sizeof` / `alignof` 语义下的
-  natural layout 大小、对齐和偏移；目标相关或无法确定的布局会安全省略
-- 函数 Hover 采用 Rider 风格的信息展开：显示函数类别、HLSL/Slang 源码形式的返回类型与
-  函数名、逐行参数列表和定义位置，并保留参数修饰符、默认值及函数文档
-- Ctrl+左键、Ctrl+B 与 Ctrl+悬停的定义导航；插件会直接复用当前 `slangd` 会话，规避
-  CLion 2026.1 原生 LSP 在 Ctrl+鼠标路径中不发起 Definition 请求的问题，并兼容部分
-  `slangd` 版本将单个定义返回为 `Location` 而非标准数组的响应形态
-- 变量“查找用法”与“高级查找用法”：内置 `slangd` 发布标准 `textDocument/references`，
-  CLion 自动提供右键菜单与 Alt+F7；当前可靠范围是同一文档内的参数、局部/全局变量和
-  结构体字段，基于解析后的声明身份排除同名遮蔽，并支持声明包含/排除
-- 光标选中变量时的同文档用法背景高亮：内置 `slangd` 发布标准
-  `textDocument/documentHighlight`，客户端显式为 Slang PSI 启用 CLion Native LSP 的
-  Highlight Usages 管线；声明和真实语义用法共用 Rider 风格的主题背景色
-- Windows x64 内置 `slangd`：校验清单与 SHA-256 后安装到 IDE system cache；项目设置可显式
-  启用高级外部覆盖，但不会隐式扫描 `SLANGD_PATH`、`VULKAN_SDK` 或 `PATH`
-- `slangdconfig.json` 的 `workspace/configuration` 映射与 `${workspaceFolder}` 展开
-- `slang-synth://<module>` 内建模块跳转，内容由
-  `slangd --print-builtin-module <module>` 生成并缓存
+- `.slang` and `.slangh` file types and icons
+- Lexical highlighting for common Slang/HLSL keywords, built-in types, attributes, semantics,
+  preprocessor directives, strings, numbers, and comments
+- Semantic coloring through `slangd` Semantic Tokens, including the stock type, namespace,
+  variable, parameter, property, function, and macro categories, plus struct, interface, enum,
+  type parameter, method, decorator, and standard modifiers
+- Line and block comments, brace matching, quote pairing, and a dedicated color settings page for
+  lexical and semantic roles
+- A project-wide `slangd` client built on the JetBrains Native LSP API
+- Standard Diagnostics, Completion, Hover, Signature Help, Definition, References, Semantic
+  Tokens, Inlay Hints, and Formatting capabilities, depending on the selected `slangd`
+- Definition navigation through Ctrl+Click, Ctrl+B, and Ctrl+Hover. The plugin reuses the active
+  `slangd` session to work around CLion 2026.1 Native LSP not issuing Definition requests on the
+  Ctrl+mouse path, and accepts servers that return a single definition as a `Location` instead of
+  the standard array form
+- `slangd` discovery in this order: explicit project setting, `SLANGD_PATH`, `VULKAN_SDK`, `PATH`
+- `workspace/configuration` mapping for `slangdconfig.json`, including `${workspaceFolder}`
+  expansion
+- Navigation to `slang-synth://<module>` built-in modules, generated and cached through
+  `slangd --print-builtin-module <module>`
 
-插件只构建由词法 token 组成的扁平 PSI，用来给编辑器动作提供精确范围；它有意不实现
-第二套 Slang 语义解析器。语义真值仍来自 Slang 编译器前端，避免随 Slang 演进而失真。
+The plugin builds only a flat PSI from lexical tokens to provide precise ranges for editor actions.
+It deliberately does not implement a second Slang semantic parser. Semantic truth remains with the
+Slang compiler front end, avoiding divergence as the language evolves.
 
-## 兼容性
+## Compatibility
 
-- 构建基线：CLion 2026.1.3（Build 261.25134）
-- 最低版本：CLion 2026.1.3；已按 2026.2 的保留兼容 API 设计，未设置人为 `until-build`
-- Plugin Verifier 1.410：CLion 2026.1.5（261.27258.50）与 2026.2.1（262.9437.136）均为 Compatible
-- 构建 JDK：25（输出 `--release 21` 字节码）；Gradle Wrapper 使用 Gradle 9.0.0
-- M3 发行包目前仅支持 Windows x64，并通过 IDE 官方 OS/架构模块阻止在其他平台安装。
-  高级外部 `slangd` 覆盖仅用于受支持平台上的调试、兼容性验证与版本二分。
+- Build baseline: CLion 2026.1.3 (Build 261.25134)
+- Minimum version: CLion 2026.1.3. The plugin uses compatibility APIs retained in 2026.2 and does
+  not set an artificial `until-build`
+- Plugin Verifier 1.410: Compatible with CLion 2026.1.5 (261.27258.50) and 2026.2.1 (262.9437.136)
+- Build JDK: 25, producing `--release 21` bytecode; the Gradle Wrapper uses Gradle 9.0.0
+- A working `slangd` is required at runtime. Slang binaries are not currently bundled
 
-项目使用 2026.1.4 之前的 Native LSP 类型名作为兼容入口。JetBrains 在 2026.1.4 重命名
-了这些 API，但保留了旧类型供已有插件继续运行。
+The project uses the pre-2026.1.4 Native LSP type names as its compatibility entry point.
+JetBrains renamed these APIs in 2026.1.4 but retained the old types for existing plugins.
 
-## 安装与使用
+## Installation and usage
 
-1. 从源码构建时，先按 [内置 slangd 运行时说明](docs/bundled-slangd.md) 生成
-   `.bundled-runtime/windows-x86_64.zip`。直接安装发行 ZIP 的用户无需此步骤。
-2. 构建插件：
+1. Obtain a `slangd` that matches the Slang compiler used by your project. It is typically provided
+   by the Slang SDK or Vulkan SDK.
+2. Build the plugin:
 
    ```powershell
    .\gradlew.bat clean test buildPlugin
    ```
 
-   如果系统默认 Java 太旧，可直接使用已安装 CLion 的 JBR：
+   If the system Java is too old, use the JBR bundled with an installed CLion:
 
    ```powershell
    .\scripts\build-with-clion-jbr.ps1 -ClionHome 'D:\Path\To\CLion' -Tasks clean,test,buildPlugin
    ```
 
-   `ClionHome` 只用于选择启动 Gradle 的 JBR。只有明确要用本地 IDE 作为编译 SDK 时，才额外
-   传入 `-IdeSdkHome 'D:\Path\To\CLion'`；发布构建默认仍锁定 `gradle.properties` 中的
-   CLion 2026.1.3 基线。
+   `ClionHome` only selects the JBR used to launch Gradle. Pass
+   `-IdeSdkHome 'D:\Path\To\CLion'` only when you explicitly want that local IDE to serve as the
+   compilation SDK. Release builds remain pinned to the CLion 2026.1.3 baseline in
+   `gradle.properties` by default.
 
-3. 在 CLion 中打开 **Settings | Plugins | ⚙ | Install Plugin from Disk...**，选择
-   `build/distributions/slang-clion-0.6.0-windows-x86_64.zip`。
-4. 默认直接使用插件内置 `slangd`。只有调试或兼容性需要时，才在
-   **Settings | Languages & Frameworks | Slang** 中启用 **Use external slangd (advanced)**
-   并指定 `slangd.exe` 的完整路径。
-5. 打开 `.slang` 或 `.slangh` 文件。Language Services 状态栏会显示 `slangd` 状态。
+3. In CLion, open **Settings | Plugins | ⚙ | Install Plugin from Disk...** and select the generated
+   ZIP under `build/distributions/`.
+4. Under **Settings | Languages & Frameworks | Slang**, enable automatic discovery or specify the
+   full path to `slangd` / `slangd.exe`.
+5. Open a `.slang` or `.slangh` file. The Language Services status bar shows the `slangd` status.
 
-语义颜色可在 **Settings | Editor | Color Scheme | Slang | Semantic** 中单独调整。预览采用
-基于 Metallic 实际 shader 用法设计的主题无关校准模板，说明与建议的调整顺序见
-[颜色调整模板](docs/color-adjustment-template.md)。服务器不可用时，插件会保留本地 Lexer
-提供的基础颜色；使用 stock slangd 时显示其现有十类，增强版 slangd 发布更细分类和
-modifiers 后会自动使用对应颜色。
+Semantic colors can be configured independently under
+**Settings | Editor | Color Scheme | Slang | Semantic**. If the server is unavailable, the plugin
+retains the basic colors produced by its local lexer. A stock `slangd` exposes its existing ten
+categories; more detailed categories and modifiers are used automatically when an enhanced server
+publishes them.
 
-本机开发时可避免下载另一份 CLion SDK：
+For local development, you can avoid downloading another CLion SDK:
 
 ```powershell
 .\gradlew.bat -PlocalIdePath='D:\Path\To\CLion' test buildPlugin
 ```
 
-## 项目配置
+## Project configuration
 
-在项目根目录（或源文件的父目录）放置 `slangdconfig.json`。键名与官方 Slang 编辑器扩展
-保持一致，例如：
+Place `slangdconfig.json` in the project root or a parent directory of the source file. Its keys
+match the official Slang editor extension, for example:
 
 ```json
 {
@@ -108,9 +101,9 @@ modifiers 后会自动使用对应颜色。
 }
 ```
 
-仓库中的 `slangdconfig.example.json` 可直接复制后修改。
+Copy and adapt the repository's `slangdconfig.example.json` as needed.
 
-## 验证
+## Verification
 
 ```powershell
 .\gradlew.bat test
@@ -121,53 +114,43 @@ slangc -no-codegen .\src\test\testData\slang\Basic.slang
 .\scripts\slangd-lsp-smoke.ps1
 ```
 
-`slangd-lsp-smoke.ps1` 会打开仓库内的定义夹具，断言调用点准确返回 `twice` 的声明位置，
-并检查同名遮蔽参数和结构体字段的 References、声明包含/排除与精确 UTF-16 范围，同时覆盖
-`__getAddress`、编译器生成的 detach 节点和 `$for` 编译期循环；随后
-打开语义高亮语料、调用 `textDocument/semanticTokens/full`、解码相对五元组并校验
-UTF-16 范围、legend 和 token 合同，而不只是检查服务器是否发布了对应 capability。
-默认执行当前官方服务器的 `stock` 合同；增强版服务器可使用：
+`slangd-lsp-smoke.ps1` opens the repository's definition fixture and asserts that the call site
+resolves to the exact declaration of `twice`. It also opens the semantic-highlighting corpus,
+invokes `textDocument/semanticTokens/full`, decodes the relative five-tuples, and validates UTF-16
+ranges, the legend, and the token contract rather than merely checking whether the server advertises
+the capability. The current official server uses the default `stock` contract; for an enhanced
+server, use:
 
 ```powershell
-.\scripts\slangd-lsp-smoke.ps1 `
-  -Slangd 'D:\path\to\enhanced\slangd.exe' `
-  -SemanticContract enhanced `
-  -AsJson
-.\scripts\slangd-lsp-smoke.ps1 `
-  -Slangd 'D:\path\to\enhanced\slangd.exe' `
-  -SemanticContract m3 `
-  -AsJson
+.\scripts\slangd-lsp-smoke.ps1 -SemanticContract enhanced -AsJson
 ```
 
-JSON 输出会记录解析后的 `slangd` 路径、可执行文件 SHA-256、`serverInfo`、完整 legend 和
-解码后的 token，适合作为 CI 差分产物。协议合同与演进规则见
-[docs/semantic-token-protocol.md](docs/semantic-token-protocol.md)。
+The JSON output records the resolved `slangd` path, executable SHA-256, `serverInfo`, complete
+legend, and decoded tokens, making it suitable for CI comparison artifacts. See
+[docs/semantic-token-protocol.md](docs/semantic-token-protocol.md) for the protocol contract and
+evolution rules.
 
-Publisher 侧实现以五层可重放补丁保存在 [`patches/slang/`](patches/slang/README.md)。M2a
-增加标准细分类型与 modifiers；M3 追加 `slangSemantic` 和 `slangSwizzle`；字段 Hover 的两层
-补丁依次追加 natural layout 信息和 Rider 风格的分层、着色展示；第五层加入文档内语义
-References。Initialize 能力协商按 M3 → M2a → stock 逐级选择 legend，构建和三协议验证
-命令见该目录说明。
-
-在开发沙箱中启动 CLion：
+Launch CLion in the development sandbox:
 
 ```powershell
 .\gradlew.bat runIde
 ```
 
-## 当前边界
+## Current limitations
 
-- 默认不接管 `.hlsl` / `.hlsli`，避免与 CLion 未来或现有 HLSL 支持冲突。
-- 不包含完整 PSI，因此本地结构重构等深度 IntelliJ 语言功能由 LSP 能力决定。
-- 变量查找用法当前只返回请求文档内的结果；跨 import/include 的工程级索引留待后续阶段。
-- 内置 `slangd` 暂只有 Windows x64 变体；也尚未实现 Compile、Reflection 或 Playground
-  工具窗口。
-- `slang-synth` 首次生成大型内建模块时可能有可感知延迟，后续访问会命中缓存。
+- The plugin does not claim `.hlsl` or `.hlsli` by default, avoiding conflicts with current or
+  future CLion HLSL support.
+- There is no full PSI, so deep IntelliJ language features such as local structural refactoring
+  depend on the capabilities exposed through LSP.
+- Platform-specific `slangd` binaries are not bundled, and Compile, Reflection, and Playground tool
+  windows are not yet implemented.
+- The first generation of a large built-in `slang-synth` module may introduce noticeable latency;
+  later accesses use the cache.
 
-架构与后续计划见 [docs/architecture.md](docs/architecture.md)。
+See [docs/architecture.md](docs/architecture.md) for the architecture and roadmap.
 
-## 参考
+## References
 
-- [Slang 官方 VS Code 扩展](https://github.com/shader-slang/slang-vscode-extension)
-- [Slang 文档](https://docs.shader-slang.org/)
+- [Official Slang VS Code extension](https://github.com/shader-slang/slang-vscode-extension)
+- [Slang documentation](https://docs.shader-slang.org/)
 - [JetBrains Native LSP API](https://plugins.jetbrains.com/docs/intellij/language-server-protocol.html)

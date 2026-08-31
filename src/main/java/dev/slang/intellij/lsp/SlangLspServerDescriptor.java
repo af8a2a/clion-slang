@@ -32,7 +32,7 @@ public final class SlangLspServerDescriptor extends ProjectWideLspServerDescript
         this.project = project;
         locator = new SlangServerLocator();
         workspaceConfiguration = new SlangWorkspaceConfiguration(project);
-        syntheticFiles = new SlangSyntheticModuleFileProvider(project);
+        syntheticFiles = new SlangSyntheticModuleFileProvider(project, locator);
         customization = new SlangLspCustomization();
     }
 
@@ -49,10 +49,6 @@ public final class SlangLspServerDescriptor extends ProjectWideLspServerDescript
     @Override
     public @NotNull GeneralCommandLine createCommandLine() throws ExecutionException {
         Path executable = locator.resolve(project);
-        return createCommandLine(executable);
-    }
-
-    private @NotNull GeneralCommandLine createCommandLine(@NotNull Path executable) {
         GeneralCommandLine commandLine = new GeneralCommandLine(executable.toString())
                 .withCharset(StandardCharsets.UTF_8);
         if (project.getBasePath() != null) {
@@ -63,13 +59,8 @@ public final class SlangLspServerDescriptor extends ProjectWideLspServerDescript
 
     @Override
     public @NotNull OSProcessHandler startServerProcess() throws ExecutionException {
-        Path executable = locator.resolve(project);
-        GeneralCommandLine commandLine = createCommandLine(executable);
+        GeneralCommandLine commandLine = createCommandLine();
         Process process = commandLine.createProcess();
-        // Pin synthetic source materialization to the exact executable backing this
-        // successfully created server process. A restart activates a new generation
-        // and invalidates any module content produced by the previous session.
-        syntheticFiles.activateSession(executable);
         Process normalizedProcess = new SlangLspProtocolProcess(process);
         return new OSProcessHandler(
                 normalizedProcess,

@@ -26,7 +26,7 @@ public final class SlangSettingsConfigurable implements Configurable {
     private final Project project;
 
     private JPanel panel;
-    private JCheckBox useExternalSlangd;
+    private JCheckBox autoDetect;
     private JTextField slangdPath;
     private JLabel resolvedPath;
 
@@ -52,14 +52,14 @@ public final class SlangSettingsConfigurable implements Configurable {
         constraints.weightx = 1.0;
         constraints.insets = new Insets(4, 0, 8, 0);
 
-        useExternalSlangd = new JCheckBox("Use external slangd (advanced)");
-        form.add(useExternalSlangd, constraints);
+        autoDetect = new JCheckBox("Automatically detect slangd (SLANGD_PATH, VULKAN_SDK, PATH)");
+        form.add(autoDetect, constraints);
 
         constraints.gridy++;
         constraints.gridwidth = 1;
         constraints.weightx = 0.0;
         constraints.insets = new Insets(0, 0, 4, 8);
-        form.add(new JLabel("External slangd executable:"), constraints);
+        form.add(new JLabel("slangd executable:"), constraints);
 
         constraints.gridx = 1;
         constraints.weightx = 1.0;
@@ -75,7 +75,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         resolvedPath = new JLabel();
         form.add(resolvedPath, constraints);
 
-        useExternalSlangd.addActionListener(event -> {
+        autoDetect.addActionListener(event -> {
             updateFieldEnabledState();
             updateResolvedPathPreview();
         });
@@ -88,24 +88,27 @@ public final class SlangSettingsConfigurable implements Configurable {
 
     @Override
     public boolean isModified() {
-        if (useExternalSlangd == null || slangdPath == null) {
+        if (autoDetect == null || slangdPath == null) {
             return false;
         }
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
-        return useExternalSlangd.isSelected() != settings.isUseExternalSlangd()
-                || !Objects.equals(slangdPath.getText().trim(), settings.getExternalSlangdPath());
+        String uiPath = autoDetect.isSelected() ? "" : slangdPath.getText().trim();
+        return autoDetect.isSelected() != settings.isAutoDetectSlangd()
+                || !Objects.equals(uiPath, settings.getSlangdPath());
     }
 
     @Override
     public void apply() {
-        if (useExternalSlangd == null || slangdPath == null) {
+        if (autoDetect == null || slangdPath == null) {
             return;
         }
 
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
         boolean changed = isModified();
-        settings.setUseExternalSlangd(useExternalSlangd.isSelected());
-        settings.setExternalSlangdPath(slangdPath.getText().trim());
+        settings.setAutoDetectSlangd(autoDetect.isSelected());
+        // Clearing the manual value makes the resolution contract unambiguous:
+        // any stored non-empty path is always the highest-priority choice.
+        settings.setSlangdPath(autoDetect.isSelected() ? "" : slangdPath.getText().trim());
         updateResolvedPathPreview();
 
         if (changed) {
@@ -116,12 +119,12 @@ public final class SlangSettingsConfigurable implements Configurable {
 
     @Override
     public void reset() {
-        if (useExternalSlangd == null || slangdPath == null) {
+        if (autoDetect == null || slangdPath == null) {
             return;
         }
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
-        useExternalSlangd.setSelected(settings.isUseExternalSlangd());
-        slangdPath.setText(settings.getExternalSlangdPath());
+        autoDetect.setSelected(settings.isAutoDetectSlangd());
+        slangdPath.setText(settings.getSlangdPath());
         updateFieldEnabledState();
         updateResolvedPathPreview();
     }
@@ -129,42 +132,32 @@ public final class SlangSettingsConfigurable implements Configurable {
     @Override
     public void disposeUIResources() {
         panel = null;
-        useExternalSlangd = null;
+        autoDetect = null;
         slangdPath = null;
         resolvedPath = null;
     }
 
     private void updateFieldEnabledState() {
-        if (slangdPath != null && useExternalSlangd != null) {
-            slangdPath.setEnabled(useExternalSlangd.isSelected());
+        if (slangdPath != null && autoDetect != null) {
+            slangdPath.setEnabled(!autoDetect.isSelected());
         }
     }
 
     private void updateResolvedPathPreview() {
-        if (resolvedPath == null || useExternalSlangd == null || slangdPath == null) {
-            return;
-        }
-
-        if (!useExternalSlangd.isSelected()) {
-            // Configurable callbacks run on Swing's event-dispatch thread. Resolving the
-            // bundle here would read, hash, and potentially extract the native runtime
-            // while the Settings dialog is opening. Installation is intentionally left
-            // to the background LSP startup path.
-            resolvedPath.setText("Bundled slangd: installed and verified automatically on first use");
-            resolvedPath.setToolTipText("Plugin-managed Windows x64 runtime");
+        if (resolvedPath == null || autoDetect == null || slangdPath == null) {
             return;
         }
 
         try {
             Path path = new SlangServerLocator().resolve(
                     project,
-                    slangdPath.getText().trim(),
-                    true
+                    autoDetect.isSelected() ? "" : slangdPath.getText().trim(),
+                    autoDetect.isSelected()
             );
-            resolvedPath.setText("External slangd: " + path);
+            resolvedPath.setText("Resolved slangd: " + path);
             resolvedPath.setToolTipText(path.toString());
         } catch (ExecutionException exception) {
-            resolvedPath.setText("External slangd not found");
+            resolvedPath.setText("slangd not found");
             resolvedPath.setToolTipText(exception.getMessage());
         }
     }

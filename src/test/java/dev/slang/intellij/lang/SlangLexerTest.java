@@ -68,26 +68,6 @@ public class SlangLexerTest {
     }
 
     @Test
-    public void classifiesMetallicStyleResourceAndEntryPointSyntax() {
-        String source = """
-                [[vk::binding(1, 0)]] RWTexture2D<float4> gOutput;
-                [shader("compute")]
-                [numthreads(8, 8, 1)]
-                void main(uint3 dispatchThreadID : SV_DispatchThreadID, uniform Push push) {}
-                """;
-        List<Token> tokens = significantTokens(source);
-
-        assertToken(tokens, "vk", SlangTokenTypes.ATTRIBUTE);
-        assertToken(tokens, "binding", SlangTokenTypes.ATTRIBUTE);
-        assertToken(tokens, "RWTexture2D", SlangTokenTypes.TYPE_KEYWORD);
-        assertToken(tokens, "float4", SlangTokenTypes.TYPE_KEYWORD);
-        assertToken(tokens, "shader", SlangTokenTypes.ATTRIBUTE);
-        assertToken(tokens, "numthreads", SlangTokenTypes.ATTRIBUTE);
-        assertToken(tokens, "uniform", SlangTokenTypes.KEYWORD);
-        assertToken(tokens, "SV_DispatchThreadID", SlangTokenTypes.SEMANTIC);
-    }
-
-    @Test
     public void supportsMultilineCommentsAndRawStringRestartStates() {
         String source = "/* first\nsecond\nthird */ R\"tag(line 1\nline 2)tag\" let value = 1;";
         List<Token> tokens = lex(source);
