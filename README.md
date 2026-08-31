@@ -1,5 +1,7 @@
 # Slang Language Support for CLion
 
+English | [简体中文](README.zh-CN.md)
+
 A CLion plugin for C++/CMake projects that use Slang. It connects CLion's native LSP client to the
 official `slangd` server while retaining lightweight lexical highlighting that does not depend on
 an external process.
