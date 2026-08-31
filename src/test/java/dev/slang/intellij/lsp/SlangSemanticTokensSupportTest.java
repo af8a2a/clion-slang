@@ -21,6 +21,8 @@ import static org.junit.Assert.assertTrue;
 
 public class SlangSemanticTokensSupportTest {
     private final SlangSemanticTokensSupport support = SlangSemanticTokensSupport.INSTANCE;
+    private final SlangDocumentHighlightsSupport documentHighlights =
+            SlangDocumentHighlightsSupport.INSTANCE;
 
     @Test
     public void advertisesTheStandardStockAndEnhancedVocabulary() {
@@ -60,6 +62,17 @@ public class SlangSemanticTokensSupportTest {
         assertTrue(
                 new SlangLspCustomization().getFindReferencesCustomizer()
                         instanceof LspFindReferencesSupport
+        );
+    }
+
+    @Test
+    public void requestsDocumentHighlightsOnlyForSlangPsi() {
+        assertTrue(documentHighlights.shouldAskServerForDocumentHighlights(
+                psiFile(SlangLanguage.INSTANCE)));
+        assertFalse(documentHighlights.shouldAskServerForDocumentHighlights(psiFile(Language.ANY)));
+        assertSame(
+                documentHighlights,
+                new SlangLspCustomization().getDocumentHighlightsCustomizer()
         );
     }
 

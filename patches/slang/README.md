@@ -43,6 +43,13 @@ The patch also completes the language-server walkers for address-of and compiler
 expressions, compile-time loops, intrinsic-asm arguments, and GPU foreach nodes; otherwise references
 inside those constructs would be silently omitted.
 
+`0006-document-variable-highlights.patch` adds the standard
+`textDocument/documentHighlight` request and advertises `documentHighlightProvider`. It deliberately
+reuses the reference resolver with declarations enabled, so every returned background range has the
+same checked declaration identity, UTF-16 conversion, ordering, and deduplication guarantees. The
+wire kind is `Text`, allowing CLion to apply its normal read-usage background without inventing a
+plugin-specific color.
+
 Apply the patches in numeric order. Each layer remains separate so the semantic-token baselines and
 field-hover extensions can be reproduced and reviewed independently.
 
@@ -73,6 +80,9 @@ git -C $slangSource apply $fieldHoverPresentationPatch
 $referencesPatch = (Resolve-Path '.\patches\slang\0005-document-local-references.patch').Path
 git -C $slangSource apply --check $referencesPatch
 git -C $slangSource apply $referencesPatch
+$documentHighlightsPatch = (Resolve-Path '.\patches\slang\0006-document-variable-highlights.patch').Path
+git -C $slangSource apply --check $documentHighlightsPatch
+git -C $slangSource apply $documentHighlightsPatch
 ```
 
 The verified Windows build used CMake, Ninja, and an x64 Visual Studio developer environment:
@@ -127,6 +137,9 @@ The same run requires `referencesProvider: true`, then queries both a shadowed p
 struct field. It checks exact UTF-16 `Location[]` ranges, declaration inclusion/exclusion, stable
 source ordering, and that same-spelled declarations are not reported as usages. Dedicated cases
 also cover `AddressOfExpr`, compiler-generated `DetachExpr`, and compile-time-loop variables/bodies.
+
+The same run requires `documentHighlightProvider: true` and verifies that the standard highlight
+array contains those declaration/use ranges without URI fields and with `DocumentHighlightKind.Text`.
 
 On Windows, the M3 language-server bundle contains `slangd.exe`, its matching
 `slang-compiler.dll`, and the generated `slang-glsl-module.bin`. Build with the static MSVC runtime

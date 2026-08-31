@@ -17,6 +17,7 @@ param(
     [string] $FieldHoverPatchPath = "",
     [string] $FieldHoverPresentationPatchPath = "",
     [string] $DocumentLocalReferencesPatchPath = "",
+    [string] $DocumentVariableHighlightsPatchPath = "",
     [string] $OutputArchive = "",
     [string] $BuildConfiguration = "RelWithDebInfo",
     [string] $BuildGenerator = "Ninja"
@@ -40,6 +41,9 @@ if ([string]::IsNullOrWhiteSpace($FieldHoverPresentationPatchPath)) {
 }
 if ([string]::IsNullOrWhiteSpace($DocumentLocalReferencesPatchPath)) {
     $DocumentLocalReferencesPatchPath = Join-Path $projectRoot "patches\slang\0005-document-local-references.patch"
+}
+if ([string]::IsNullOrWhiteSpace($DocumentVariableHighlightsPatchPath)) {
+    $DocumentVariableHighlightsPatchPath = Join-Path $projectRoot "patches\slang\0006-document-variable-highlights.patch"
 }
 if ([string]::IsNullOrWhiteSpace($OutputArchive)) {
     $OutputArchive = Join-Path $projectRoot ".bundled-runtime\windows-x86_64.zip"
@@ -618,6 +622,9 @@ $resolvedFieldHoverPresentationPatch = Resolve-RequiredFile `
 $resolvedDocumentLocalReferencesPatch = Resolve-RequiredFile `
     -Path $DocumentLocalReferencesPatchPath `
     -Description "document-local references Slang patch"
+$resolvedDocumentVariableHighlightsPatch = Resolve-RequiredFile `
+    -Path $DocumentVariableHighlightsPatchPath `
+    -Description "document variable highlights Slang patch"
 $resolvedMinizLicense = Resolve-RequiredFile `
     -Path (Join-Path $resolvedSlangSource "external\miniz\LICENSE") `
     -Description "miniz license"
@@ -676,7 +683,8 @@ try {
         $resolvedM3Patch,
         $resolvedFieldHoverPatch,
         $resolvedFieldHoverPresentationPatch,
-        $resolvedDocumentLocalReferencesPatch
+        $resolvedDocumentLocalReferencesPatch,
+        $resolvedDocumentVariableHighlightsPatch
     )) {
         [void] (Invoke-GitRepository `
             -Repository $patchReplayDirectory `
@@ -724,7 +732,7 @@ if ($trackedDiff -cne $expectedTrackedDiff) {
         "HEAD",
         "--"
     )
-    throw "The tracked Slang source diff does not exactly match replaying the recorded M2a, M3, field-layout, field-presentation, and document-local references patches in order. Submodule worktree state is ignored, but no additional tracked superproject changes are allowed.`nTracked changes:`n$changedPaths"
+    throw "The tracked Slang source diff does not exactly match replaying the recorded M2a, M3, field-layout, field-presentation, document-local references, and document-variable highlights patches in order. Submodule worktree state is ignored, but no additional tracked superproject changes are allowed.`nTracked changes:`n$changedPaths"
 }
 $sourceDescribe = Invoke-SlangGit -Arguments @("describe", "--tags", "--always", "--dirty")
 $sourceRepository = ConvertTo-SafeRemoteUrl -RemoteUrl (
@@ -759,6 +767,7 @@ $payloadFiles = [ordered]@{
     "0003-field-layout-hover.patch" = $resolvedFieldHoverPatch
     "0004-field-hover-presentation.patch" = $resolvedFieldHoverPresentationPatch
     "0005-document-local-references.patch" = $resolvedDocumentLocalReferencesPatch
+    "0006-document-variable-highlights.patch" = $resolvedDocumentVariableHighlightsPatch
     "LICENSE-slang.txt" = $resolvedLicense
     "LICENSES/lz4-distribution.txt" = $resolvedLz4DistributionLicense
     "LICENSES/lz4-lib-BSD-2-Clause.txt" = $resolvedLz4LibraryLicense
@@ -789,8 +798,8 @@ $manifestLines = @(
     '  },',
     '  "protocol": {',
     '    "major": 1,',
-    '    "minor": 3,',
-    '    "features": ["semanticTokens.m2a", "semanticTokens.m3", "hover.fieldLayout.natural", "references.documentLocal"]',
+    '    "minor": 4,',
+    '    "features": ["semanticTokens.m2a", "semanticTokens.m3", "hover.fieldLayout.natural", "references.documentLocal", "documentHighlight.documentLocal"]',
     '  },',
     '  "files": {',
     ('    "0001-m2a-enhanced-semantic-tokens.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0001-m2a-enhanced-semantic-tokens.patch'])),
@@ -798,6 +807,7 @@ $manifestLines = @(
     ('    "0003-field-layout-hover.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0003-field-layout-hover.patch'])),
     ('    "0004-field-hover-presentation.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0004-field-hover-presentation.patch'])),
     ('    "0005-document-local-references.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0005-document-local-references.patch'])),
+    ('    "0006-document-variable-highlights.patch": {0},' -f (ConvertTo-JsonString $fileHashes['0006-document-variable-highlights.patch'])),
     ('    "LICENSE-slang.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSE-slang.txt'])),
     ('    "LICENSES/lz4-distribution.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSES/lz4-distribution.txt'])),
     ('    "LICENSES/lz4-lib-BSD-2-Clause.txt": {0},' -f (ConvertTo-JsonString $fileHashes['LICENSES/lz4-lib-BSD-2-Clause.txt'])),
@@ -830,6 +840,7 @@ try {
         "0003-field-layout-hover.patch",
         "0004-field-hover-presentation.patch",
         "0005-document-local-references.patch",
+        "0006-document-variable-highlights.patch",
         "LICENSE-slang.txt",
         "LICENSES/lz4-distribution.txt",
         "LICENSES/lz4-lib-BSD-2-Clause.txt",

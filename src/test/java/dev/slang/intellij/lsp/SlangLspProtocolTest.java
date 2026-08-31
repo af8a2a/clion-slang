@@ -125,6 +125,34 @@ public class SlangLspProtocolTest {
     }
 
     @Test
+    public void preservesDocumentHighlightArraysByteForByte() throws Exception {
+        SlangLspRequestTracker tracker = new SlangLspRequestTracker();
+        ByteArrayOutputStream forwardedRequests = new ByteArrayOutputStream();
+        SlangLspProtocolOutputStream requests = new SlangLspProtocolOutputStream(
+                forwardedRequests,
+                tracker
+        );
+        byte[] requestFrame = frame("""
+                {"jsonrpc":"2.0","id":"variable-highlights","method":"textDocument/documentHighlight","params":{
+                  "textDocument":{"uri":"file:///着色器/Usage.slang"},
+                  "position":{"line":8,"character":12}
+                }}
+                """.strip());
+        writeInChunks(requests, requestFrame, 5, 2, 13, 7);
+        requests.flush();
+        assertArrayEquals(requestFrame, forwardedRequests.toByteArray());
+
+        byte[] responseFrame = frame("""
+                {"jsonrpc":"2.0","id":"variable-highlights","result":[
+                  {"range":{"start":{"line":2,"character":9},"end":{"line":2,"character":16}},"kind":1},
+                  {"range":{"start":{"line":8,"character":11},"end":{"line":8,"character":18}},"kind":1}
+                ]}
+                """.strip());
+
+        assertArrayEquals(responseFrame, forward(responseFrame, tracker));
+    }
+
+    @Test
     public void preservesStandardDefinitionArraysAndNullResults() throws Exception {
         SlangLspRequestTracker tracker = new SlangLspRequestTracker();
         recordDefinitionRequest(tracker, "array");

@@ -98,6 +98,11 @@ the current workspace creates a fresh root module for each opened document. The 
 language-server AST recursion for address-of and detach wrappers, compile-time loops, intrinsic-asm
 arguments, and GPU foreach nodes so valid references inside those constructs are not skipped.
 
+The sixth publisher patch adds standard `textDocument/documentHighlight` on top of that exact
+declaration-identity scan and advances the bundled contract to protocol 1.4. The client overrides
+the Native LSP document-highlight gate because CLion's default support only opts in TEXT/TextMate
+PSI; returned `Text` highlights then flow through the IDE's standard read-usage background styling.
+
 ## Bundled runtime
 
 M2b introduced the Windows x64 bundled runtime; M3 refreshes it with the M3 publisher. The archive

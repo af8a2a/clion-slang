@@ -780,6 +780,7 @@ try {
                 textDocument = @{
                     definition = @{ linkSupport = $true }
                     references = @{ dynamicRegistration = $true }
+                    documentHighlight = @{ dynamicRegistration = $true }
                     hover = @{ contentFormat = @("markdown", "plaintext") }
                     semanticTokens = @{
                         dynamicRegistration = $false
@@ -808,6 +809,7 @@ try {
         "hoverProvider",
         "definitionProvider",
         "referencesProvider",
+        "documentHighlightProvider",
         "semanticTokensProvider"
     )
     foreach ($name in $required) {
@@ -1020,6 +1022,34 @@ try {
         $fieldReferenceItems[1].range.start.character -ne $ExpectedHoverRangeStart -or
         $fieldReferenceItems[1].range.end.character -ne $ExpectedHoverRangeEnd) {
         throw "slangd returned invalid struct-field references: $($fieldReferencesResponse.result | ConvertTo-Json -Compress -Depth 10)"
+    }
+
+    Send-LspMessage @{
+        jsonrpc = "2.0"
+        id = 27
+        method = "textDocument/documentHighlight"
+        params = @{
+            textDocument = @{ uri = $definitionUri }
+            position = @{ line = $ReferenceLine; character = $ReferenceCharacter }
+        }
+    }
+    $documentHighlightsResponse = Read-LspResponse 27
+    $documentHighlightItems = @($documentHighlightsResponse.result)
+    if ($documentHighlightItems.Count -ne $referenceItems.Count) {
+        throw "slangd returned $($documentHighlightItems.Count) document highlights instead of $($referenceItems.Count): $($documentHighlightsResponse.result | ConvertTo-Json -Compress -Depth 10)"
+    }
+    for ($index = 0; $index -lt $documentHighlightItems.Count; $index++) {
+        $highlight = $documentHighlightItems[$index]
+        $reference = $referenceItems[$index]
+        if ($null -eq $highlight.range -or
+            $highlight.kind -ne 1 -or
+            $null -ne $highlight.PSObject.Properties["uri"] -or
+            $highlight.range.start.line -ne $reference.range.start.line -or
+            $highlight.range.start.character -ne $reference.range.start.character -or
+            $highlight.range.end.line -ne $reference.range.end.line -or
+            $highlight.range.end.character -ne $reference.range.end.character) {
+            throw "slangd returned an invalid document highlight at index $index`: $($highlight | ConvertTo-Json -Compress -Depth 10)"
+        }
     }
 
     $edgeReferenceCases = @(
@@ -1256,6 +1286,11 @@ try {
             ExcludeDeclarationCount = $usageOnlyItems.Count
             FieldCount = $fieldReferenceItems.Count
             TraversalCases = [pscustomobject]$edgeReferenceCounts
+            Scope = "document"
+        }
+        DocumentHighlights = [pscustomobject][ordered]@{
+            Count = $documentHighlightItems.Count
+            Kind = "text"
             Scope = "document"
         }
         SemanticTokens = [pscustomobject][ordered]@{

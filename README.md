@@ -24,6 +24,9 @@
 - 变量“查找用法”与“高级查找用法”：内置 `slangd` 发布标准 `textDocument/references`，
   CLion 自动提供右键菜单与 Alt+F7；当前可靠范围是同一文档内的参数、局部/全局变量和
   结构体字段，基于解析后的声明身份排除同名遮蔽，并支持声明包含/排除
+- 光标选中变量时的同文档用法背景高亮：内置 `slangd` 发布标准
+  `textDocument/documentHighlight`，客户端显式为 Slang PSI 启用 CLion Native LSP 的
+  Highlight Usages 管线；声明和真实语义用法共用 Rider 风格的主题背景色
 - Windows x64 内置 `slangd`：校验清单与 SHA-256 后安装到 IDE system cache；项目设置可显式
   启用高级外部覆盖，但不会隐式扫描 `SLANGD_PATH`、`VULKAN_SDK` 或 `PATH`
 - `slangdconfig.json` 的 `workspace/configuration` 映射与 `${workspaceFolder}` 展开
@@ -66,7 +69,7 @@
    CLion 2026.1.3 基线。
 
 3. 在 CLion 中打开 **Settings | Plugins | ⚙ | Install Plugin from Disk...**，选择
-   `build/distributions/slang-clion-0.4.0-windows-x86_64.zip`。
+   `build/distributions/slang-clion-0.5.0-windows-x86_64.zip`。
 4. 默认直接使用插件内置 `slangd`。只有调试或兼容性需要时，才在
    **Settings | Languages & Frameworks | Slang** 中启用 **Use external slangd (advanced)**
    并指定 `slangd.exe` 的完整路径。

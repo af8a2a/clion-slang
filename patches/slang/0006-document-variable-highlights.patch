@@ -1,0 +1,213 @@
+diff --git a/source/compiler-core/slang-language-server-protocol.cpp b/source/compiler-core/slang-language-server-protocol.cpp
+index ae7a9e0929c1be21513e32492c29847fe477802b..b24b8861e5b400c8b3293c7ba7b56cdd019b6ef5 100644
+--- a/source/compiler-core/slang-language-server-protocol.cpp
++++ b/source/compiler-core/slang-language-server-protocol.cpp
+@@ -263,6 +263,7 @@ static const StructRttiInfo _makeServerCapabilitiesRtti()
+     builder.addField("documentRangeFormattingProvider", &obj.documentRangeFormattingProvider);
+     builder.addField("definitionProvider", &obj.definitionProvider);
+     builder.addField("referencesProvider", &obj.referencesProvider);
++    builder.addField("documentHighlightProvider", &obj.documentHighlightProvider);
+     builder.addField("completionProvider", &obj.completionProvider);
+     builder.addField("semanticTokensProvider", &obj.semanticTokensProvider);
+     builder.addField("signatureHelpProvider", &obj.signatureHelpProvider);
+@@ -286,6 +287,7 @@ static const StructRttiInfo _makeVSServerCapabilitiesRtti()
+     builder.addField("documentRangeFormattingProvider", &obj.documentRangeFormattingProvider);
+     builder.addField("definitionProvider", &obj.definitionProvider);
+     builder.addField("referencesProvider", &obj.referencesProvider);
++    builder.addField("documentHighlightProvider", &obj.documentHighlightProvider);
+     builder.addField("completionProvider", &obj.completionProvider);
+     builder.addField("semanticTokensProvider", &obj.semanticTokensProvider);
+     builder.addField("signatureHelpProvider", &obj.signatureHelpProvider);
+@@ -567,6 +569,34 @@ const StructRttiInfo ReferenceParams::g_rttiInfo = _makeReferenceParamsRtti();
+ const UnownedStringSlice ReferenceParams::methodName =
+     UnownedStringSlice::fromLiteral("textDocument/references");
+ 
++static const StructRttiInfo _makeDocumentHighlightParamsRtti()
++{
++    DocumentHighlightParams obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::DocumentHighlightParams",
++        &WorkDoneProgressParams::g_rttiInfo);
++    builder.addField("textDocument", &obj.textDocument);
++    builder.addField("position", &obj.position);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo DocumentHighlightParams::g_rttiInfo =
++    _makeDocumentHighlightParamsRtti();
++const UnownedStringSlice DocumentHighlightParams::methodName =
++    UnownedStringSlice::fromLiteral("textDocument/documentHighlight");
++
++static const StructRttiInfo _makeDocumentHighlightRtti()
++{
++    DocumentHighlight obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::DocumentHighlight", nullptr);
++    builder.addField("range", &obj.range);
++    builder.addField("kind", &obj.kind);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo DocumentHighlight::g_rttiInfo = _makeDocumentHighlightRtti();
++
+ static const StructRttiInfo _makeCompletionParamsRtti()
+ {
+     CompletionParams obj;
+diff --git a/source/compiler-core/slang-language-server-protocol.h b/source/compiler-core/slang-language-server-protocol.h
+index f4e0338dca9e7e511251a29ec5b76183e1ef67d9..56725c9b8af80f16818c1255b28d079c4d1abfff 100644
+--- a/source/compiler-core/slang-language-server-protocol.h
++++ b/source/compiler-core/slang-language-server-protocol.h
+@@ -287,6 +287,7 @@ struct ServerCapabilities
+     bool hoverProvider = false;
+     bool definitionProvider = false;
+     bool referencesProvider = false;
++    bool documentHighlightProvider = false;
+     bool documentSymbolProvider = false;
+     bool documentFormattingProvider = false;
+     bool documentRangeFormattingProvider = false;
+@@ -516,6 +517,24 @@ struct ReferenceParams : WorkDoneProgressParams, TextDocumentPositionParams
+     static const UnownedStringSlice methodName;
+ };
+ 
++typedef int32_t DocumentHighlightKind;
++const DocumentHighlightKind kDocumentHighlightKindText = 1;
++const DocumentHighlightKind kDocumentHighlightKindRead = 2;
++const DocumentHighlightKind kDocumentHighlightKindWrite = 3;
++
++struct DocumentHighlightParams : WorkDoneProgressParams, TextDocumentPositionParams
++{
++    static const StructRttiInfo g_rttiInfo;
++    static const UnownedStringSlice methodName;
++};
++
++struct DocumentHighlight
++{
++    Range range;
++    DocumentHighlightKind kind = kDocumentHighlightKindText;
++    static const StructRttiInfo g_rttiInfo;
++};
++
+ struct MarkupContent
+ {
+     /**
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index d8759f6b4afef43113efabddc7074b9c2fc58e8f..62fba1b26a78cf5b8a43049c3aa53915723a5e4a 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -197,6 +197,7 @@ SlangResult LanguageServer::parseNextMessage()
+                     caps.hoverProvider = true;
+                     caps.definitionProvider = true;
+                     caps.referencesProvider = true;
++                    caps.documentHighlightProvider = true;
+                     caps.documentSymbolProvider = true;
+                     caps.inlayHintProvider.resolveProvider = false;
+                     caps.documentFormattingProvider = true;
+@@ -1549,6 +1550,53 @@ LanguageServerResult<List<LanguageServerProtocol::Location>> LanguageServerCore:
+     return results;
+ }
+ 
++SlangResult LanguageServer::documentHighlight(
++    const LanguageServerProtocol::DocumentHighlightParams& args,
++    const JSONValue& responseId)
++{
++    auto result = m_core.documentHighlight(args);
++    removePendingModuleToUpdateDiagnostics(args.textDocument.uri);
++
++    if (SLANG_FAILED(result.returnCode) || result.isNull)
++    {
++        m_connection->sendResult(NullResponse::get(), responseId);
++        return SLANG_OK;
++    }
++    m_connection->sendResult(&result.result, responseId);
++    return SLANG_OK;
++}
++
++LanguageServerResult<List<LanguageServerProtocol::DocumentHighlight>>
++LanguageServerCore::documentHighlight(
++    const LanguageServerProtocol::DocumentHighlightParams& args)
++{
++    ReferenceParams referenceArgs;
++    referenceArgs.workDoneToken = args.workDoneToken;
++    referenceArgs.textDocument = args.textDocument;
++    referenceArgs.position = args.position;
++    referenceArgs.context.includeDeclaration = true;
++
++    auto references = findReferences(referenceArgs);
++    if (SLANG_FAILED(references.returnCode))
++    {
++        return references.returnCode;
++    }
++    if (references.isNull)
++    {
++        return std::nullopt;
++    }
++
++    List<DocumentHighlight> highlights;
++    for (const auto& reference : references.result)
++    {
++        DocumentHighlight highlight;
++        highlight.range = reference.range;
++        highlight.kind = kDocumentHighlightKindText;
++        highlights.add(_Move(highlight));
++    }
++    return highlights;
++}
++
+ template<typename Func>
+ struct Deferred
+ {
+@@ -3055,6 +3103,12 @@ SlangResult LanguageServer::queueJSONCall(JSONRPCCall call)
+         SLANG_RETURN_ON_FAIL(m_connection->toNativeArgsOrSendError(call.params, &args, call.id));
+         cmd.referenceArgs = args;
+     }
++    else if (call.method == DocumentHighlightParams::methodName)
++    {
++        DocumentHighlightParams args;
++        SLANG_RETURN_ON_FAIL(m_connection->toNativeArgsOrSendError(call.params, &args, call.id));
++        cmd.documentHighlightArgs = args;
++    }
+     else if (call.method == CompletionParams::methodName)
+     {
+         CompletionParams args;
+@@ -3181,6 +3235,10 @@ SlangResult LanguageServer::runCommand(Command& call)
+         {
+             return findReferences(call.referenceArgs.get(), call.id);
+         }
++        else if (call.method == DocumentHighlightParams::methodName)
++        {
++            return documentHighlight(call.documentHighlightArgs.get(), call.id);
++        }
+         else if (call.method == CompletionParams::methodName)
+         {
+             return completion(call.completionArgs.get(), call.id);
+diff --git a/source/slang/slang-language-server.h b/source/slang/slang-language-server.h
+index 91ac3cedbbb38e0570d21aa82d91855616c8964d..c53811c30c83da066b4298c815ca692a7321de3a 100644
+--- a/source/slang/slang-language-server.h
++++ b/source/slang/slang-language-server.h
+@@ -71,6 +71,7 @@ struct Command
+     Optional<LanguageServerProtocol::SignatureHelpParams> signatureHelpArgs;
+     Optional<LanguageServerProtocol::DefinitionParams> definitionArgs;
+     Optional<LanguageServerProtocol::ReferenceParams> referenceArgs;
++    Optional<LanguageServerProtocol::DocumentHighlightParams> documentHighlightArgs;
+     Optional<LanguageServerProtocol::SemanticTokensParams> semanticTokenArgs;
+     Optional<LanguageServerProtocol::HoverParams> hoverArgs;
+     Optional<LanguageServerProtocol::DidOpenTextDocumentParams> openDocArgs;
+@@ -126,6 +127,8 @@ public:
+         const LanguageServerProtocol::DefinitionParams& args);
+     LanguageServerResult<List<LanguageServerProtocol::Location>> findReferences(
+         const LanguageServerProtocol::ReferenceParams& args);
++    LanguageServerResult<List<LanguageServerProtocol::DocumentHighlight>> documentHighlight(
++        const LanguageServerProtocol::DocumentHighlightParams& args);
+ 
+     LanguageServerResult<CompletionResult> completion(
+         const LanguageServerProtocol::CompletionParams& args);
+@@ -223,6 +226,9 @@ public:
+     SlangResult findReferences(
+         const LanguageServerProtocol::ReferenceParams& args,
+         const JSONValue& responseId);
++    SlangResult documentHighlight(
++        const LanguageServerProtocol::DocumentHighlightParams& args,
++        const JSONValue& responseId);
+     SlangResult completion(
+         const LanguageServerProtocol::CompletionParams& args,
+         const JSONValue& responseId);
