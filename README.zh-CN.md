@@ -14,6 +14,8 @@
   和标准 modifiers
 - 行注释、块注释、括号匹配、引号配对，以及包含词法和语义角色的独立配色页
 - 基于 JetBrains Native LSP API 的项目级 `slangd` 客户端
+- 可选的 [M4b 预处理分支显示](docs/preprocessor-branch-display.md)：非激活代码灰显、活动分支标记、
+  分支来源提示；需要带 M4a 补丁的 `slangd`（插件不捆绑此二进制）
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
   Inlay Hints、Formatting 等标准能力，实际能力取决于所用 `slangd`
 - 通过 Ctrl+左键、Ctrl+B 与 Ctrl+悬停进行定义导航。插件会直接复用当前 `slangd` 会话，

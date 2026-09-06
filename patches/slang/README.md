@@ -51,5 +51,5 @@ dependency-only overrides; no old compiler modifications are used. A fully initi
 does not need them.
 
 The generated directories are ignored by Git. The plugin still selects an external server through
-its existing settings. Selecting the patched executable enables the protocol for testing, but M4a
-does not yet issue UI-driven trace requests or render inactive code.
+its existing settings. Selecting the patched executable now enables the optional
+[M4b branch display](../../docs/preprocessor-branch-display.md), which consumes this unchanged protocol.

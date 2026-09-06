@@ -17,6 +17,8 @@ an external process.
 - Line and block comments, brace matching, quote pairing, and a dedicated color settings page for
   lexical and semantic roles
 - A project-wide `slangd` client built on the JetBrains Native LSP API
+- Optional [preprocessor branch display](docs/preprocessor-branch-display.md): inactive-code dimming,
+  active-branch marks and branch source labels, requiring M4a-patched `slangd` (not bundled)
 - Standard Diagnostics, Completion, Hover, Signature Help, Definition, References, Semantic
   Tokens, Inlay Hints, and Formatting capabilities, depending on the selected `slangd`
 - Definition navigation through Ctrl+Click, Ctrl+B, and Ctrl+Hover. The plugin reuses the active

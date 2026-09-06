@@ -50,6 +50,9 @@ tasks {
 
     withType<Test>().configureEach {
         useJUnit()
+        providers.gradleProperty("slangdTestPath").orNull?.let {
+            systemProperty("slang.test.slangd", it)
+        }
     }
 
     wrapper {

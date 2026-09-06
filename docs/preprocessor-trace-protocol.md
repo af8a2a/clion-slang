@@ -1,5 +1,8 @@
 # M4a — Preprocessor trace baseline
 
+The baseline described here is now consumed by [M4b client branch display](preprocessor-branch-display.md).
+Statements about absent automatic requests/UI below describe the original M4a milestone.
+
 M4a adds a compiler-backed, versioned protocol for conditional branches. It does **not** yet
 add Rider-style context selection, inactive-code highlighting, branch switching or branch-label
 inlays. The separate `#include` / include-path color setting is lexical and works with stock

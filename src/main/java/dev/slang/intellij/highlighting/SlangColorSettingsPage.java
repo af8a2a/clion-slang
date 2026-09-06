@@ -6,6 +6,7 @@ import com.intellij.openapi.options.colors.AttributesDescriptor;
 import com.intellij.openapi.options.colors.ColorDescriptor;
 import com.intellij.openapi.options.colors.ColorSettingsPage;
 import dev.slang.intellij.lang.SlangFileType;
+import dev.slang.intellij.preprocessor.SlangBranchColors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,6 +26,9 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             descriptor("Comments//Documentation comment", SlangSyntaxHighlighter.DOC_COMMENT),
             descriptor("Preprocessor directives", SlangSyntaxHighlighter.PREPROCESSOR),
             descriptor("Include paths", SlangSyntaxHighlighter.INCLUDE_PATH),
+            descriptor("Preprocessor branches//Inactive code", SlangBranchColors.INACTIVE),
+            descriptor("Preprocessor branches//Active branch", SlangBranchColors.ACTIVE),
+            descriptor("Preprocessor branches//Source label", SlangBranchColors.LABEL),
             descriptor("Attributes", SlangSyntaxHighlighter.ATTRIBUTE),
             descriptor("HLSL semantics", SlangSyntaxHighlighter.SEMANTIC),
             descriptor("Semantic//Namespace", SlangSemanticColors.NAMESPACE),
@@ -85,12 +89,21 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             Map.entry("semanticMacro", SlangSemanticColors.MACRO),
             Map.entry("semanticDecorator", SlangSemanticColors.DECORATOR),
             Map.entry("semanticBuiltinSymbol", SlangSemanticColors.BUILTIN_SYMBOL),
-            Map.entry("semanticIdentifier", SlangSemanticColors.IDENTIFIER)
+            Map.entry("semanticIdentifier", SlangSemanticColors.IDENTIFIER),
+            Map.entry("inactiveBranch", SlangBranchColors.INACTIVE),
+            Map.entry("activeBranch", SlangBranchColors.ACTIVE),
+            Map.entry("branchLabel", SlangBranchColors.LABEL)
     );
 
     private static final String DEMO_TEXT = """
             #include "ClusterLightGridCommon.slang"
             #include <lighting/Common.slangh>
+            #if BLUE
+            <inactiveBranch>float3 tint = float3(0, 0, 1);</inactiveBranch>
+            #<activeBranch>elif</activeBranch> GREEN <branchLabel>#if BLUE</branchLabel>
+            float3 tint = float3(0, 1, 0);
+            #endif <branchLabel>#elif GREEN</branchLabel>
+
             #define <semanticMacro>THREAD_COUNT</semanticMacro> 8
 
             namespace <semanticNamespace>rendering</semanticNamespace>

@@ -3,6 +3,7 @@ package dev.slang.intellij.lsp;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.platform.lsp.api.LspServerSupportProvider;
+import dev.slang.intellij.preprocessor.SlangBranchDisplayService;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;
@@ -16,6 +17,7 @@ public final class SlangLspServerSupportProvider implements LspServerSupportProv
             @NotNull LspServerStarter serverStarter
     ) {
         if (isSlangFile(file)) {
+            SlangBranchDisplayService.getInstance(project);
             serverStarter.ensureServerStarted(new SlangLspServerDescriptor(project));
         }
     }

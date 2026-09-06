@@ -6,6 +6,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.platform.lsp.api.LspServerManager;
 import dev.slang.intellij.lsp.SlangLspServerSupportProvider;
 import dev.slang.intellij.lsp.SlangServerLocator;
+import dev.slang.intellij.preprocessor.SlangBranchDisplayService;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +30,8 @@ public final class SlangSettingsConfigurable implements Configurable {
     private JCheckBox autoDetect;
     private JTextField slangdPath;
     private JLabel resolvedPath;
+    private JCheckBox branchDisplay;
+    private JCheckBox branchLabels;
 
     public SlangSettingsConfigurable(@NotNull Project project) {
         this.project = project;
@@ -75,6 +78,16 @@ public final class SlangSettingsConfigurable implements Configurable {
         resolvedPath = new JLabel();
         form.add(resolvedPath, constraints);
 
+        constraints.gridy++;
+        branchDisplay = new JCheckBox("Show preprocessor branches (requires M4a-enabled slangd)");
+        form.add(branchDisplay, constraints);
+        constraints.gridy++;
+        branchLabels = new JCheckBox("Show branch source labels after #elif / #else / #endif");
+        form.add(branchLabels, constraints);
+        constraints.gridy++;
+        form.add(new JLabel("Context: current file as compilation root; macros from saved slangdconfig.json."), constraints);
+        branchDisplay.addActionListener(event -> branchLabels.setEnabled(branchDisplay.isSelected()));
+
         autoDetect.addActionListener(event -> {
             updateFieldEnabledState();
             updateResolvedPathPreview();
@@ -94,7 +107,9 @@ public final class SlangSettingsConfigurable implements Configurable {
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
         String uiPath = autoDetect.isSelected() ? "" : slangdPath.getText().trim();
         return autoDetect.isSelected() != settings.isAutoDetectSlangd()
-                || !Objects.equals(uiPath, settings.getSlangdPath());
+                || !Objects.equals(uiPath, settings.getSlangdPath())
+                || branchDisplay.isSelected() != settings.isShowPreprocessorBranches()
+                || branchLabels.isSelected() != settings.isShowPreprocessorBranchLabels();
     }
 
     @Override
@@ -104,14 +119,19 @@ public final class SlangSettingsConfigurable implements Configurable {
         }
 
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
-        boolean changed = isModified();
+        String uiPath = autoDetect.isSelected() ? "" : slangdPath.getText().trim();
+        boolean serverChanged = autoDetect.isSelected() != settings.isAutoDetectSlangd()
+                || !Objects.equals(uiPath, settings.getSlangdPath());
         settings.setAutoDetectSlangd(autoDetect.isSelected());
         // Clearing the manual value makes the resolution contract unambiguous:
         // any stored non-empty path is always the highest-priority choice.
         settings.setSlangdPath(autoDetect.isSelected() ? "" : slangdPath.getText().trim());
+        settings.setShowPreprocessorBranches(branchDisplay.isSelected());
+        settings.setShowPreprocessorBranchLabels(branchLabels.isSelected());
         updateResolvedPathPreview();
+        SlangBranchDisplayService.getInstance(project).refresh();
 
-        if (changed) {
+        if (serverChanged) {
             LspServerManager.getInstance(project)
                     .stopAndRestartIfNeeded(SlangLspServerSupportProvider.class);
         }
@@ -125,6 +145,9 @@ public final class SlangSettingsConfigurable implements Configurable {
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
         autoDetect.setSelected(settings.isAutoDetectSlangd());
         slangdPath.setText(settings.getSlangdPath());
+        branchDisplay.setSelected(settings.isShowPreprocessorBranches());
+        branchLabels.setSelected(settings.isShowPreprocessorBranchLabels());
+        branchLabels.setEnabled(branchDisplay.isSelected());
         updateFieldEnabledState();
         updateResolvedPathPreview();
     }
@@ -135,6 +158,8 @@ public final class SlangSettingsConfigurable implements Configurable {
         autoDetect = null;
         slangdPath = null;
         resolvedPath = null;
+        branchDisplay = null;
+        branchLabels = null;
     }
 
     private void updateFieldEnabledState() {

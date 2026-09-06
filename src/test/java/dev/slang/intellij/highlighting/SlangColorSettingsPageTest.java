@@ -32,7 +32,7 @@ public class SlangColorSettingsPageTest {
         SlangColorSettingsPage page = new SlangColorSettingsPage();
         Map<String, TextAttributesKey> tags = page.getAdditionalHighlightingTagToDescriptorMap();
 
-        assertEquals(24, tags.size());
+        assertEquals(27, tags.size());
         assertSame(SlangSemanticColors.STRUCT, tags.get("semanticStruct"));
         assertSame(SlangSemanticColors.PARAMETER, tags.get("semanticParameter"));
         assertSame(SlangSemanticColors.INTRINSIC, tags.get("semanticIntrinsic"));

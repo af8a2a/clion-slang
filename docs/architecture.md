@@ -32,6 +32,8 @@ best handled by `slangd`.
 - `navigation/`: a public-LSP-API declaration bridge for Ctrl+hover, Ctrl+click, and Ctrl+B. CLion
   2026.1's implicit LSP reference provider does not issue definition requests from its Ctrl+mouse path.
 - `synth/`: support code for generated builtin-module documents returned through `slang-synth://` URIs.
+- `preprocessor/`: optional M4a trace consumers for [M4b branch display](preprocessor-branch-display.md),
+  including debounced refresh, synchronization/freshness guards and editor-owned decorations.
 
 No component depends on CLion Classic/CIDR C++ PSI or on Radler internals.
 

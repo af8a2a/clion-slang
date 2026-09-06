@@ -17,6 +17,8 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
     public static final class SettingsState {
         public boolean autoDetectSlangd = true;
         public String slangdPath = "";
+        public boolean showPreprocessorBranches = true;
+        public boolean showPreprocessorBranchLabels = true;
 
         public SettingsState() {
         }
@@ -24,6 +26,8 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
         private SettingsState(@NotNull SettingsState other) {
             autoDetectSlangd = other.autoDetectSlangd;
             slangdPath = other.slangdPath;
+            showPreprocessorBranches = other.showPreprocessorBranches;
+            showPreprocessorBranchLabels = other.showPreprocessorBranchLabels;
         }
     }
 
@@ -61,4 +65,12 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
     public synchronized void setSlangdPath(@NotNull String slangdPath) {
         state.slangdPath = slangdPath;
     }
+
+    public synchronized boolean isShowPreprocessorBranches() { return state.showPreprocessorBranches; }
+
+    public synchronized void setShowPreprocessorBranches(boolean value) { state.showPreprocessorBranches = value; }
+
+    public synchronized boolean isShowPreprocessorBranchLabels() { return state.showPreprocessorBranchLabels; }
+
+    public synchronized void setShowPreprocessorBranchLabels(boolean value) { state.showPreprocessorBranchLabels = value; }
 }
