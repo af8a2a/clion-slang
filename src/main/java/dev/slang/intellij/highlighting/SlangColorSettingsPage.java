@@ -24,6 +24,7 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             descriptor("Comments//Block comment", SlangSyntaxHighlighter.BLOCK_COMMENT),
             descriptor("Comments//Documentation comment", SlangSyntaxHighlighter.DOC_COMMENT),
             descriptor("Preprocessor directives", SlangSyntaxHighlighter.PREPROCESSOR),
+            descriptor("Include paths", SlangSyntaxHighlighter.INCLUDE_PATH),
             descriptor("Attributes", SlangSyntaxHighlighter.ATTRIBUTE),
             descriptor("HLSL semantics", SlangSyntaxHighlighter.SEMANTIC),
             descriptor("Semantic//Namespace", SlangSemanticColors.NAMESPACE),
@@ -88,6 +89,8 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
     );
 
     private static final String DEMO_TEXT = """
+            #include "ClusterLightGridCommon.slang"
+            #include <lighting/Common.slangh>
             #define <semanticMacro>THREAD_COUNT</semanticMacro> 8
 
             namespace <semanticNamespace>rendering</semanticNamespace>

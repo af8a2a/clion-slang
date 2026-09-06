@@ -91,6 +91,55 @@ public class SlangLexerTest {
         assertEquals(source.length(), tokens.getLast().end());
     }
 
+    @Test
+    public void separatesIncludeDirectivePathsAndComments() {
+        String source = "#include \"ClusterLightGridCommon.slang\" // lighting\n"
+                + "  #  include <lighting/Common.slangh>\n"
+                + "#include /* comment */ \"dir\\header.slang\"\n"
+                + "#include HEADER_MACRO\n#define HEADER_MACRO \"other.slang\"\n"
+                + "bool result = left < right;";
+        List<Token> tokens = significantTokens(source);
+        assertToken(tokens, "#include", SlangTokenTypes.PREPROCESSOR);
+        assertToken(tokens, "#  include", SlangTokenTypes.PREPROCESSOR);
+        assertToken(tokens, "\"ClusterLightGridCommon.slang\"", SlangTokenTypes.INCLUDE_PATH);
+        assertToken(tokens, "<lighting/Common.slangh>", SlangTokenTypes.INCLUDE_PATH);
+        assertToken(tokens, "\"dir\\header.slang\"", SlangTokenTypes.INCLUDE_PATH);
+        assertToken(tokens, "// lighting", SlangTokenTypes.LINE_COMMENT);
+        assertToken(tokens, "/* comment */", SlangTokenTypes.BLOCK_COMMENT);
+        assertToken(tokens, "HEADER_MACRO", SlangTokenTypes.IDENTIFIER);
+        assertToken(tokens, "#define HEADER_MACRO \"other.slang\"", SlangTokenTypes.PREPROCESSOR);
+        assertToken(tokens, "<", SlangTokenTypes.OPERATOR);
+    }
+
+    @Test
+    public void includeHighlightingRestartsAndStopsAtNewlines() {
+        for (String newline : List.of("\n", "\r\n", "\r")) {
+            String source = "#include \\" + newline + "  <continued.slang>" + newline
+                    + "#include /* first" + newline + "second */ \"comment.slang\"" + newline
+                    + "#include" + newline + "<ordinary>" + newline
+                    + "#include \"unfinished" + newline + "float value;" + newline
+                    + "#include_next <notAnInclude>";
+            List<Token> tokens = lex(source);
+            assertToken(tokens, "<continued.slang>", SlangTokenTypes.INCLUDE_PATH);
+            assertToken(tokens, "\"comment.slang\"", SlangTokenTypes.INCLUDE_PATH);
+            assertToken(tokens, "ordinary", SlangTokenTypes.IDENTIFIER);
+            assertToken(tokens, "float", SlangTokenTypes.TYPE_KEYWORD);
+            assertToken(tokens, "\"unfinished", SlangTokenTypes.INCLUDE_PATH);
+            assertToken(tokens, "#include_next <notAnInclude>", SlangTokenTypes.PREPROCESSOR);
+            int end = 0;
+            for (Token expected : tokens) {
+                assertEquals(end, expected.start());
+                assertTrue(expected.end() > expected.start());
+                end = expected.end();
+                SlangLexer restarted = new SlangLexer();
+                restarted.start(source, expected.start(), source.length(), expected.state());
+                assertSame(expected.text(), expected.type(), restarted.getTokenType());
+                assertEquals(expected.text(), expected.end(), restarted.getTokenEnd());
+            }
+            assertEquals(source.length(), end);
+        }
+    }
+
     private static List<Token> significantTokens(String source) {
         return lex(source).stream()
                 .filter(token -> token.type() != SlangTokenTypes.WHITE_SPACE)

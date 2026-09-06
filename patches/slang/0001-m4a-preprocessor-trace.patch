@@ -1,0 +1,930 @@
+diff --git a/source/compiler-core/slang-language-server-protocol.cpp b/source/compiler-core/slang-language-server-protocol.cpp
+index 2530120d3..01b09866b 100644
+--- a/source/compiler-core/slang-language-server-protocol.cpp
++++ b/source/compiler-core/slang-language-server-protocol.cpp
+@@ -249,6 +249,20 @@ static const StructRttiInfo _makeWorkspaceCapabilitiesRtti()
+ }
+ const StructRttiInfo WorkspaceCapabilities::g_rttiInfo = _makeWorkspaceCapabilitiesRtti();
+ 
++static const StructRttiInfo _makeSlangExperimentalServerCapabilitiesRtti()
++{
++    SlangExperimentalServerCapabilities obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::SlangExperimentalServerCapabilities",
++        nullptr);
++    builder.addField("preprocessorTrace", &obj.preprocessorTrace);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo SlangExperimentalServerCapabilities::g_rttiInfo =
++    _makeSlangExperimentalServerCapabilitiesRtti();
++
+ static const StructRttiInfo _makeServerCapabilitiesRtti()
+ {
+     ServerCapabilities obj;
+@@ -266,6 +280,7 @@ static const StructRttiInfo _makeServerCapabilitiesRtti()
+     builder.addField("semanticTokensProvider", &obj.semanticTokensProvider);
+     builder.addField("signatureHelpProvider", &obj.signatureHelpProvider);
+     builder.addField("documentSymbolProvider", &obj.documentSymbolProvider);
++    builder.addField("experimental", &obj.experimental);
+     builder.ignoreUnknownFields();
+     return builder.make();
+ }
+@@ -288,6 +303,7 @@ static const StructRttiInfo _makeVSServerCapabilitiesRtti()
+     builder.addField("semanticTokensProvider", &obj.semanticTokensProvider);
+     builder.addField("signatureHelpProvider", &obj.signatureHelpProvider);
+     builder.addField("documentSymbolProvider", &obj.documentSymbolProvider);
++    builder.addField("experimental", &obj.experimental);
+     builder.addField("_vs_projectContextProvider", &obj._vs_projectContextProvider);
+     builder.ignoreUnknownFields();
+     return builder.make();
+@@ -573,6 +589,72 @@ static const StructRttiInfo _makeSemanticTokensRtti()
+ }
+ const StructRttiInfo SemanticTokens::g_rttiInfo = _makeSemanticTokensRtti();
+ 
++static const StructRttiInfo _makePreprocessorTraceParamsRtti()
++{
++    PreprocessorTraceParams obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::PreprocessorTraceParams",
++        &WorkDoneProgressParams::g_rttiInfo);
++    builder.addField("textDocument", &obj.textDocument);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo PreprocessorTraceParams::g_rttiInfo = _makePreprocessorTraceParamsRtti();
++const UnownedStringSlice PreprocessorTraceParams::methodName =
++    UnownedStringSlice::fromLiteral("slang/textDocument/preprocessorTrace");
++
++static const StructRttiInfo _makePreprocessorTraceDirectiveRtti()
++{
++    PreprocessorTraceDirective obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::PreprocessorTraceDirective",
++        nullptr);
++    builder.addField("kind", &obj.kind);
++    builder.addField("range", &obj.range);
++    builder.addField("keywordRange", &obj.keywordRange);
++    builder.addField("evaluated", &obj.evaluated);
++    builder.addField("value", &obj.value);
++    builder.addField("active", &obj.active);
++    builder.addField("depth", &obj.depth);
++    builder.addField("parentDirective", &obj.parentDirective);
++    builder.addField("matchingIfDirective", &obj.matchingIfDirective);
++    builder.addField("previousBranchDirective", &obj.previousBranchDirective);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo PreprocessorTraceDirective::g_rttiInfo =
++    _makePreprocessorTraceDirectiveRtti();
++
++static const StructRttiInfo _makePreprocessorTraceInactiveRegionRtti()
++{
++    PreprocessorTraceInactiveRegion obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::PreprocessorTraceInactiveRegion",
++        nullptr);
++    builder.addField("range", &obj.range);
++    builder.addField("controllingDirective", &obj.controllingDirective);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo PreprocessorTraceInactiveRegion::g_rttiInfo =
++    _makePreprocessorTraceInactiveRegionRtti();
++
++static const StructRttiInfo _makePreprocessorTraceRtti()
++{
++    PreprocessorTrace obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorTrace", nullptr);
++    builder.addField("uri", &obj.uri);
++    builder.addField("version", &obj.version);
++    builder.addField("directives", &obj.directives);
++    builder.addField("inactiveRegions", &obj.inactiveRegions);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo PreprocessorTrace::g_rttiInfo = _makePreprocessorTraceRtti();
++
+ static const StructRttiInfo _makeSignatureHelpParamsRtti()
+ {
+     SignatureHelpParams obj;
+diff --git a/source/compiler-core/slang-language-server-protocol.h b/source/compiler-core/slang-language-server-protocol.h
+index ff933e867..ae5094755 100644
+--- a/source/compiler-core/slang-language-server-protocol.h
++++ b/source/compiler-core/slang-language-server-protocol.h
+@@ -280,6 +280,12 @@ struct DocumentOnTypeFormattingOptions
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
++struct SlangExperimentalServerCapabilities
++{
++    int preprocessorTrace = 0;
++    static const StructRttiInfo g_rttiInfo;
++};
++
+ struct ServerCapabilities
+ {
+     String positionEncoding;
+@@ -295,6 +301,7 @@ struct ServerCapabilities
+     SemanticTokensOptions semanticTokensProvider;
+     SignatureHelpOptions signatureHelpProvider;
+     WorkspaceCapabilities workspace;
++    SlangExperimentalServerCapabilities experimental;
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
+@@ -711,6 +718,48 @@ struct SemanticTokens
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
++struct PreprocessorTraceParams : WorkDoneProgressParams
++{
++    TextDocumentIdentifier textDocument;
++
++    static const UnownedStringSlice methodName;
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorTraceDirective
++{
++    String kind;
++    Range range;
++    Range keywordRange;
++    bool evaluated = false;
++    bool value = false;
++    bool active = false;
++    int depth = 0;
++    int parentDirective = -1;
++    int matchingIfDirective = -1;
++    int previousBranchDirective = -1;
++
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorTraceInactiveRegion
++{
++    Range range;
++    int controllingDirective = -1;
++
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorTrace
++{
++    String uri;
++    int version = 0;
++    List<PreprocessorTraceDirective> directives;
++    List<PreprocessorTraceInactiveRegion> inactiveRegions;
++
++    static const StructRttiInfo g_rttiInfo;
++};
++
+ struct SignatureHelpParams : WorkDoneProgressParams, TextDocumentPositionParams
+ {
+     static const UnownedStringSlice methodName;
+diff --git a/source/slang/slang-content-assist-info.h b/source/slang/slang-content-assist-info.h
+index c913e1546..d72c1c4fb 100644
+--- a/source/slang/slang-content-assist-info.h
++++ b/source/slang/slang-content-assist-info.h
+@@ -77,11 +77,37 @@ struct FileIncludeContentAssistInfo
+     String path;
+ };
+ 
++struct ConditionalDirectiveContentAssistInfo
++{
++    String kind;
++    SourceLoc beginLoc;
++    SourceLoc endLoc;
++    SourceLoc keywordLoc;
++    int keywordLength = 0;
++    bool evaluated = false;
++    bool value = false;
++    bool active = false;
++    int depth = 0;
++    int parentDirective = -1;
++    int matchingIfDirective = -1;
++    int previousBranchDirective = -1;
++};
++
++struct InactiveRegionContentAssistInfo
++{
++    SourceLoc beginLoc;
++    SourceLoc endLoc;
++    int controllingDirective = -1;
++    bool endsAtDirective = false;
++};
++
+ struct PreprocessorContentAssistInfo
+ {
+     List<MacroDefinitionContentAssistInfo> macroDefinitions;
+     List<MacroInvocationContentAssistInfo> macroInvocations;
+     List<FileIncludeContentAssistInfo> fileIncludes;
++    List<ConditionalDirectiveContentAssistInfo> conditionalDirectives;
++    List<InactiveRegionContentAssistInfo> inactiveRegions;
+ };
+ 
+ enum class ContentAssistCheckingMode
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index baae3cbe9..76c140f53 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -159,6 +159,7 @@ SlangResult LanguageServer::parseNextMessage()
+                     caps.completionProvider.workDoneToken = "";
+                     caps.semanticTokensProvider.full = true;
+                     caps.semanticTokensProvider.range = false;
++                    caps.experimental.preprocessorTrace = 1;
+                     caps.signatureHelpProvider.triggerCharacters.add("(");
+                     caps.signatureHelpProvider.triggerCharacters.add("<");
+                     caps.signatureHelpProvider.triggerCharacters.add(",");
+@@ -248,7 +249,8 @@ SlangResult LanguageServer::parseNextMessage()
+ SlangResult LanguageServerCore::didOpenTextDocument(const DidOpenTextDocumentParams& args)
+ {
+     String canonicalPath = uriToCanonicalPath(args.textDocument.uri);
+-    m_workspace->openDoc(canonicalPath, args.textDocument.text);
++    auto doc = m_workspace->openDoc(canonicalPath, args.textDocument.text);
++    doc->setVersion(args.textDocument.version);
+     return SLANG_OK;
+ }
+ 
+@@ -1485,6 +1487,176 @@ LanguageServerResult<LanguageServerProtocol::SemanticTokens> LanguageServerCore:
+     return response;
+ }
+ 
++SlangResult LanguageServer::preprocessorTrace(
++    const LanguageServerProtocol::PreprocessorTraceParams& args,
++    const JSONValue& responseId)
++{
++    auto result = m_core.preprocessorTrace(args);
++    removePendingModuleToUpdateDiagnostics(args.textDocument.uri);
++
++    if (SLANG_FAILED(result.returnCode) || result.isNull)
++    {
++        JSONResultResponse response;
++        response.id = responseId;
++        response.result = JSONValue::makeNull();
++        m_connection->sendRPC(&response);
++        return SLANG_OK;
++    }
++    m_connection->sendResult(&result.result, responseId);
++    return SLANG_OK;
++}
++
++LanguageServerResult<LanguageServerProtocol::PreprocessorTrace>
++LanguageServerCore::preprocessorTrace(
++    const LanguageServerProtocol::PreprocessorTraceParams& args)
++{
++    String canonicalPath = uriToCanonicalPath(args.textDocument.uri);
++
++    RefPtr<DocumentVersion> doc;
++    if (!m_workspace->openedDocuments.tryGetValue(canonicalPath, doc))
++        return std::nullopt;
++
++    auto workspaceVersion = m_workspace->getCurrentVersion();
++    SLANG_AST_BUILDER_RAII(workspaceVersion->linkage->getASTBuilder());
++    if (!workspaceVersion->getOrLoadModule(canonicalPath))
++        return std::nullopt;
++
++    auto sourceManager = workspaceVersion->linkage->getSourceManager();
++    auto isPrimaryPath = [&](const HumaneSourceLoc& humaneLoc)
++    {
++        String locCanonicalPath;
++        if (SLANG_SUCCEEDED(
++                Path::getCanonical(humaneLoc.pathInfo.foundPath, locCanonicalPath)))
++            return locCanonicalPath == canonicalPath;
++        return humaneLoc.pathInfo.foundPath == canonicalPath;
++    };
++    auto getLineLength = [&](Index oneBasedLine)
++    {
++        auto boundaries = doc->getUTF16Boundaries(oneBasedLine);
++        return boundaries.getCount() ? (int)boundaries.getCount() - 1 : 0;
++    };
++    auto getDirectiveRanges = [&]
++    (
++        SourceLoc beginLoc,
++        SourceLoc endLoc,
++        SourceLoc loc,
++        int keywordLength,
++        LanguageServerProtocol::Range& range,
++        LanguageServerProtocol::Range& keywordRange
++    )
++    {
++        auto humaneLoc = sourceManager->getHumaneLoc(loc, SourceLocType::Actual);
++        auto beginHumane = sourceManager->getHumaneLoc(beginLoc, SourceLocType::Actual);
++        auto endHumane = sourceManager->getHumaneLoc(endLoc, SourceLocType::Actual);
++        if (!isPrimaryPath(humaneLoc) || !isPrimaryPath(beginHumane) ||
++            !isPrimaryPath(endHumane))
++            return false;
++
++        int32_t line = 0;
++        int32_t col = 0;
++        int32_t endLine = 0;
++        int32_t endCol = 0;
++        doc->oneBasedUTF8LocToZeroBasedUTF16Loc(humaneLoc.line, humaneLoc.column, line, col);
++        doc->oneBasedUTF8LocToZeroBasedUTF16Loc(
++            humaneLoc.line,
++            humaneLoc.column + keywordLength,
++            endLine,
++            endCol);
++        range.start.line = (int)beginHumane.line - 1;
++        range.start.character = 0;
++        Index finalLine = endHumane.line;
++        if (finalLine > beginHumane.line && endHumane.column == 1)
++            --finalLine;
++        range.end.line = (int)finalLine - 1;
++        range.end.character = getLineLength(finalLine);
++        keywordRange.start.line = line;
++        keywordRange.start.character = col;
++        keywordRange.end.line = endLine;
++        keywordRange.end.character = endCol;
++        return true;
++    };
++    auto getInactiveRange = [&]
++    (
++        SourceLoc beginLoc,
++        SourceLoc endLoc,
++        bool endsAtDirective,
++        LanguageServerProtocol::Range& range
++    )
++    {
++        auto beginHumane = sourceManager->getHumaneLoc(beginLoc, SourceLocType::Actual);
++        auto endHumane = sourceManager->getHumaneLoc(endLoc, SourceLocType::Actual);
++        if (!isPrimaryPath(beginHumane) || !isPrimaryPath(endHumane))
++            return false;
++
++        range.start.line = (int)beginHumane.line - 1;
++        range.start.character = 0;
++        range.end.line = (int)endHumane.line - 1;
++        range.end.character = endsAtDirective ? 0 : getLineLength(endHumane.line);
++        return range.start.line < range.end.line ||
++               (range.start.line == range.end.line &&
++                range.start.character < range.end.character);
++    };
++
++    PreprocessorTrace response;
++    response.uri = args.textDocument.uri;
++    response.version = doc->getVersion();
++
++    auto& traceInfo = workspaceVersion->linkage->contentAssistInfo.preprocessorInfo;
++    List<int> oldToNewDirectiveIndex;
++    oldToNewDirectiveIndex.setCount(traceInfo.conditionalDirectives.getCount());
++    for (auto& index : oldToNewDirectiveIndex)
++        index = -1;
++
++    for (Index oldIndex = 0; oldIndex < traceInfo.conditionalDirectives.getCount(); ++oldIndex)
++    {
++        auto& source = traceInfo.conditionalDirectives[oldIndex];
++        PreprocessorTraceDirective target;
++        if (!getDirectiveRanges(
++                source.beginLoc,
++                source.endLoc,
++                source.keywordLoc,
++                source.keywordLength,
++                target.range,
++                target.keywordRange))
++            continue;
++
++        target.kind = source.kind;
++        target.evaluated = source.evaluated;
++        target.value = source.value;
++        target.active = source.active;
++        target.depth = source.depth;
++        target.parentDirective = source.parentDirective;
++        target.matchingIfDirective = source.matchingIfDirective;
++        target.previousBranchDirective = source.previousBranchDirective;
++        oldToNewDirectiveIndex[oldIndex] = (int)response.directives.getCount();
++        response.directives.add(_Move(target));
++    }
++
++    auto remapDirectiveIndex = [&](int oldIndex)
++    {
++        if (oldIndex < 0 || oldIndex >= oldToNewDirectiveIndex.getCount())
++            return -1;
++        return oldToNewDirectiveIndex[oldIndex];
++    };
++    for (auto& directive : response.directives)
++    {
++        directive.parentDirective = remapDirectiveIndex(directive.parentDirective);
++        directive.matchingIfDirective = remapDirectiveIndex(directive.matchingIfDirective);
++        directive.previousBranchDirective =
++            remapDirectiveIndex(directive.previousBranchDirective);
++    }
++
++    for (auto& source : traceInfo.inactiveRegions)
++    {
++        PreprocessorTraceInactiveRegion target;
++        if (!getInactiveRange(source.beginLoc, source.endLoc, source.endsAtDirective, target.range))
++            continue;
++        target.controllingDirective = remapDirectiveIndex(source.controllingDirective);
++        response.inactiveRegions.add(_Move(target));
++    }
++    return response;
++}
++
+ String LanguageServerCore::getExprDeclSignature(
+     Expr* expr,
+     String* outDocumentation,
+@@ -2710,6 +2882,16 @@ SlangResult LanguageServer::queueJSONCall(JSONRPCCall call)
+             call.id));
+         cmd.semanticTokenArgs = args;
+     }
++    else if (call.method == PreprocessorTraceParams::methodName)
++    {
++        PreprocessorTraceParams args;
++        SLANG_RETURN_ON_FAIL(m_connection->checkArrayObjectWrap(
++            call.params,
++            GetRttiInfo<PreprocessorTraceParams>::get(),
++            &args,
++            call.id));
++        cmd.preprocessorTraceArgs = args;
++    }
+     else if (call.method == SignatureHelpParams::methodName)
+     {
+         SignatureHelpParams args;
+@@ -2824,6 +3006,10 @@ SlangResult LanguageServer::runCommand(Command& call)
+         {
+             return semanticTokens(call.semanticTokenArgs.get(), call.id);
+         }
++        else if (call.method == PreprocessorTraceParams::methodName)
++        {
++            return preprocessorTrace(call.preprocessorTraceArgs.get(), call.id);
++        }
+         else if (call.method == SignatureHelpParams::methodName)
+         {
+             return signatureHelp(call.signatureHelpArgs.get(), call.id);
+@@ -2866,6 +3052,8 @@ SlangResult LanguageServer::runCommand(Command& call)
+     }
+     catch (...)
+     {
++        if (call.method == PreprocessorTraceParams::methodName)
++            return m_connection->sendError(JSONRPC::ErrorCode::InternalError, call.id);
+         // If we encountered an internal compiler error, don't crash the language server.
+         // Instead we just return a null response.
+         return m_connection->sendResult(NullResponse::get(), call.id);
+@@ -2950,6 +3138,10 @@ SlangResult LanguageServerCore::didChangeTextDocument(const DidChangeTextDocumen
+     for (auto change : args.contentChanges)
+         m_workspace->changeDoc(canonicalPath, change.range, change.text);
+ 
++    RefPtr<DocumentVersion> doc;
++    if (m_workspace->openedDocuments.tryGetValue(canonicalPath, doc))
++        doc->setVersion(args.textDocument.version);
++
+     return SLANG_OK;
+ }
+ 
+diff --git a/source/slang/slang-language-server.h b/source/slang/slang-language-server.h
+index 6e524885f..f637b2db0 100644
+--- a/source/slang/slang-language-server.h
++++ b/source/slang/slang-language-server.h
+@@ -71,6 +71,7 @@ struct Command
+     Optional<LanguageServerProtocol::SignatureHelpParams> signatureHelpArgs;
+     Optional<LanguageServerProtocol::DefinitionParams> definitionArgs;
+     Optional<LanguageServerProtocol::SemanticTokensParams> semanticTokenArgs;
++    Optional<LanguageServerProtocol::PreprocessorTraceParams> preprocessorTraceArgs;
+     Optional<LanguageServerProtocol::HoverParams> hoverArgs;
+     Optional<LanguageServerProtocol::DidOpenTextDocumentParams> openDocArgs;
+     Optional<LanguageServerProtocol::DidChangeTextDocumentParams> changeDocArgs;
+@@ -129,6 +130,8 @@ public:
+         const LanguageServerProtocol::TextEditCompletionItem& editItem);
+     LanguageServerResult<LanguageServerProtocol::SemanticTokens> semanticTokens(
+         const LanguageServerProtocol::SemanticTokensParams& args);
++    LanguageServerResult<LanguageServerProtocol::PreprocessorTrace> preprocessorTrace(
++        const LanguageServerProtocol::PreprocessorTraceParams& args);
+     LanguageServerResult<LanguageServerProtocol::SignatureHelp> signatureHelp(
+         const LanguageServerProtocol::SignatureHelpParams& args);
+     LanguageServerResult<List<LanguageServerProtocol::DocumentSymbol>> documentSymbol(
+@@ -225,6 +228,9 @@ public:
+     SlangResult semanticTokens(
+         const LanguageServerProtocol::SemanticTokensParams& args,
+         const JSONValue& responseId);
++    SlangResult preprocessorTrace(
++        const LanguageServerProtocol::PreprocessorTraceParams& args,
++        const JSONValue& responseId);
+     SlangResult signatureHelp(
+         const LanguageServerProtocol::SignatureHelpParams& args,
+         const JSONValue& responseId);
+diff --git a/source/slang/slang-preprocessor.cpp b/source/slang/slang-preprocessor.cpp
+index 6e79511b7..f57b0f7e1 100644
+--- a/source/slang/slang-preprocessor.cpp
++++ b/source/slang/slang-preprocessor.cpp
+@@ -111,6 +111,10 @@ struct Conditional
+ 
+     /// The state of the conditional
+     State state;
++
++    /// Indices into the language-server trace, when content-assist tracing is enabled.
++    int ifDirectiveIndex = -1;
++    int currentDirectiveIndex = -1;
+ };
+ 
+ /// An environment used for mapping macro names to their definitions during preprocessing.
+@@ -1321,6 +1325,11 @@ struct Preprocessor
+     /// Stores macro definition and invocation info for language server.
+     PreprocessorContentAssistInfo* contentAssistInfo = nullptr;
+ 
++    /// Pending inactive source range for the primary input file.
++    bool hasPendingInactiveRegion = false;
++    SourceLoc pendingInactiveBeginLoc;
++    int pendingInactiveControllingDirective = -1;
++
+     NamePool* getNamePool() { return namePool; }
+     SourceManager* getSourceManager() { return sourceManager; }
+ 
+@@ -2620,6 +2629,9 @@ struct PreprocessorDirectiveContext
+     // The directive token (e.g., the `if` in `#if`).
+     // Useful for reference in diagnostic messages.
+     Token m_directiveToken;
++    SourceLoc m_beginLoc;
++    SourceLoc m_endLoc;
++    int m_traceIndex = -1;
+ 
+     // Has any kind of parse error been encountered in
+     // the directive so far?
+@@ -2886,6 +2898,91 @@ static bool Expect(
+ // Preprocessor Conditionals
+ //
+ 
++static bool shouldRecordPreprocessorTrace(Preprocessor* preprocessor)
++{
++    return preprocessor->contentAssistInfo && preprocessor->m_currentInputFile &&
++           !preprocessor->m_currentInputFile->isIncludedFile();
++}
++
++static int getConditionalDepth(Conditional* conditional)
++{
++    int depth = 0;
++    for (auto parent = conditional ? conditional->parent : nullptr; parent; parent = parent->parent)
++        ++depth;
++    return depth;
++}
++
++static int getParentDirectiveIndex(Conditional* conditional)
++{
++    return conditional && conditional->parent ? conditional->parent->currentDirectiveIndex : -1;
++}
++
++static int addConditionalDirectiveForContentAssist(
++    PreprocessorDirectiveContext* context,
++    const char* kind,
++    bool evaluated,
++    bool value,
++    bool active,
++    int depth,
++    int parentDirective,
++    int matchingIfDirective,
++    int previousBranchDirective)
++{
++    auto preprocessor = context->m_preprocessor;
++    if (!shouldRecordPreprocessorTrace(preprocessor))
++        return -1;
++
++    ConditionalDirectiveContentAssistInfo info;
++    info.kind = kind;
++    info.beginLoc = context->m_beginLoc;
++    info.keywordLoc = context->m_directiveToken.loc;
++    info.keywordLength = (int)context->m_directiveToken.getContentLength();
++    info.evaluated = evaluated;
++    info.value = evaluated && value;
++    info.active = active;
++    info.depth = depth;
++    info.parentDirective = parentDirective;
++    info.matchingIfDirective = matchingIfDirective;
++    info.previousBranchDirective = previousBranchDirective;
++    auto index = (int)preprocessor->contentAssistInfo->conditionalDirectives.getCount();
++    preprocessor->contentAssistInfo->conditionalDirectives.add(_Move(info));
++    context->m_traceIndex = index;
++    return index;
++}
++
++static int getInactiveControllingDirective(InputFile* inputFile)
++{
++    for (auto conditional = inputFile->getInnerMostConditional(); conditional;
++         conditional = conditional->parent)
++    {
++        if (conditional->state != Conditional::State::During)
++            return conditional->currentDirectiveIndex;
++    }
++    return -1;
++}
++
++static void flushPendingInactiveRegion(
++    Preprocessor* preprocessor,
++    SourceLoc endLoc,
++    bool endsAtDirective = false)
++{
++    if (!preprocessor->hasPendingInactiveRegion)
++        return;
++
++    if (preprocessor->contentAssistInfo &&
++        endLoc.getRaw() > preprocessor->pendingInactiveBeginLoc.getRaw())
++    {
++        InactiveRegionContentAssistInfo info;
++        info.beginLoc = preprocessor->pendingInactiveBeginLoc;
++        info.endLoc = endLoc;
++        info.controllingDirective = preprocessor->pendingInactiveControllingDirective;
++        info.endsAtDirective = endsAtDirective;
++        preprocessor->contentAssistInfo->inactiveRegions.add(info);
++    }
++    preprocessor->hasPendingInactiveRegion = false;
++    preprocessor->pendingInactiveControllingDirective = -1;
++}
++
+ bool InputFile::isSkipping()
+ {
+     // If we are not inside a preprocessor conditional, then don't skip
+@@ -2930,7 +3027,10 @@ static void updateLexerFlagsForConditionals(InputFile* inputFile)
+ }
+ 
+ /// Start a preprocessor conditional, with an initial enable/disable state.
+-static void beginConditional(PreprocessorDirectiveContext* context, bool enable)
++static Conditional* beginConditional(
++    PreprocessorDirectiveContext* context,
++    bool enable,
++    int directiveIndex)
+ {
+     Preprocessor* preprocessor = context->m_preprocessor;
+     InputFile* inputFile = getInputFile(context);
+@@ -2955,11 +3055,14 @@ static void beginConditional(PreprocessorDirectiveContext* context, bool enable)
+         state = Conditional::State::During;
+ 
+     conditional->state = state;
++    conditional->ifDirectiveIndex = directiveIndex;
++    conditional->currentDirectiveIndex = directiveIndex;
+ 
+     // Push conditional onto the stack
+     inputFile->pushConditional(conditional);
+ 
+     updateLexerFlagsForConditionals(inputFile);
++    return conditional;
+ }
+ 
+ //
+@@ -3346,13 +3449,38 @@ static void HandleIfDirective(PreprocessorDirectiveContext* context)
+     // Read a preprocessor expression (if not skipping), and begin a conditional
+     // based on the value of that expression.
+     //
++    auto inputFile = getInputFile(context);
++    auto parent = inputFile->getInnerMostConditional();
++    bool evaluated = !inputFile->isSkipping();
+     PreprocessorExpressionValue value = _skipOrParseAndEvaluateExpression(context);
+-    beginConditional(context, value != 0);
++    int depth = parent ? getConditionalDepth(parent) + 1 : 0;
++    int parentDirective = parent ? parent->currentDirectiveIndex : -1;
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "if",
++        evaluated,
++        value != 0,
++        false,
++        depth,
++        parentDirective,
++        -1,
++        -1);
++    auto conditional = beginConditional(context, value != 0, directiveIndex);
++    if (directiveIndex >= 0)
++    {
++        auto& info = context->m_preprocessor->contentAssistInfo
++                         ->conditionalDirectives[directiveIndex];
++        info.active = conditional->state == Conditional::State::During;
++        info.matchingIfDirective = directiveIndex;
++    }
+ }
+ 
+ // Handle a `#ifdef` directive
+ static void HandleIfDefDirective(PreprocessorDirectiveContext* context)
+ {
++    auto inputFile = getInputFile(context);
++    auto parent = inputFile->getInnerMostConditional();
++    bool evaluated = !inputFile->isSkipping();
+     // Expect a raw identifier, so we can check if it is defined
+     Token nameToken;
+     if (!ExpectRaw(
+@@ -3364,12 +3492,35 @@ static void HandleIfDefDirective(PreprocessorDirectiveContext* context)
+     Name* name = nameToken.getName();
+ 
+     // Check if the name is defined.
+-    beginConditional(context, LookupMacro(context, name) != NULL);
++    bool value = LookupMacro(context, name) != NULL;
++    int depth = parent ? getConditionalDepth(parent) + 1 : 0;
++    int parentDirective = parent ? parent->currentDirectiveIndex : -1;
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "ifdef",
++        evaluated,
++        value,
++        false,
++        depth,
++        parentDirective,
++        -1,
++        -1);
++    auto conditional = beginConditional(context, value, directiveIndex);
++    if (directiveIndex >= 0)
++    {
++        auto& info = context->m_preprocessor->contentAssistInfo
++                         ->conditionalDirectives[directiveIndex];
++        info.active = conditional->state == Conditional::State::During;
++        info.matchingIfDirective = directiveIndex;
++    }
+ }
+ 
+ // Handle a `#ifndef` directive
+ static void HandleIfNDefDirective(PreprocessorDirectiveContext* context)
+ {
++    auto inputFile = getInputFile(context);
++    auto parent = inputFile->getInnerMostConditional();
++    bool evaluated = !inputFile->isSkipping();
+     // Expect a raw identifier, so we can check if it is defined
+     Token nameToken;
+     if (!ExpectRaw(
+@@ -3381,7 +3532,27 @@ static void HandleIfNDefDirective(PreprocessorDirectiveContext* context)
+     Name* name = nameToken.getName();
+ 
+     // Check if the name is defined.
+-    beginConditional(context, LookupMacro(context, name) == NULL);
++    bool value = LookupMacro(context, name) == NULL;
++    int depth = parent ? getConditionalDepth(parent) + 1 : 0;
++    int parentDirective = parent ? parent->currentDirectiveIndex : -1;
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "ifndef",
++        evaluated,
++        value,
++        false,
++        depth,
++        parentDirective,
++        -1,
++        -1);
++    auto conditional = beginConditional(context, value, directiveIndex);
++    if (directiveIndex >= 0)
++    {
++        auto& info = context->m_preprocessor->contentAssistInfo
++                         ->conditionalDirectives[directiveIndex];
++        info.active = conditional->state == Conditional::State::During;
++        info.matchingIfDirective = directiveIndex;
++    }
+ }
+ 
+ // Handle a `#else` directive
+@@ -3411,6 +3582,7 @@ static void HandleElseDirective(PreprocessorDirectiveContext* context)
+         return;
+     }
+     conditional->elseToken = context->m_directiveToken;
++    int previousBranchDirective = conditional->currentDirectiveIndex;
+ 
+     switch (conditional->state)
+     {
+@@ -3426,6 +3598,19 @@ static void HandleElseDirective(PreprocessorDirectiveContext* context)
+         break;
+     }
+ 
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "else",
++        false,
++        false,
++        conditional->state == Conditional::State::During,
++        getConditionalDepth(conditional),
++        getParentDirectiveIndex(conditional),
++        conditional->ifDirectiveIndex,
++        previousBranchDirective);
++    if (directiveIndex >= 0)
++        conditional->currentDirectiveIndex = directiveIndex;
++
+     updateLexerFlagsForConditionals(inputFile);
+ }
+ 
+@@ -3473,12 +3658,16 @@ static void HandleElifDirective(PreprocessorDirectiveContext* context)
+         return;
+     }
+ 
++    bool evaluated = false;
++    bool value = false;
++    int previousBranchDirective = conditional->currentDirectiveIndex;
+     switch (conditional->state)
+     {
+     case Conditional::State::Before:
+         {
+             // Only evaluate the expression if we are in the before state.
+-            const PreprocessorExpressionValue value = _parseAndEvaluateExpression(context);
++            evaluated = true;
++            value = _parseAndEvaluateExpression(context) != 0;
+             if (value)
+             {
+                 conditional->state = Conditional::State::During;
+@@ -3500,6 +3689,19 @@ static void HandleElifDirective(PreprocessorDirectiveContext* context)
+         }
+     }
+ 
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "elif",
++        evaluated,
++        value,
++        conditional->state == Conditional::State::During,
++        getConditionalDepth(conditional),
++        getParentDirectiveIndex(conditional),
++        conditional->ifDirectiveIndex,
++        previousBranchDirective);
++    if (directiveIndex >= 0)
++        conditional->currentDirectiveIndex = directiveIndex;
++
+     updateLexerFlagsForConditionals(inputFile);
+ }
+ 
+@@ -3519,6 +3721,17 @@ static void HandleEndIfDirective(PreprocessorDirectiveContext* context)
+         return;
+     }
+ 
++    addConditionalDirectiveForContentAssist(
++        context,
++        "endif",
++        false,
++        false,
++        false,
++        getConditionalDepth(conditional),
++        getParentDirectiveIndex(conditional),
++        conditional->ifDirectiveIndex,
++        conditional->currentDirectiveIndex);
++
+     inputFile->popConditional();
+ 
+     updateLexerFlagsForConditionals(inputFile);
+@@ -3551,6 +3764,11 @@ static void expectEndOfDirective(PreprocessorDirectiveContext* context)
+         SkipToEndOfLine(context);
+     }
+ 
++    // Capture the physical end of the logical directive, including continuations.
++    auto endToken = PeekRawToken(context);
++    context->m_endLoc = SourceLoc::fromRaw(
++        endToken.loc.getRaw() + (SourceLoc::RawValue)endToken.getContentLength());
++
+     // Clear out the end-of-line token
+     AdvanceRawToken(context);
+ }
+@@ -4783,6 +5001,8 @@ static Token ReadToken(Preprocessor* preprocessor)
+         Token token = expansionStream->peekRawToken();
+         if (token.type == TokenType::EndOfFile)
+         {
++            if (!inputFile->isIncludedFile())
++                flushPendingInactiveRegion(preprocessor, token.loc);
+             preprocessor->popInputFile();
+             continue;
+         }
+@@ -4793,15 +5013,33 @@ static Token ReadToken(Preprocessor* preprocessor)
+             // Skip the `#`
+             expansionStream->readRawToken();
+ 
++            auto directive = FindDirective(String(expansionStream->peekRawToken().getContent()));
++            bool traceConditional = shouldRecordPreprocessorTrace(preprocessor) &&
++                (directive->flags & PreprocessorDirectiveFlag::ProcessWhenSkipping);
++            if (traceConditional)
++                flushPendingInactiveRegion(preprocessor, token.loc, true);
++
+             // Create a context for parsing the directive
+             PreprocessorDirectiveContext directiveContext;
+             directiveContext.m_preprocessor = preprocessor;
+             directiveContext.m_parseError = false;
+             directiveContext.m_haveDoneEndOfDirectiveChecks = false;
+             directiveContext.m_inputFile = inputFile;
++            directiveContext.m_beginLoc = token.loc;
+ 
+             // Parse and handle the directive
+             HandleDirective(&directiveContext);
++            if (directiveContext.m_traceIndex >= 0)
++                preprocessor->contentAssistInfo
++                    ->conditionalDirectives[directiveContext.m_traceIndex].endLoc =
++                    directiveContext.m_endLoc;
++            if (traceConditional && inputFile->isSkipping() && directiveContext.m_endLoc.isValid())
++            {
++                preprocessor->hasPendingInactiveRegion = true;
++                preprocessor->pendingInactiveBeginLoc = directiveContext.m_endLoc;
++                preprocessor->pendingInactiveControllingDirective =
++                    getInactiveControllingDirective(inputFile);
++            }
+             continue;
+         }
+ 
+diff --git a/source/slang/slang-workspace-version.h b/source/slang/slang-workspace-version.h
+index 07ba16fb9..fd81cd7ce 100644
+--- a/source/slang/slang-workspace-version.h
++++ b/source/slang/slang-workspace-version.h
+@@ -22,6 +22,7 @@ private:
+     List<UnownedStringSlice> lines;
+     List<List<Index>> mapUTF16CharIndexToCodePointIndex;
+     List<List<Index>> mapCodePointIndexToUTF8ByteOffset;
++    int version = 0;
+ 
+ public:
+     void setPath(String filePath)
+@@ -33,6 +34,8 @@ public:
+     String getPath() { return path; }
+     const String& getText() { return text; }
+     void setText(const String& newText);
++    int getVersion() const { return version; }
++    void setVersion(int newVersion) { version = newVersion; }
+ 
+     void ensureUTFBoundsAvailable();
+     ArrayView<Index> getUTF16Boundaries(Index line);

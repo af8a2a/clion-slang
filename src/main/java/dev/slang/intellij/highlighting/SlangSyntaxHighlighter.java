@@ -25,6 +25,7 @@ public final class SlangSyntaxHighlighter extends SyntaxHighlighterBase {
             "SLANG.DOC_COMMENT", DefaultLanguageHighlighterColors.DOC_COMMENT);
     public static final TextAttributesKey PREPROCESSOR = key(
             "SLANG.PREPROCESSOR", DefaultLanguageHighlighterColors.METADATA);
+    public static final TextAttributesKey INCLUDE_PATH = key("SLANG.INCLUDE_PATH", STRING);
     public static final TextAttributesKey ATTRIBUTE = key(
             "SLANG.ATTRIBUTE", DefaultLanguageHighlighterColors.METADATA);
     public static final TextAttributesKey SEMANTIC = key(
@@ -53,6 +54,7 @@ public final class SlangSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final TextAttributesKey[] BLOCK_COMMENT_KEYS = pack(BLOCK_COMMENT);
     private static final TextAttributesKey[] DOC_COMMENT_KEYS = pack(DOC_COMMENT);
     private static final TextAttributesKey[] PREPROCESSOR_KEYS = pack(PREPROCESSOR);
+    private static final TextAttributesKey[] INCLUDE_PATH_KEYS = pack(INCLUDE_PATH);
     private static final TextAttributesKey[] ATTRIBUTE_KEYS = pack(ATTRIBUTE);
     private static final TextAttributesKey[] SEMANTIC_KEYS = pack(SEMANTIC);
     private static final TextAttributesKey[] OPERATOR_KEYS = pack(OPERATOR);
@@ -82,6 +84,7 @@ public final class SlangSyntaxHighlighter extends SyntaxHighlighterBase {
         if (tokenType == SlangTokenTypes.BLOCK_COMMENT) return BLOCK_COMMENT_KEYS;
         if (tokenType == SlangTokenTypes.DOC_COMMENT) return DOC_COMMENT_KEYS;
         if (tokenType == SlangTokenTypes.PREPROCESSOR) return PREPROCESSOR_KEYS;
+        if (tokenType == SlangTokenTypes.INCLUDE_PATH) return INCLUDE_PATH_KEYS;
         if (tokenType == SlangTokenTypes.ATTRIBUTE) return ATTRIBUTE_KEYS;
         if (tokenType == SlangTokenTypes.SEMANTIC) return SEMANTIC_KEYS;
         if (tokenType == SlangTokenTypes.OPERATOR || tokenType == SlangTokenTypes.COLON) return OPERATOR_KEYS;

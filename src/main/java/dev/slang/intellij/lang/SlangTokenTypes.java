@@ -20,6 +20,7 @@ public final class SlangTokenTypes {
     public static final IElementType STRING_LITERAL = token("STRING_LITERAL");
     public static final IElementType CHARACTER_LITERAL = token("CHARACTER_LITERAL");
     public static final IElementType PREPROCESSOR = token("PREPROCESSOR");
+    public static final IElementType INCLUDE_PATH = token("INCLUDE_PATH");
     public static final IElementType ATTRIBUTE = token("ATTRIBUTE");
     public static final IElementType SEMANTIC = token("SEMANTIC");
 

@@ -4,6 +4,8 @@
 .intellijPlatform/
 .slang-m2a-source/
 .slang-m2a-build*/
+.slang-m4a-source/
+.slang-m4a-build*/
 .bundled-runtime/
 .tmp-gradle/
 build/

@@ -2,6 +2,7 @@ package dev.slang.intellij.highlighting;
 
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.options.colors.AttributesDescriptor;
+import dev.slang.intellij.lang.SlangTokenTypes;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -14,6 +15,18 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class SlangColorSettingsPageTest {
+    @Test
+    public void includePathsHaveAnIndependentStringBasedColor() {
+        SlangSyntaxHighlighter highlighter = new SlangSyntaxHighlighter();
+        assertSame(SlangSyntaxHighlighter.PREPROCESSOR,
+                highlighter.getTokenHighlights(SlangTokenTypes.PREPROCESSOR)[0]);
+        assertSame(SlangSyntaxHighlighter.INCLUDE_PATH,
+                highlighter.getTokenHighlights(SlangTokenTypes.INCLUDE_PATH)[0]);
+        assertSame(SlangSyntaxHighlighter.STRING, SlangSyntaxHighlighter.INCLUDE_PATH.getFallbackAttributeKey());
+        assertTrue(Arrays.stream(new SlangColorSettingsPage().getAttributeDescriptors())
+                .anyMatch(descriptor -> descriptor.getKey() == SlangSyntaxHighlighter.INCLUDE_PATH));
+    }
+
     @Test
     public void exposesSemanticTagsAndDescriptors() {
         SlangColorSettingsPage page = new SlangColorSettingsPage();

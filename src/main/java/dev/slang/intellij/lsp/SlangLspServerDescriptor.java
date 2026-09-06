@@ -108,6 +108,11 @@ public final class SlangLspServerDescriptor extends ProjectWideLspServerDescript
     }
 
     @Override
+    public @NotNull Class<SlangLanguageServer> getLsp4jServerClass() {
+        return SlangLanguageServer.class;
+    }
+
+    @Override
     public @NotNull LspCustomization getLspCustomization() {
         return customization;
     }

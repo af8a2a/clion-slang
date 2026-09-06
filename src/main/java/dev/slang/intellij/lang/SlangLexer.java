@@ -23,6 +23,9 @@ public final class SlangLexer extends LexerBase {
     private static final int IN_BLOCK_COMMENT_STATE = 1;
     private static final int IN_DOC_COMMENT_STATE = 2;
     private static final int IN_RAW_STRING_STATE = 3;
+    private static final int INCLUDE_PATH_STATE = 4;
+    private static final int INCLUDE_BLOCK_COMMENT_STATE = 5;
+    private static final int INCLUDE_DOC_COMMENT_STATE = 6;
 
     private static final Set<String> KEYWORDS = words(
             // Slang declarations and type system.
@@ -177,9 +180,11 @@ public final class SlangLexer extends LexerBase {
         }
 
         nextState = state;
-        if (state == IN_BLOCK_COMMENT_STATE || state == IN_DOC_COMMENT_STATE) {
-            boolean doc = state == IN_DOC_COMMENT_STATE;
+        if (state == IN_BLOCK_COMMENT_STATE || state == IN_DOC_COMMENT_STATE
+                || state == INCLUDE_BLOCK_COMMENT_STATE || state == INCLUDE_DOC_COMMENT_STATE) {
+            boolean doc = state == IN_DOC_COMMENT_STATE || state == INCLUDE_DOC_COMMENT_STATE;
             scanBlockCommentChunk(tokenStart, doc);
+            preserveIncludeAfterComment();
             tokenType = doc ? SlangTokenTypes.DOC_COMMENT : SlangTokenTypes.BLOCK_COMMENT;
             return;
         }
@@ -193,11 +198,36 @@ public final class SlangLexer extends LexerBase {
 
         if (Character.isWhitespace(c)) {
             tokenEnd = tokenStart + 1;
+            if (isLineBreak(c)) nextState = DEFAULT_STATE;
             while (tokenEnd < bufferEnd && Character.isWhitespace(charAt(tokenEnd))) {
+                if (isLineBreak(charAt(tokenEnd))) nextState = DEFAULT_STATE;
                 tokenEnd++;
             }
             tokenType = SlangTokenTypes.WHITE_SPACE;
             return;
+        }
+
+        if (state == INCLUDE_PATH_STATE) {
+            if (c == '\\' && tokenStart + 1 < bufferEnd && isLineBreak(charAt(tokenStart + 1))) {
+                tokenEnd = tokenStart + 1;
+                consumeLineBreak();
+                tokenType = SlangTokenTypes.WHITE_SPACE;
+                return;
+            }
+            if (c == '"' || c == '<') {
+                // Header names are not string literals: backslashes in Windows paths are literal.
+                char closing = c == '<' ? '>' : '"';
+                tokenEnd = tokenStart + 1;
+                while (tokenEnd < bufferEnd && !isLineBreak(charAt(tokenEnd))) {
+                    if (charAt(tokenEnd++) == closing) break;
+                }
+                tokenType = SlangTokenTypes.INCLUDE_PATH;
+                nextState = DEFAULT_STATE;
+                return;
+            }
+            // Whitespace and block comments may precede the header name. Macro operands use
+            // normal identifier highlighting (and slangd's semantic macro classification).
+            if (!startsWith(tokenStart, "/*")) nextState = DEFAULT_STATE;
         }
 
         if (c == '#' && isDirectiveStart(tokenStart)) {
@@ -221,6 +251,7 @@ public final class SlangLexer extends LexerBase {
                 boolean doc = tokenStart + 2 < bufferEnd
                         && (charAt(tokenStart + 2) == '*' || charAt(tokenStart + 2) == '!');
                 scanBlockCommentChunk(tokenStart + 2, doc);
+                preserveIncludeAfterComment();
                 tokenType = doc ? SlangTokenTypes.DOC_COMMENT : SlangTokenTypes.BLOCK_COMMENT;
                 return;
             }
@@ -273,6 +304,16 @@ public final class SlangLexer extends LexerBase {
     }
 
     private void scanPreprocessorDirective() {
+        int nameStart = tokenStart + 1;
+        while (nameStart < bufferEnd && isHorizontalWhitespace(charAt(nameStart))) nameStart++;
+        int nameEnd = nameStart;
+        while (nameEnd < bufferEnd && isIdentifierPart(charAt(nameEnd))) nameEnd++;
+        if (buffer.subSequence(nameStart, nameEnd).toString().equals("include")) {
+            tokenEnd = nameEnd;
+            tokenType = SlangTokenTypes.PREPROCESSOR;
+            nextState = INCLUDE_PATH_STATE;
+            return;
+        }
         tokenEnd = tokenStart + 1;
         while (tokenEnd < bufferEnd) {
             char c = charAt(tokenEnd);
@@ -296,6 +337,16 @@ public final class SlangLexer extends LexerBase {
             }
         }
         tokenType = SlangTokenTypes.PREPROCESSOR;
+    }
+
+    private void preserveIncludeAfterComment() {
+        if (state != INCLUDE_PATH_STATE && state != INCLUDE_BLOCK_COMMENT_STATE
+                && state != INCLUDE_DOC_COMMENT_STATE) return;
+        nextState = switch (nextState) {
+            case IN_BLOCK_COMMENT_STATE -> INCLUDE_BLOCK_COMMENT_STATE;
+            case IN_DOC_COMMENT_STATE -> INCLUDE_DOC_COMMENT_STATE;
+            default -> INCLUDE_PATH_STATE;
+        };
     }
 
     private void scanBlockCommentChunk(int contentStart, boolean doc) {
@@ -713,8 +764,12 @@ public final class SlangLexer extends LexerBase {
         return c == '\r' || c == '\n';
     }
 
+    private static boolean isHorizontalWhitespace(char c) {
+        return c == ' ' || c == '\t' || c == '\f';
+    }
+
     private static boolean isKnownState(int value) {
-        return value >= DEFAULT_STATE && value <= IN_RAW_STRING_STATE;
+        return value >= DEFAULT_STATE && value <= INCLUDE_DOC_COMMENT_STATE;
     }
 
     private char charAt(int offset) {
