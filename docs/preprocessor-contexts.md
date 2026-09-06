@@ -3,6 +3,9 @@
 M4c adds compilation-root selection to [M4b branch display](preprocessor-branch-display.md).
 It does **not** change completion, navigation, diagnostic or semantic-token contexts.
 
+[M4e](shader-variants.md) now adds declared build contexts and macro/include-path variants, with a
+separate server capability. The rest of this page documents the root-only M4c baseline.
+
 ## Use
 
 1. Apply both [server patches](../patches/slang/README.md), build `slangd`, and select it under
@@ -109,8 +112,8 @@ the unavailable JetBrains test-framework dependency. GUI acceptance is not claim
 Manual acceptance: create A/B roots defining `FLAG` as 1/0 and including a header with `#if FLAG`.
 Choose A/B and confirm the header colors switch. Check Auto/current/manual selection, search, splits,
 restart persistence, unsaved edits, root deletion/rename, stock/M4a fallback and skipped/repeated
-includes. Build-target/macro-set extraction, forced branch preview and repeated-instance selection
-remain future milestones; M4c is not Rider's complete shader project model.
+includes. M4e provides an explicit build/macro-set bridge; automatic extraction, forced branch preview
+and repeated-instance selection remain separate work. M4c is not Rider's complete shader project model.
 
 A ready-made blue/green/current-file fixture is
 `src/test/testData/slang/PreprocessorContextShared.slangh` with the adjacent

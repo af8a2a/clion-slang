@@ -2,6 +2,7 @@ package dev.slang.intellij.lsp;
 
 import com.intellij.openapi.editor.impl.DocumentImpl;
 import dev.slang.intellij.preprocessor.SlangBranchPresentation;
+import dev.slang.intellij.preprocessor.SlangVariantCatalog;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -73,6 +74,8 @@ public class SlangBranchProtocolTest {
 
             if (SlangPreprocessorTrace.supportsContexts(initialized.getCapabilities()))
                 checkContexts(server, root);
+            if (SlangPreprocessorTrace.supportsVariants(initialized.getCapabilities()))
+                checkVariants(server, root);
 
             server.getTextDocumentService().didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(uri)));
             assertNull(server.preprocessorTrace(params).get(30, TimeUnit.SECONDS));
@@ -83,6 +86,30 @@ public class SlangBranchProtocolTest {
             process.destroyForcibly();
             process.waitFor(10, TimeUnit.SECONDS);
         }
+    }
+
+    private static void checkVariants(SlangLanguageServer server, Path root) throws Exception {
+        Path file = root.resolve("Variant.slang");
+        String source = "#if MODE == 1\nfloat blue;\n#else\nfloat green;\n#endif\n";
+        Files.writeString(file, source);
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(file.toUri().toString(), "slang", 20, source)));
+        String manifest = """
+                {"version":1,"contexts":[{"id":"compute","root":"Variant.slang","target":"spirv","profile":"spirv_1_5",
+                 "variants":[{"id":"blue","defines":{"MODE":"1"}},{"id":"green","defines":{"MODE":"2"}}]}]}
+                """;
+        var catalog = SlangVariantCatalog.parse(root.resolve("slang-variants.json"), root, manifest);
+        for (String id : List.of("compute/blue", "compute/green", "compute/blue")) {
+            var variant = catalog.find(id);
+            var trace = server.preprocessorTrace(new SlangPreprocessorTrace.Params(new TextDocumentIdentifier(file.toUri().toString()),
+                    file.toUri().toString(), variant.buildContext())).get(30, TimeUnit.SECONDS);
+            assertTrue(trace.matchesContext(file.toUri().toString(), 20));
+            assertTrue(trace.matchesVariant(variant.buildContext()));
+            assertEquals(id.endsWith("blue"), trace.directives().getFirst().active());
+            var presentation = SlangBranchPresentation.create(new DocumentImpl(source), trace);
+            assertNotNull(presentation);
+            assertEquals(source.indexOf(id.endsWith("blue") ? "float green" : "float blue"), presentation.inactive().getFirst().getStartOffset());
+        }
+        server.getTextDocumentService().didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(file.toUri().toString())));
     }
 
     private static void checkContexts(SlangLanguageServer server, Path root) throws Exception {

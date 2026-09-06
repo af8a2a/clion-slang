@@ -39,7 +39,7 @@ public final class SlangContextWidgetFactory implements StatusBarWidgetFactory {
         }
         @Override public String getTooltipText() {
             var editor = FileEditorManager.getInstance(project).getSelectedTextEditor();
-            return editor == null ? "Slang preprocessor context" : SlangContextService.getInstance(project)
+            return editor == null ? "Slang preprocessor context" : "Slang context: " + SlangContextService.getInstance(project)
                     .description(FileDocumentManager.getInstance().getFile(editor.getDocument())) + " — click to choose";
         }
         @Override public float getAlignment() { return 0; }

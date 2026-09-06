@@ -53,6 +53,9 @@ tasks {
         providers.gradleProperty("slangdTestPath").orNull?.let {
             systemProperty("slang.test.slangd", it)
         }
+        providers.gradleProperty("slangVariantsTestPath").orNull?.let {
+            systemProperty("slang.test.cmakeVariants", it)
+        }
     }
 
     wrapper {

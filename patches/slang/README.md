@@ -1,4 +1,4 @@
-# Optional M4a / M4c slangd patches
+# Optional M4a / M4c / M4e slangd patches
 
 `0001-m4a-preprocessor-trace.patch` is a standalone patch against upstream Slang commit
 `5f9227cf6e5055b6a9ee742fdd729aab9162cf25` (`v2026.4.2-29-g5f9227cf6`). Do not apply it on top
@@ -9,6 +9,9 @@ its source tree or a server binary in the plugin ZIP.
 `0002-m4c-preprocessor-contexts.patch` applies **after 0001**, on the same pinned base. It adds
 per-instance include tracing, isolated root compilation and `experimental.preprocessorContexts: 1`.
 See [M4c contexts](../../docs/preprocessor-contexts.md) for the selector, protocol and limitations.
+
+`0003-m4e-shader-variants.patch` applies **after 0002**. It adds isolated macro/include-path/target/profile
+build environments with `experimental.preprocessorVariants: 1`; see [M4e](../../docs/shader-variants.md).
 
 The protocol and limitations are documented in [preprocessor-trace-protocol.md](../../docs/preprocessor-trace-protocol.md).
 
@@ -24,6 +27,8 @@ git -C .slang-m4a-source apply --check ../patches/slang/0001-m4a-preprocessor-tr
 git -C .slang-m4a-source apply ../patches/slang/0001-m4a-preprocessor-trace.patch
 git -C .slang-m4a-source apply --check ../patches/slang/0002-m4c-preprocessor-contexts.patch
 git -C .slang-m4a-source apply ../patches/slang/0002-m4c-preprocessor-contexts.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0003-m4e-shader-variants.patch
+git -C .slang-m4a-source apply ../patches/slang/0003-m4e-shader-variants.patch
 ```
 
 Do not reuse an existing dirty checkout for these commands. Configure with CMake and an installed
@@ -45,6 +50,8 @@ python scripts/slangd-preprocessor-trace-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 python scripts/slangd-preprocessor-context-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
+python scripts/slangd-shader-variants-smoke.py `
+  --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 ```
 
 The verified local build used Windows x64, Visual Studio 18 / MSVC 14.51, and `RelWithDebInfo`.
@@ -62,3 +69,4 @@ The generated directories are ignored by Git. The plugin still selects an extern
 its existing settings. Selecting the patched executable now enables the optional
 [M4b branch display](../../docs/preprocessor-branch-display.md) and, with both patches,
 the [M4c context selector](../../docs/preprocessor-contexts.md). Original M4a requests remain compatible.
+With all three patches, [M4e Shader Variants](../../docs/shader-variants.md) is also available.

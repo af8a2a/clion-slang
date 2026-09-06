@@ -1,0 +1,349 @@
+diff --git a/source/compiler-core/slang-language-server-protocol.cpp b/source/compiler-core/slang-language-server-protocol.cpp
+index d38854050..2582edeb6 100644
+--- a/source/compiler-core/slang-language-server-protocol.cpp
++++ b/source/compiler-core/slang-language-server-protocol.cpp
+@@ -258,6 +258,7 @@ static const StructRttiInfo _makeSlangExperimentalServerCapabilitiesRtti()
+         nullptr);
+     builder.addField("preprocessorTrace", &obj.preprocessorTrace);
+     builder.addField("preprocessorContexts", &obj.preprocessorContexts);
++    builder.addField("preprocessorVariants", &obj.preprocessorVariants);
+     builder.ignoreUnknownFields();
+     return builder.make();
+ }
+@@ -590,6 +591,32 @@ static const StructRttiInfo _makeSemanticTokensRtti()
+ }
+ const StructRttiInfo SemanticTokens::g_rttiInfo = _makeSemanticTokensRtti();
+ 
++static const StructRttiInfo _makePreprocessorBuildMacroRtti()
++{
++    PreprocessorBuildMacro obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorBuildMacro", nullptr);
++    builder.addField("name", &obj.name);
++    builder.addField("value", &obj.value);
++    return builder.make();
++}
++const StructRttiInfo PreprocessorBuildMacro::g_rttiInfo = _makePreprocessorBuildMacroRtti();
++
++static const StructRttiInfo _makePreprocessorBuildContextRtti()
++{
++    PreprocessorBuildContext obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorBuildContext", nullptr);
++    builder.addField("version", &obj.version);
++    builder.addField("fingerprint", &obj.fingerprint);
++    builder.addField("inheritWorkspace", &obj.inheritWorkspace);
++    builder.addField("defines", &obj.defines);
++    builder.addField("undefines", &obj.undefines);
++    builder.addField("includePaths", &obj.includePaths);
++    builder.addField("target", &obj.target);
++    builder.addField("profile", &obj.profile);
++    return builder.make();
++}
++const StructRttiInfo PreprocessorBuildContext::g_rttiInfo = _makePreprocessorBuildContextRtti();
++
+ static const StructRttiInfo _makePreprocessorTraceParamsRtti()
+ {
+     PreprocessorTraceParams obj;
+@@ -599,6 +626,7 @@ static const StructRttiInfo _makePreprocessorTraceParamsRtti()
+         &WorkDoneProgressParams::g_rttiInfo);
+     builder.addField("textDocument", &obj.textDocument);
+     builder.addField("contextUri", &obj.contextUri, StructRttiInfo::Flag::Optional);
++    builder.addField("buildContext", &obj.buildContext, StructRttiInfo::Flag::Optional);
+     builder.ignoreUnknownFields();
+     return builder.make();
+ }
+@@ -654,6 +682,8 @@ static const StructRttiInfo _makePreprocessorTraceRtti()
+     builder.addField("contextVersion", &obj.contextVersion);
+     builder.addField("status", &obj.status);
+     builder.addField("occurrenceCount", &obj.occurrenceCount);
++    builder.addField("contextFingerprint", &obj.contextFingerprint);
++    builder.addField("contextError", &obj.contextError);
+     builder.addField("directives", &obj.directives);
+     builder.addField("inactiveRegions", &obj.inactiveRegions);
+     builder.ignoreUnknownFields();
+diff --git a/source/compiler-core/slang-language-server-protocol.h b/source/compiler-core/slang-language-server-protocol.h
+index 1b8d9dbc2..1419fc877 100644
+--- a/source/compiler-core/slang-language-server-protocol.h
++++ b/source/compiler-core/slang-language-server-protocol.h
+@@ -284,6 +284,7 @@ struct SlangExperimentalServerCapabilities
+ {
+     int preprocessorTrace = 0;
+     int preprocessorContexts = 0;
++    int preprocessorVariants = 0;
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
+@@ -719,10 +720,31 @@ struct SemanticTokens
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
++struct PreprocessorBuildMacro
++{
++    String name;
++    String value;
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorBuildContext
++{
++    int version = 0;
++    String fingerprint;
++    bool inheritWorkspace = false;
++    List<PreprocessorBuildMacro> defines;
++    List<String> undefines;
++    List<String> includePaths;
++    String target;
++    String profile;
++    static const StructRttiInfo g_rttiInfo;
++};
++
+ struct PreprocessorTraceParams : WorkDoneProgressParams
+ {
+     TextDocumentIdentifier textDocument;
+     String contextUri;
++    PreprocessorBuildContext buildContext;
+ 
+     static const UnownedStringSlice methodName;
+     static const StructRttiInfo g_rttiInfo;
+@@ -760,6 +782,8 @@ struct PreprocessorTrace
+     int contextVersion = -1;
+     String status;
+     int occurrenceCount = 0;
++    String contextFingerprint;
++    String contextError;
+     List<PreprocessorTraceDirective> directives;
+     List<PreprocessorTraceInactiveRegion> inactiveRegions;
+ 
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index 2bc440a3b..193549a85 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -161,6 +161,7 @@ SlangResult LanguageServer::parseNextMessage()
+                     caps.semanticTokensProvider.range = false;
+                     caps.experimental.preprocessorTrace = 1;
+                     caps.experimental.preprocessorContexts = 1;
++                    caps.experimental.preprocessorVariants = 1;
+                     caps.signatureHelpProvider.triggerCharacters.add("(");
+                     caps.signatureHelpProvider.triggerCharacters.add("<");
+                     caps.signatureHelpProvider.triggerCharacters.add(",");
+@@ -1493,7 +1494,7 @@ SlangResult LanguageServer::preprocessorTrace(
+     const JSONValue& responseId)
+ {
+     auto result = m_core.preprocessorTrace(args);
+-    if (!args.contextUri.getLength())
++    if (!args.contextUri.getLength() && !args.buildContext.version && !args.buildContext.fingerprint.getLength())
+         removePendingModuleToUpdateDiagnostics(args.textDocument.uri);
+ 
+     if (SLANG_FAILED(result.returnCode) || result.isNull)
+@@ -1520,10 +1521,25 @@ LanguageServerCore::preprocessorTrace(
+ 
+     String contextUri = args.contextUri.getLength() ? args.contextUri : args.textDocument.uri;
+     String contextPath = uriToCanonicalPath(contextUri);
++    PreprocessorTrace response;
++    response.uri = args.textDocument.uri;
++    response.version = doc->getVersion();
++    response.contextUri = contextUri;
++    response.contextFingerprint = args.buildContext.fingerprint;
++    RefPtr<DocumentVersion> contextDoc;
++    if (m_workspace->openedDocuments.tryGetValue(contextPath, contextDoc))
++        response.contextVersion = contextDoc->getVersion();
+     // Context traces must not pollute the ordinary LSP module/diagnostics cache.
+-    RefPtr<WorkspaceVersion> workspaceVersion = args.contextUri.getLength()
+-        ? m_workspace->createVersionForPreprocessorTrace()
++    bool hasBuildContext = args.buildContext.version || args.buildContext.fingerprint.getLength();
++    RefPtr<WorkspaceVersion> workspaceVersion = args.contextUri.getLength() || hasBuildContext
++        ? m_workspace->createVersionForPreprocessorTrace(
++            hasBuildContext ? &args.buildContext : nullptr, &response.contextError)
+         : RefPtr<WorkspaceVersion>(m_workspace->getCurrentVersion());
++    if (!workspaceVersion)
++    {
++        response.status = "invalidContext";
++        return response;
++    }
+     SLANG_AST_BUILDER_RAII(workspaceVersion->linkage->getASTBuilder());
+     if (!workspaceVersion->getOrLoadModule(contextPath, true))
+         return std::nullopt;
+@@ -1604,14 +1620,6 @@ LanguageServerCore::preprocessorTrace(
+                 range.start.character < range.end.character);
+     };
+ 
+-    PreprocessorTrace response;
+-    response.uri = args.textDocument.uri;
+-    response.version = doc->getVersion();
+-    response.contextUri = contextUri;
+-    RefPtr<DocumentVersion> contextDoc;
+-    if (m_workspace->openedDocuments.tryGetValue(contextPath, contextDoc))
+-        response.contextVersion = contextDoc->getVersion();
+-
+     auto& traceInfo = workspaceVersion->linkage->contentAssistInfo.preprocessorInfo;
+     int selectedFile = -1;
+     for (Index i = 0; i < traceInfo.traceFiles.getCount(); ++i)
+diff --git a/source/slang/slang-workspace-version.cpp b/source/slang/slang-workspace-version.cpp
+index 14636ebb9..4dc6e1581 100644
+--- a/source/slang/slang-workspace-version.cpp
++++ b/source/slang/slang-workspace-version.cpp
+@@ -476,8 +476,49 @@ void WorkspaceVersion::parseDiagnostics(String compilerOutput)
+     }
+ }
+ 
+-RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion()
++RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion(
++    const LanguageServerProtocol::PreprocessorBuildContext* buildContext,
++    String* outError)
+ {
++    auto fail = [&](const char* message) -> RefPtr<WorkspaceVersion>
++    {
++        if (outError) *outError = message;
++        return nullptr;
++    };
++    auto validName = [](const String& name)
++    {
++        if (!name.getLength() || name.getLength() > 128) return false;
++        for (Index i = 0; i < name.getLength(); ++i)
++        {
++            char c = name[i];
++            if (!(c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
++                  (i > 0 && c >= '0' && c <= '9'))) return false;
++        }
++        return true;
++    };
++    HashSet<String> replacedMacros;
++    if (buildContext)
++    {
++        if (buildContext->version != 1 || buildContext->fingerprint.getLength() != 64 ||
++            buildContext->defines.getCount() > 256 || buildContext->undefines.getCount() > 256 ||
++            buildContext->includePaths.getCount() > 256 || buildContext->target.getLength() > 32 ||
++            buildContext->profile.getLength() > 128)
++            return fail("Invalid build context version, fingerprint or limits");
++        for (char c : buildContext->fingerprint)
++            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
++                return fail("Build context fingerprint must be lowercase SHA-256");
++        for (auto& name : buildContext->undefines)
++            if (!validName(name) || !replacedMacros.add(name)) return fail("Invalid or duplicate undefine");
++        for (auto& macro : buildContext->defines)
++        {
++            if (!validName(macro.name) || !replacedMacros.add(macro.name) || macro.value.getLength() > 4096 ||
++                macro.value.indexOf('\0') >= 0 || macro.value.indexOf('\n') >= 0 || macro.value.indexOf('\r') >= 0)
++                return fail("Invalid, conflicting or duplicate macro definition");
++        }
++        for (auto& path : buildContext->includePaths)
++            if (!Path::isAbsolute(path) || path.getLength() > 4096 || path.indexOf('\0') >= 0)
++                return fail("Build include paths must be absolute local paths");
++    }
+     RefPtr<WorkspaceVersion> version = new WorkspaceVersion();
+     version->workspace = this;
+     slang::SessionDesc desc = {};
+@@ -485,41 +526,74 @@ RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion()
+     desc.targetCount = 1;
+     slang::TargetDesc targetDesc = {};
+     targetDesc.profile = slangGlobalSession->findProfile("sm_6_6");
++    if (buildContext)
++    {
++        auto& target = buildContext->target;
++        if (target == "spirv") targetDesc.format = SLANG_SPIRV;
++        else if (target == "dxil") targetDesc.format = SLANG_DXIL;
++        else if (target == "hlsl") targetDesc.format = SLANG_HLSL;
++        else if (target == "glsl") targetDesc.format = SLANG_GLSL;
++        else if (target == "cpp") targetDesc.format = SLANG_CPP_SOURCE;
++        else if (target == "cuda") targetDesc.format = SLANG_CUDA_SOURCE;
++        else if (target == "ptx") targetDesc.format = SLANG_PTX;
++        else if (target.getLength()) return fail("Unsupported build context target");
++        if (buildContext->profile.getLength())
++        {
++            targetDesc.profile = slangGlobalSession->findProfile(buildContext->profile.getBuffer());
++            if (targetDesc.profile == SLANG_PROFILE_UNKNOWN) return fail("Unknown build context profile");
++        }
++    }
+     desc.targets = &targetDesc;
+     List<const char*> searchPathsRaw;
+-    for (auto& path : additionalSearchPaths)
+-        searchPathsRaw.add(path.getBuffer());
+-    if (searchInWorkspace)
++    if (buildContext)
++        for (auto& path : buildContext->includePaths) searchPathsRaw.add(path.getBuffer());
++    if (!buildContext || buildContext->inheritWorkspace)
+     {
+-        for (auto& path : workspaceSearchPaths)
++        for (auto& path : additionalSearchPaths)
+             searchPathsRaw.add(path.getBuffer());
+-    }
+-    else
+-    {
+-        HashSet<String> set;
+-        for (const auto& [docPath, _] : openedDocuments)
++        if (searchInWorkspace)
++        {
++            for (auto& path : workspaceSearchPaths)
++                searchPathsRaw.add(path.getBuffer());
++        }
++        else
+         {
+-            auto dir = Path::getParentDirectory(docPath.getBuffer());
+-            if (set.add(dir))
+-                searchPathsRaw.add(dir.getBuffer());
++            HashSet<String> set;
++            for (const auto& [docPath, _] : openedDocuments)
++            {
++                auto dir = Path::getParentDirectory(docPath.getBuffer());
++                if (set.add(dir))
++                    searchPathsRaw.add(dir.getBuffer());
++            }
+         }
+     }
+     desc.searchPaths = searchPathsRaw.getBuffer();
+     desc.searchPathCount = searchPathsRaw.getCount();
+ 
+-    desc.preprocessorMacroCount = predefinedMacros.getCount();
+     List<slang::PreprocessorMacroDesc> macroDescs;
+     for (auto& macro : predefinedMacros)
+     {
++        if (buildContext && (!buildContext->inheritWorkspace || replacedMacros.contains(macro.name)))
++            continue;
+         slang::PreprocessorMacroDesc macroDesc;
+         macroDesc.name = macro.name.getBuffer();
+         macroDesc.value = macro.value.getBuffer();
+         macroDescs.add(macroDesc);
+     }
++    if (buildContext)
++        for (auto& macro : buildContext->defines)
++        {
++            slang::PreprocessorMacroDesc macroDesc;
++            macroDesc.name = macro.name.getBuffer();
++            macroDesc.value = macro.value.getBuffer();
++            macroDescs.add(macroDesc);
++        }
++    desc.preprocessorMacroCount = macroDescs.getCount();
+     desc.preprocessorMacros = macroDescs.getBuffer();
+ 
+     ComPtr<slang::ISession> session;
+-    slangGlobalSession->createSession(desc, session.writeRef());
++    if (SLANG_FAILED(slangGlobalSession->createSession(desc, session.writeRef())) || !session)
++        return fail("Unable to create build context compiler session");
+ 
+     ComPtr<Linkage> linkage;
+     session->queryInterface(Linkage::getTypeGuid(), (void**)linkage.writeRef());
+diff --git a/source/slang/slang-workspace-version.h b/source/slang/slang-workspace-version.h
+index 3afd152c0..b8d84fbd0 100644
+--- a/source/slang/slang-workspace-version.h
++++ b/source/slang/slang-workspace-version.h
+@@ -167,7 +167,9 @@ class Workspace : public ComObject, public ISlangFileSystem
+ private:
+     RefPtr<WorkspaceVersion> currentVersion;
+     RefPtr<WorkspaceVersion> currentCompletionVersion;
+-    RefPtr<WorkspaceVersion> createWorkspaceVersion();
++    RefPtr<WorkspaceVersion> createWorkspaceVersion(
++        const LanguageServerProtocol::PreprocessorBuildContext* buildContext = nullptr,
++        String* outError = nullptr);
+ 
+ public:
+     List<String> rootDirectories;
+@@ -196,7 +198,9 @@ public:
+     WorkspaceVersion* getCurrentVersion();
+     WorkspaceVersion* getCurrentCompletionVersion() { return currentCompletionVersion.Ptr(); }
+     WorkspaceVersion* createVersionForCompletion();
+-    RefPtr<WorkspaceVersion> createVersionForPreprocessorTrace() { return createWorkspaceVersion(); }
++    RefPtr<WorkspaceVersion> createVersionForPreprocessorTrace(
++        const LanguageServerProtocol::PreprocessorBuildContext* buildContext = nullptr,
++        String* outError = nullptr) { return createWorkspaceVersion(buildContext, outError); }
+ 
+ public:
+     // Inherited via ISlangFileSystem

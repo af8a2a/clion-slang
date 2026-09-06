@@ -5,6 +5,9 @@ import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.DumbAwareAction;
@@ -20,8 +23,8 @@ import java.util.List;
 import java.util.Objects;
 
 public final class SlangSelectContextAction extends DumbAwareAction {
-    private record Choice(Path root, String label, boolean browse) {
-        Choice(Path root, String label) { this(root, label, false); }
+    private record Choice(Path root, String label, boolean browse, String variantId, boolean manifest) {
+        Choice(Path root, String label) { this(root, label, false, null, false); }
         @Override public String toString() { return label; }
     }
 
@@ -46,7 +49,17 @@ public final class SlangSelectContextAction extends DumbAwareAction {
         SlangContextService contexts = SlangContextService.getInstance(project);
         new Task.Backgroundable(project, "Discover Slang include contexts", true) {
             private SlangContextService.Discovery discovery;
-            @Override public void run(@NotNull ProgressIndicator indicator) { discovery = contexts.discover(target); }
+            private SlangVariantCatalog catalog;
+            private VirtualFile manifestFile;
+            @Override public void run(@NotNull ProgressIndicator indicator) {
+                discovery = contexts.discover(target);
+                try {
+                    catalog = contexts.variants();
+                    manifestFile = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(catalog.file());
+                } catch (IllegalArgumentException exception) {
+                    catalog = new SlangVariantCatalog(null, List.of(), exception.getMessage(), false);
+                }
+            }
             @Override public void onSuccess() {
                 if (project.isDisposed() || editor.isDisposed() || !target.isValid()) return;
                 List<Choice> choices = new ArrayList<>();
@@ -58,19 +71,31 @@ public final class SlangSelectContextAction extends DumbAwareAction {
                     choices.add(new Choice(candidate.root(), chain));
                 }
                 String pinned = SlangProjectSettings.getInstance(project).getPreprocessorContext(target.getPath());
+                String selectedVariant = SlangProjectSettings.getInstance(project).getShaderVariant(target.getPath());
                 Path selected = pinned == null ? null : Path.of(pinned);
                 if (selected != null && choices.stream().noneMatch(c -> selected.equals(c.root)))
                     choices.add(new Choice(selected, "Previously selected (not discovered) — " + contexts.relative(selected)));
-                Choice current = choices.stream().filter(c -> Objects.equals(c.root, selected)).findFirst().orElse(choices.getFirst());
-                choices.add(new Choice(null, "Choose another .slang root file…", true));
+                for (var variant : catalog.variants())
+                    choices.add(new Choice(variant.root(), "Variant · " + variant.summary(), false, variant.id(), false));
+                if (selectedVariant != null && catalog.find(selectedVariant) == null)
+                    choices.add(new Choice(null, "Unavailable variant — " + selectedVariant, false, selectedVariant, false));
+                Choice current = choices.stream().filter(c -> selectedVariant != null ? selectedVariant.equals(c.variantId)
+                        : c.variantId == null && Objects.equals(c.root, selected)).findFirst().orElse(choices.getFirst());
+                choices.add(new Choice(null, "Choose another .slang root file…", true, null, false));
+                choices.add(new Choice(null, "Open Shader Variants manifest…", false, null, true));
                 JBPopupFactory.getInstance().createPopupChooserBuilder(choices)
                         .setTitle("Slang Preprocessor Context — " + target.getName())
                         .setNamerForFiltering(Choice::label).setFilterAlwaysVisible(true)
                         .setSelectedValue(current, true)
                         .setAdText((discovery.limited() ? "Scan incomplete. " : "")
-                                + "Potential includes; slangd confirms execution. " + contexts.description(target))
+                                + (catalog.error() != null ? catalog.error() : "Potential includes / declared variants; slangd confirms execution."))
                         .setItemChosenCallback(choice -> {
-                            if (choice.browse) FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFileDescriptor("slang")
+                            if (choice.manifest) {
+                                if (manifestFile != null && manifestFile.isValid()) FileEditorManager.getInstance(project).openFile(manifestFile, true);
+                                else Messages.showInfoMessage(project, "Create a UTF-8 Shader Variants manifest at " + catalog.file()
+                                        + ". You can change its path in Slang settings. See docs/shader-variants.md for the schema.", "Shader Variants");
+                            } else if (choice.variantId != null) contexts.selectVariant(target, choice.variantId);
+                            else if (choice.browse) FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFileDescriptor("slang")
                                             .withTitle("Choose Slang Compilation Root"), project, target,
                                     chosen -> { if (chosen.isInLocalFileSystem()) contexts.select(target, SlangContextService.path(chosen)); });
                             else contexts.select(target, choice.root);

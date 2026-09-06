@@ -21,6 +21,8 @@ an external process.
   active-branch marks and branch source labels, requiring M4a-patched `slangd` (not bundled)
 - Optional [M4c context selector](docs/preprocessor-contexts.md): discover direct/transitive includers,
   search/select a compilation root, and remember the choice per file; requires M4c-patched `slangd`
+- Optional [M4e Shader Variants](docs/shader-variants.md): saved build contexts with per-variant macros,
+  include paths and target/profile, plus an explicit CMake exporter; requires M4e-patched `slangd`
 - Standard Diagnostics, Completion, Hover, Signature Help, Definition, References, Semantic
   Tokens, Inlay Hints, and Formatting capabilities, depending on the selected `slangd`
 - Definition navigation through Ctrl+Click, Ctrl+B, and Ctrl+Hover. The plugin reuses the active

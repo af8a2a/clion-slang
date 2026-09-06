@@ -12,12 +12,27 @@ import java.util.Map;
 /** M4a trace plus optional M4c context metadata; positions are zero-based UTF-16. */
 public record SlangPreprocessorTrace(
         String uri, int version, List<Directive> directives, List<InactiveRegion> inactiveRegions,
-        String contextUri, int contextVersion, String status, int occurrenceCount) {
+        String contextUri, int contextVersion, String status, int occurrenceCount,
+        String contextFingerprint, String contextError) {
+    public SlangPreprocessorTrace(String uri, int version, List<Directive> directives, List<InactiveRegion> inactiveRegions,
+                                  String contextUri, int contextVersion, String status, int occurrenceCount) {
+        this(uri, version, directives, inactiveRegions, contextUri, contextVersion, status, occurrenceCount, null, null);
+    }
     public SlangPreprocessorTrace(String uri, int version, List<Directive> directives, List<InactiveRegion> inactiveRegions) {
         this(uri, version, directives, inactiveRegions, null, -1, null, 0);
     }
-    public record Params(TextDocumentIdentifier textDocument, String contextUri) {
-        public Params(TextDocumentIdentifier textDocument) { this(textDocument, null); }
+    public record Params(TextDocumentIdentifier textDocument, String contextUri, BuildContext buildContext) {
+        public Params(TextDocumentIdentifier textDocument) { this(textDocument, null, null); }
+        public Params(TextDocumentIdentifier textDocument, String contextUri) { this(textDocument, contextUri, null); }
+    }
+
+    public record Macro(String name, String value) {}
+    public record BuildContext(int version, String fingerprint, boolean inheritWorkspace,
+                               List<Macro> defines, List<String> undefines, List<String> includePaths,
+                               String target, String profile) {}
+
+    public boolean matchesVariant(BuildContext requested) {
+        return requested == null || requested.fingerprint().equals(contextFingerprint);
     }
 
     public boolean matchesContext(String requestedUri, int requestedVersion) {
@@ -39,6 +54,10 @@ public record SlangPreprocessorTrace(
 
     public static boolean supportsContexts(ServerCapabilities capabilities) {
         return isSupported(capabilities) && supports(capabilities, "preprocessorContexts");
+    }
+
+    public static boolean supportsVariants(ServerCapabilities capabilities) {
+        return supportsContexts(capabilities) && supports(capabilities, "preprocessorVariants");
     }
 
     private static boolean supports(ServerCapabilities capabilities, String capability) {

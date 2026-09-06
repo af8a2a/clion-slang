@@ -11,7 +11,8 @@ import time
 
 
 class Client:
-    def __init__(self, executable):
+    def __init__(self, executable, configuration=None):
+        self.configuration = configuration or {}
         self.process = subprocess.Popen(
             [executable], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
@@ -62,7 +63,7 @@ class Client:
                     result = None
                     if message["method"] == "workspace/configuration":
                         # Null preserves each server default.
-                        result = [None] * len(message["params"]["items"])
+                        result = [self.configuration.get(item.get("section")) for item in message["params"]["items"]]
                     self.send({"id": message["id"], "result": result})
                 continue
             if message.get("id") == request_id:

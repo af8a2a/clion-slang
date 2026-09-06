@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "contexts": [
+    {
+      "id": "scene-path-trace",
+      "name": "Scene path trace (optional RTXCR/NTC disabled)",
+      "buildTarget": "ScenePathTrace runtime compilation",
+      "configuration": "Example: optional features off",
+      "root": "${workspaceFolder}/Shaders/ScenePathTrace.slang",
+      "entryPoint": "scenePathTraceMain",
+      "stage": "compute",
+      "target": "spirv",
+      "profile": "spirv_1_6",
+      "inheritWorkspace": false,
+      "includePaths": ["${workspaceFolder}/Shaders"],
+      "defines": {
+        "METALLIC_HAS_RTXCR": "0",
+        "METALLIC_HAS_NTC": "0",
+        "METALLIC_NTC_COOPERATIVE_VECTOR": "0"
+      },
+      "variants": [
+        {"id": "base", "name": "Plain path tracing"},
+        {"id": "sharc-update", "name": "SHaRC update", "defines": {"SHARC_UPDATE": "1"}},
+        {"id": "sharc-query", "name": "SHaRC query", "defines": {"SHARC_QUERY": "1"}},
+        {"id": "nrc-update", "name": "NRC training", "defines": {"NRC_UPDATE": "1"}},
+        {"id": "nrc-query", "name": "NRC query", "defines": {"NRC_QUERY": "1"}}
+      ]
+    }
+  ]
+}

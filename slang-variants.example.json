@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "contexts": [
+    {
+      "id": "sample-compute",
+      "name": "Compute shader",
+      "buildTarget": "sample_shaders",
+      "configuration": "Debug",
+      "root": "${workspaceFolder}/src/test/testData/slang/PreprocessorVariant.slang",
+      "entryPoint": "variantMain",
+      "stage": "compute",
+      "target": "spirv",
+      "profile": "spirv_1_5",
+      "inheritWorkspace": false,
+      "includePaths": ["${workspaceFolder}/src/test/testData/slang"],
+      "variants": [
+        {"id": "base", "name": "Base", "defines": {"MODE": "0"}},
+        {"id": "blue", "name": "Blue", "defines": {"MODE": "1"}},
+        {"id": "green", "name": "Green", "defines": {"MODE": "2"}}
+      ]
+    }
+  ]
+}

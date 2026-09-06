@@ -29,6 +29,7 @@ import java.util.*;
 @Service(Service.Level.PROJECT)
 public final class SlangContextService implements Disposable {
     public record Discovery(List<SlangIncludeGraph.Candidate> candidates, boolean limited) {}
+    public record ResolvedContext(Path root, String label, SlangVariantCatalog.Variant variant) {}
     private record Snapshot(long epoch, SlangIncludeGraph graph, boolean limited) {}
     private static final int MAX_FILES = 8192, MAX_ATTEMPTS = 100_000;
     private static final long MAX_BYTES = 16 * 1024 * 1024;
@@ -60,6 +61,50 @@ public final class SlangContextService implements Disposable {
         return automaticRoot(path(target), discovery);
     }
 
+    public Path variantsFile() {
+        Path configured = Path.of(SlangProjectSettings.getInstance(project).getShaderVariantsPath());
+        if (!configured.isAbsolute()) {
+            if (project.getBasePath() == null) throw new IllegalArgumentException("Shader variants need a project directory or absolute manifest path");
+            configured = Path.of(project.getBasePath()).resolve(configured);
+        }
+        return configured.normalize();
+    }
+
+    /** Saved UTF-8 data, read off EDT on each use; selected IDs never silently fall back. */
+    public SlangVariantCatalog variants() {
+        return SlangVariantCatalog.read(variantsFile(), project.getBasePath() == null ? null : Path.of(project.getBasePath()));
+    }
+
+    public ResolvedContext resolveBuildContext(VirtualFile target) {
+        String id = SlangProjectSettings.getInstance(project).getShaderVariant(target.getPath());
+        if (id == null) {
+            Path root = resolve(target);
+            return new ResolvedContext(root, relative(root), null);
+        }
+        var catalog = variants();
+        if (catalog.error() != null) throw new IllegalArgumentException(catalog.error());
+        var variant = catalog.find(id);
+        if (variant == null) throw new IllegalArgumentException("Selected shader variant is missing: " + id);
+        return new ResolvedContext(variant.root(), variant.label() + " · " + relative(variant.root()), variant);
+    }
+
+    public boolean isVariantCurrent(VirtualFile target, ResolvedContext resolved) {
+        if (resolved.variant == null) return SlangProjectSettings.getInstance(project).getShaderVariant(target.getPath()) == null;
+        if (!resolved.variant.id().equals(SlangProjectSettings.getInstance(project).getShaderVariant(target.getPath()))) return false;
+        var current = variants().find(resolved.variant.id());
+        return current != null && current.buildContext().fingerprint().equals(resolved.variant.buildContext().fingerprint());
+    }
+
+    public void selectVariant(VirtualFile target, String id) {
+        SlangProjectSettings.getInstance(project).setShaderVariant(target.getPath(), id);
+        SlangBranchDisplayService.getInstance(project).refresh();
+    }
+
+    public boolean isVariantsPath(String eventPath) {
+        try { return variantsFile().equals(Path.of(eventPath).toAbsolutePath().normalize()); }
+        catch (IllegalArgumentException ignored) { return false; }
+    }
+
     static Path automaticRoot(Path target, Discovery discovery) {
         return !discovery.limited && discovery.candidates.size() == 1 ? discovery.candidates.getFirst().root() : target;
     }
@@ -71,7 +116,7 @@ public final class SlangContextService implements Disposable {
     }
 
     public void report(VirtualFile target, String message) {
-        status.put(target.getPath(), message);
+        status.put(target.getPath(), message == null ? "Context unavailable" : message);
         updateWidget();
     }
 
@@ -84,6 +129,8 @@ public final class SlangContextService implements Disposable {
                 && !SlangPreprocessorTrace.isSupported(server.getInitializeResult().getCapabilities())))
             return "This slangd does not support branch traces";
         String selected = SlangProjectSettings.getInstance(project).getPreprocessorContext(target.getPath());
+        String variant = SlangProjectSettings.getInstance(project).getShaderVariant(target.getPath());
+        if (variant != null) return status.getOrDefault(target.getPath(), "Variant: " + variant + " — awaiting trace");
         return status.getOrDefault(target.getPath(), selected == null ? "Auto — awaiting trace" : "Selected: " + selected);
     }
 

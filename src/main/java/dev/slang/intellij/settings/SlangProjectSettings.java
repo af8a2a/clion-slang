@@ -23,6 +23,8 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
         public boolean showPreprocessorBranchLabels = true;
         /** Target local path -> explicitly chosen root path. Absence means automatic. */
         public Map<String, String> preprocessorContexts = new HashMap<>();
+        public String shaderVariantsPath = "slang-variants.json";
+        public Map<String, String> shaderVariants = new HashMap<>();
 
         public SettingsState() {
         }
@@ -33,6 +35,9 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
             showPreprocessorBranches = other.showPreprocessorBranches;
             showPreprocessorBranchLabels = other.showPreprocessorBranchLabels;
             if (other.preprocessorContexts != null) preprocessorContexts.putAll(other.preprocessorContexts);
+            shaderVariantsPath = other.shaderVariantsPath == null || other.shaderVariantsPath.isBlank()
+                    ? "slang-variants.json" : other.shaderVariantsPath;
+            if (other.shaderVariants != null) shaderVariants.putAll(other.shaderVariants);
         }
     }
 
@@ -82,7 +87,18 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
     public synchronized String getPreprocessorContext(String target) { return state.preprocessorContexts.get(target); }
 
     public synchronized void setPreprocessorContext(String target, String root) {
+        state.shaderVariants.remove(target);
         if (root == null) state.preprocessorContexts.remove(target);
         else state.preprocessorContexts.put(target, root);
+    }
+
+    public synchronized String getShaderVariantsPath() { return state.shaderVariantsPath; }
+    public synchronized void setShaderVariantsPath(String path) {
+        state.shaderVariantsPath = path == null || path.isBlank() ? "slang-variants.json" : path.trim();
+    }
+    public synchronized String getShaderVariant(String target) { return state.shaderVariants.get(target); }
+    public synchronized void setShaderVariant(String target, String id) {
+        if (id == null) state.shaderVariants.remove(target);
+        else state.shaderVariants.put(target, id);
     }
 }

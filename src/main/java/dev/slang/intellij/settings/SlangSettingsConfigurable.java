@@ -32,6 +32,7 @@ public final class SlangSettingsConfigurable implements Configurable {
     private JLabel resolvedPath;
     private JCheckBox branchDisplay;
     private JCheckBox branchLabels;
+    private JTextField variantsPath;
 
     public SlangSettingsConfigurable(@NotNull Project project) {
         this.project = project;
@@ -86,6 +87,11 @@ public final class SlangSettingsConfigurable implements Configurable {
         form.add(branchLabels, constraints);
         constraints.gridy++;
         form.add(new JLabel("Choose the branch context from the editor popup or Slang status-bar widget (M4c slangd)."), constraints);
+        constraints.gridy++;
+        form.add(new JLabel("Shader Variants manifest (project-relative or absolute; saved UTF-8 JSON; M4e slangd):"), constraints);
+        constraints.gridy++;
+        variantsPath = new JTextField();
+        form.add(variantsPath, constraints);
         branchDisplay.addActionListener(event -> branchLabels.setEnabled(branchDisplay.isSelected()));
 
         autoDetect.addActionListener(event -> {
@@ -109,7 +115,8 @@ public final class SlangSettingsConfigurable implements Configurable {
         return autoDetect.isSelected() != settings.isAutoDetectSlangd()
                 || !Objects.equals(uiPath, settings.getSlangdPath())
                 || branchDisplay.isSelected() != settings.isShowPreprocessorBranches()
-                || branchLabels.isSelected() != settings.isShowPreprocessorBranchLabels();
+                || branchLabels.isSelected() != settings.isShowPreprocessorBranchLabels()
+                || !Objects.equals(variantsPath.getText().trim().isEmpty() ? "slang-variants.json" : variantsPath.getText().trim(), settings.getShaderVariantsPath());
     }
 
     @Override
@@ -128,6 +135,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         settings.setSlangdPath(autoDetect.isSelected() ? "" : slangdPath.getText().trim());
         settings.setShowPreprocessorBranches(branchDisplay.isSelected());
         settings.setShowPreprocessorBranchLabels(branchLabels.isSelected());
+        settings.setShaderVariantsPath(variantsPath.getText());
         updateResolvedPathPreview();
         SlangBranchDisplayService.getInstance(project).refresh();
 
@@ -147,6 +155,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         slangdPath.setText(settings.getSlangdPath());
         branchDisplay.setSelected(settings.isShowPreprocessorBranches());
         branchLabels.setSelected(settings.isShowPreprocessorBranchLabels());
+        variantsPath.setText(settings.getShaderVariantsPath());
         branchLabels.setEnabled(branchDisplay.isSelected());
         updateFieldEnabledState();
         updateResolvedPathPreview();
@@ -160,6 +169,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         resolvedPath = null;
         branchDisplay = null;
         branchLabels = null;
+        variantsPath = null;
     }
 
     private void updateFieldEnabledState() {

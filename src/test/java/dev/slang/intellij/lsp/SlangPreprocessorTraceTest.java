@@ -12,6 +12,27 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class SlangPreprocessorTraceTest {
+    @Test public void variantCapabilityAndFingerprintAreRequiredIndependently() {
+        var caps = new ServerCapabilities();
+        caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorContexts", 1));
+        assertFalse(SlangPreprocessorTrace.supportsVariants(caps));
+        caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorContexts", 1, "preprocessorVariants", 1));
+        assertTrue(SlangPreprocessorTrace.supportsVariants(caps));
+        for (Object invalid : new Object[]{true, "1", 0, 2, 1.5}) {
+            caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorContexts", 1, "preprocessorVariants", invalid));
+            assertFalse(SlangPreprocessorTrace.supportsVariants(caps));
+        }
+        var build = new SlangPreprocessorTrace.BuildContext(1, "fingerprint", false,
+                java.util.List.of(new SlangPreprocessorTrace.Macro("MODE", "1")), java.util.List.of(), java.util.List.of(), "spirv", "spirv_1_5");
+        var trace = new SlangPreprocessorTrace("target", 1, java.util.List.of(), java.util.List.of(), "root", -1, "ok", 1,
+                "fingerprint", "");
+        assertTrue(trace.matchesVariant(build));
+        assertFalse(new SlangPreprocessorTrace("target", 1, java.util.List.of(), java.util.List.of(), "root", -1, "ok", 1,
+                "different", "").matchesVariant(build));
+        assertFalse(new SlangPreprocessorTrace("target", 1, java.util.List.of(), java.util.List.of()).matchesVariant(build));
+        var gson = new Gson();
+        assertEquals(build, gson.fromJson(gson.toJson(build), SlangPreprocessorTrace.BuildContext.class));
+    }
     @Test public void contextsRequireTheirOwnCapabilityAndExactResponseIdentity() {
         var caps = new ServerCapabilities();
         caps.setExperimental(Map.of("preprocessorTrace", 1));

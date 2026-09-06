@@ -37,6 +37,9 @@ best handled by `slangd`.
   [M4c contexts](preprocessor-contexts.md) add bounded include discovery, a searchable selector,
   workspace-persisted choices and a status-bar widget. Isolated contextual compiler traces do not
   change ordinary LSP completion/navigation/diagnostics contexts.
+  [M4e variants](shader-variants.md) add a strict, versioned build-context catalog, per-file variant
+  selection and fingerprint gating; `cmake/SlangShaderVariants.cmake` exports explicit shader build
+  data without importing host C++ flags. Only the selected variant is sent to an isolated compiler session.
 
 No component depends on CLion Classic/CIDR C++ PSI or on Radler internals.
 
@@ -60,7 +63,7 @@ LSP `workspace/configuration`. `${workspaceFolder}` is expanded against the proj
 the configuration portable between CLion, VS Code, Visual Studio, and CI.
 
 CMake definitions and include paths are not imported automatically: host C++ options and shader
-options are often intentionally different. A future explicit import action can provide that bridge.
+options are often intentionally different. M4e provides an explicit shader-data export/manifest bridge.
 
 ## Synthetic builtin modules
 

@@ -18,6 +18,8 @@
   分支来源提示；需要带 M4a 补丁的 `slangd`（插件不捆绑此二进制）
 - 可选的 [M4c 上下文选择器](docs/preprocessor-contexts.md)：发现直接／间接包含入口，可搜索、选择并
   按文件记忆编译上下文；通过编辑器右键或状态栏使用，需要带 M4c 补丁的 `slangd`
+- 可选的 [M4e 构建上下文与 Shader Variants](docs/shader-variants.md)：通过清单和 CMake 显式导出，
+  按变体切换宏、include 路径与 target/profile；提供 metallic 示例，需要带 M4e 补丁的 `slangd`
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
   Inlay Hints、Formatting 等标准能力，实际能力取决于所用 `slangd`
 - 通过 Ctrl+左键、Ctrl+B 与 Ctrl+悬停进行定义导航。插件会直接复用当前 `slangd` 会话，
