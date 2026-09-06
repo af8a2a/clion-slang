@@ -43,5 +43,13 @@
                 instance="dev.slang.intellij.settings.SlangSettingsConfigurable"/>
 
         <platform.lsp.serverSupportProvider implementation="dev.slang.intellij.lsp.SlangLspServerSupportProvider"/>
+        <statusBarWidgetFactory implementation="dev.slang.intellij.preprocessor.SlangContextWidgetFactory"/>
     </extensions>
+    <actions>
+        <action id="Slang.SelectPreprocessorContext" class="dev.slang.intellij.preprocessor.SlangSelectContextAction"
+                text="Slang Preprocessor Context…" description="Choose the compilation root for Slang branch display">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>

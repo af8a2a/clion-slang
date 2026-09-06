@@ -12,6 +12,24 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class SlangPreprocessorTraceTest {
+    @Test public void contextsRequireTheirOwnCapabilityAndExactResponseIdentity() {
+        var caps = new ServerCapabilities();
+        caps.setExperimental(Map.of("preprocessorTrace", 1));
+        assertFalse(SlangPreprocessorTrace.supportsContexts(caps));
+        caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorContexts", 1));
+        assertTrue(SlangPreprocessorTrace.supportsContexts(caps));
+        for (Object invalid : new Object[]{true, "1", 0, 2, 1.5}) {
+            caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorContexts", invalid));
+            assertFalse(SlangPreprocessorTrace.supportsContexts(caps));
+        }
+        var trace = new SlangPreprocessorTrace("target", 3, java.util.List.of(), java.util.List.of(), "root", 7, "ok", 1);
+        assertTrue(trace.matchesContext("root", 7));
+        assertFalse(trace.matchesContext("other", 7));
+        assertFalse(trace.matchesContext("root", 8));
+        assertFalse(new SlangPreprocessorTrace("target", 3, java.util.List.of(), java.util.List.of(), "root", 7, "ambiguous", 2)
+                .matchesContext("root", 7));
+        assertFalse(new SlangPreprocessorTrace("target", 3, java.util.List.of(), java.util.List.of()).matchesContext("root", 0));
+    }
     @Test
     public void capabilityIsOptionalAndVersioned() {
         assertFalse(SlangPreprocessorTrace.isSupported(null));

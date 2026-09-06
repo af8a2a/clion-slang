@@ -34,6 +34,9 @@ best handled by `slangd`.
 - `synth/`: support code for generated builtin-module documents returned through `slang-synth://` URIs.
 - `preprocessor/`: optional M4a trace consumers for [M4b branch display](preprocessor-branch-display.md),
   including debounced refresh, synchronization/freshness guards and editor-owned decorations.
+  [M4c contexts](preprocessor-contexts.md) add bounded include discovery, a searchable selector,
+  workspace-persisted choices and a status-bar widget. Isolated contextual compiler traces do not
+  change ordinary LSP completion/navigation/diagnostics contexts.
 
 No component depends on CLion Classic/CIDR C++ PSI or on Radler internals.
 

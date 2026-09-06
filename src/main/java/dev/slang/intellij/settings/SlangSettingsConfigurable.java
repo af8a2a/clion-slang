@@ -85,7 +85,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         branchLabels = new JCheckBox("Show branch source labels after #elif / #else / #endif");
         form.add(branchLabels, constraints);
         constraints.gridy++;
-        form.add(new JLabel("Context: current file as compilation root; macros from saved slangdconfig.json."), constraints);
+        form.add(new JLabel("Choose the branch context from the editor popup or Slang status-bar widget (M4c slangd)."), constraints);
         branchDisplay.addActionListener(event -> branchLabels.setEnabled(branchDisplay.isSelected()));
 
         autoDetect.addActionListener(event -> {

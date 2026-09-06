@@ -21,6 +21,7 @@ public record SlangBranchPresentation(List<TextRange> inactive, List<TextRange> 
 
     public static @Nullable SlangBranchPresentation create(Document document, SlangPreprocessorTrace trace) {
         if (trace == null || trace.directives() == null || trace.inactiveRegions() == null
+                || trace.status() != null && !"ok".equals(trace.status())
                 || (long) trace.directives().size() + trace.inactiveRegions().size() > MAX_ITEMS) return null;
         var directives = trace.directives();
         var ranges = new ArrayList<TextRange>();

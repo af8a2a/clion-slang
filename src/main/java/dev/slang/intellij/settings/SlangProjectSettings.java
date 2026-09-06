@@ -7,6 +7,8 @@ import com.intellij.openapi.components.Storage;
 import com.intellij.openapi.components.StoragePathMacros;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service(Service.Level.PROJECT)
 @State(
@@ -19,6 +21,8 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
         public String slangdPath = "";
         public boolean showPreprocessorBranches = true;
         public boolean showPreprocessorBranchLabels = true;
+        /** Target local path -> explicitly chosen root path. Absence means automatic. */
+        public Map<String, String> preprocessorContexts = new HashMap<>();
 
         public SettingsState() {
         }
@@ -28,6 +32,7 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
             slangdPath = other.slangdPath;
             showPreprocessorBranches = other.showPreprocessorBranches;
             showPreprocessorBranchLabels = other.showPreprocessorBranchLabels;
+            if (other.preprocessorContexts != null) preprocessorContexts.putAll(other.preprocessorContexts);
         }
     }
 
@@ -73,4 +78,11 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
     public synchronized boolean isShowPreprocessorBranchLabels() { return state.showPreprocessorBranchLabels; }
 
     public synchronized void setShowPreprocessorBranchLabels(boolean value) { state.showPreprocessorBranchLabels = value; }
+
+    public synchronized String getPreprocessorContext(String target) { return state.preprocessorContexts.get(target); }
+
+    public synchronized void setPreprocessorContext(String target, String root) {
+        if (root == null) state.preprocessorContexts.remove(target);
+        else state.preprocessorContexts.put(target, root);
+    }
 }

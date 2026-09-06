@@ -1,6 +1,9 @@
 package dev.slang.intellij.preprocessor;
 
 import com.intellij.openapi.Disposable;
+import com.intellij.ProjectTopics;
+import com.intellij.openapi.roots.ModuleRootEvent;
+import com.intellij.openapi.roots.ModuleRootListener;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.application.ReadAction;
@@ -21,10 +24,12 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.vfs.newvfs.BulkFileListener;
 import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent;
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
+import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent;
 import com.intellij.platform.lsp.api.LspServer;
 import com.intellij.platform.lsp.api.LspServerManager;
 import com.intellij.platform.lsp.api.LspServerManagerListener;
@@ -62,6 +67,14 @@ public final class SlangBranchDisplayService implements Disposable {
         Future<?> request;
     }
 
+    private record ContextStamp(VirtualFile file, Document document, String uri, int version,
+                                long fileStamp, long documentStamp) {
+        boolean isCurrent() {
+            return file.isValid() && file.getModificationStamp() == fileStamp
+                    && (document == null || document.getModificationStamp() == documentStamp);
+        }
+    }
+
     public static SlangBranchDisplayService getInstance(Project project) {
         return project.getService(SlangBranchDisplayService.class);
     }
@@ -69,6 +82,11 @@ public final class SlangBranchDisplayService implements Disposable {
     public SlangBranchDisplayService(Project project) {
         this.project = project;
         var connection = project.getMessageBus().connect(this);
+        connection.subscribe(ProjectTopics.PROJECT_ROOTS, new ModuleRootListener() {
+            @Override public void rootsChanged(@NotNull ModuleRootEvent event) {
+                ui(() -> { restartNeeded = true; invalidate(); });
+            }
+        });
         connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
             @Override public void fileOpened(@NotNull FileEditorManager manager, @NotNull VirtualFile file) {
                 if (isSlangFile(file)) refresh();
@@ -147,6 +165,7 @@ public final class SlangBranchDisplayService implements Disposable {
 
     private void invalidate() {
         generation++;
+        SlangContextService.getInstance(project).invalidate();
         alarm.cancelAllRequests();
         for (Entry entry : entries.values()) {
             if (entry.request != null) entry.request.cancel(true);
@@ -188,19 +207,51 @@ public final class SlangBranchDisplayService implements Disposable {
         entries.put(document, entry);
         entry.request = AppExecutorUtil.getAppExecutorService().submit(() -> {
             try {
+                var contexts = SlangContextService.getInstance(project);
+                boolean supportsContexts = SlangPreprocessorTrace.supportsContexts(server.getInitializeResult().getCapabilities());
+                String pinned = SlangProjectSettings.getInstance(project).getPreprocessorContext(file.getPath());
+                if (!supportsContexts && pinned != null
+                        && !java.nio.file.Path.of(pinned).equals(SlangContextService.path(file))) {
+                    report(document, entry, file, "Selected context requires M4c slangd");
+                    return;
+                }
+                var root = supportsContexts ? contexts.resolve(file) : SlangContextService.path(file);
+                VirtualFile rootFile = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root);
+                if (rootFile == null || !rootFile.isValid()) {
+                    report(document, entry, file, "Selected root is missing: " + contexts.relative(root));
+                    return;
+                }
+                ContextStamp context = ReadAction.compute(() -> {
+                    Document rootDocument = FileEditorManager.getInstance(project).isFileOpen(rootFile)
+                            ? FileDocumentManager.getInstance().getCachedDocument(rootFile) : null;
+                    return new ContextStamp(rootFile, rootDocument, server.getDocumentIdentifier(rootFile).getUri(),
+                            rootDocument == null ? -1 : server.getDocumentVersion(rootDocument),
+                            rootFile.getModificationStamp(), rootDocument == null ? -1 : rootDocument.getModificationStamp());
+                });
                 SlangPreprocessorTrace trace = server.sendRequestSync(5_000, remote ->
                         remote instanceof SlangLanguageServer slang
-                                ? slang.preprocessorTrace(new SlangPreprocessorTrace.Params(identifier))
+                                ? slang.preprocessorTrace(new SlangPreprocessorTrace.Params(identifier, supportsContexts ? context.uri : null))
                                 : CompletableFuture.completedFuture(null));
+                if (supportsContexts && (trace == null || !trace.matchesContext(context.uri, context.version))) {
+                    String reason = trace == null ? "Trace unavailable" : switch (String.valueOf(trace.status())) {
+                        case "notIncluded" -> "Not included under this root's macros";
+                        case "ambiguous" -> "Included " + trace.occurrenceCount() + " times — occurrence selection not yet supported";
+                        default -> "Context trace unavailable or stale";
+                    };
+                    report(document, entry, file, contexts.relative(root) + " — " + reason);
+                    return;
+                }
                 SlangBranchPresentation presentation = ReadAction.compute(() ->
                         document.getModificationStamp() == stamp.documentStamp()
                                 && trace != null && stamp.uri().equals(trace.uri()) && stamp.version() == trace.version()
                                 ? SlangBranchPresentation.create(document, trace) : null);
                 ui(() -> {
-                    if (entries.get(document) != entry || !file.isValid() || !awaitingSync.isReady()
+                    if (entries.get(document) != entry || !file.isValid() || !context.isCurrent() || !awaitingSync.isReady()
                             || !SlangProjectSettings.getInstance(project).isShowPreprocessorBranches()
                             || !stamp.accepts(trace, runningServer(), server.getDocumentVersion(document),
                             document.getModificationStamp(), generation) || presentation == null) return;
+                    contexts.report(file, (pinned == null ? "Auto: " : "") + contexts.relative(root)
+                            + (supportsContexts ? "" : " (current-file only; M4c slangd required for contexts)"));
                     for (Editor editor : EditorFactory.getInstance().getEditors(document, project)) {
                         if (!eligibleEditor(editor)) continue;
                         var old = decorations.remove(editor);
@@ -213,14 +264,21 @@ public final class SlangBranchDisplayService implements Disposable {
                 // Superseded request, closed editor or disposed project.
             } catch (RuntimeException exception) {
                 LOG.debug("slangd preprocessor trace unavailable for " + file.getPath(), exception);
+                report(document, entry, file, "Context trace unavailable; retry on edit or selection");
             }
         });
     }
 
+    private void report(Document document, Entry entry, VirtualFile file, String message) {
+        ui(() -> { if (entries.get(document) == entry) SlangContextService.getInstance(project).report(file, message); });
+    }
+
     private void filesChanged(List<? extends VFileEvent> events) {
+        if (events.stream().anyMatch(SlangBranchDisplayService::affectsContexts))
+            SlangContextService.getInstance(project).invalidate();
         if (runningServer() == null || !SlangProjectSettings.getInstance(project).isShowPreprocessorBranches()) return;
         for (VFileEvent event : events) {
-            if (!isShaderDependency(event.getPath())) continue;
+            if (!affectsContexts(event)) continue;
             VirtualFile file = event.getFile();
             Document document = file == null ? null : FileDocumentManager.getInstance().getCachedDocument(file);
             // Native LSP already sent didChange for a saved, opened Slang document.
@@ -231,6 +289,12 @@ public final class SlangBranchDisplayService implements Disposable {
             invalidate();
             break;
         }
+    }
+
+    private static boolean affectsContexts(VFileEvent event) {
+        return isShaderDependency(event.getPath()) || event.getFile() != null && event.getFile().isDirectory()
+                || event instanceof VFilePropertyChangeEvent property && VirtualFile.PROP_NAME.equals(property.getPropertyName())
+                && isShaderDependency(String.valueOf(property.getOldValue()));
     }
 
     static boolean isShaderDependency(String path) {

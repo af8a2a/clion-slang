@@ -8,9 +8,9 @@ M4b consumes the [M4a compiler trace](preprocessor-trace-protocol.md) in the edi
 - Read-only, after-line-end labels show the previous branch at `elif` / `else` / `endif`, for example
   `#if BLUE`, `#elif GREEN`, or `#elif RED #else`. Labels never change the document or evaluate macros.
 
-The context is still **the currently opened file as its own compilation root**, with the server's
-configured macros/search paths. This milestone does not discover includers, select an alternative
-root, force an inactive branch, or add shader permutation controls.
+With an M4a-only server, the context is **the current file as its own compilation root**, with
+configured macros/search paths. [M4c](preprocessor-contexts.md) now adds includer discovery and root
+selection under an additional capability. Forced branches and shader permutations remain out of scope.
 
 ## Enable and configure
 
@@ -59,9 +59,8 @@ restart for avoiding stale compiler data. Unsaved JSON configuration is not appl
 
 Without a dependency graph, disk invalidation is conservative across VFS shader/header events
 (`slang`, `slangh`, `hlsl`, `hlsli`, `h`, `hpp`, `inc`), including external search paths. Large generated
-shader trees may cause extra restarts. Nonstandard include extensions and directory-only moves
-require a manual language-server restart for now. Root-context/dependency discovery can narrow this
-in a later milestone.
+shader trees may cause extra restarts. M4c additionally handles directory moves and content-root
+changes. Nonstandard include extensions still require a manual language-server restart.
 
 ## Tests and manual acceptance
 

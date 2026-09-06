@@ -19,6 +19,8 @@ an external process.
 - A project-wide `slangd` client built on the JetBrains Native LSP API
 - Optional [preprocessor branch display](docs/preprocessor-branch-display.md): inactive-code dimming,
   active-branch marks and branch source labels, requiring M4a-patched `slangd` (not bundled)
+- Optional [M4c context selector](docs/preprocessor-contexts.md): discover direct/transitive includers,
+  search/select a compilation root, and remember the choice per file; requires M4c-patched `slangd`
 - Standard Diagnostics, Completion, Hover, Signature Help, Definition, References, Semantic
   Tokens, Inlay Hints, and Formatting capabilities, depending on the selected `slangd`
 - Definition navigation through Ctrl+Click, Ctrl+B, and Ctrl+Hover. The plugin reuses the active

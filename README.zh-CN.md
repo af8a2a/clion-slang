@@ -16,6 +16,8 @@
 - 基于 JetBrains Native LSP API 的项目级 `slangd` 客户端
 - 可选的 [M4b 预处理分支显示](docs/preprocessor-branch-display.md)：非激活代码灰显、活动分支标记、
   分支来源提示；需要带 M4a 补丁的 `slangd`（插件不捆绑此二进制）
+- 可选的 [M4c 上下文选择器](docs/preprocessor-contexts.md)：发现直接／间接包含入口，可搜索、选择并
+  按文件记忆编译上下文；通过编辑器右键或状态栏使用，需要带 M4c 补丁的 `slangd`
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
   Inlay Hints、Formatting 等标准能力，实际能力取决于所用 `slangd`
 - 通过 Ctrl+左键、Ctrl+B 与 Ctrl+悬停进行定义导航。插件会直接复用当前 `slangd` 会话，

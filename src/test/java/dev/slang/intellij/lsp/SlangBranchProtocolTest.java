@@ -71,6 +71,9 @@ public class SlangBranchProtocolTest {
             assertNotNull(changed);
             assertEquals(source.indexOf("float green"), changed.inactive().getFirst().getStartOffset());
 
+            if (SlangPreprocessorTrace.supportsContexts(initialized.getCapabilities()))
+                checkContexts(server, root);
+
             server.getTextDocumentService().didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(uri)));
             assertNull(server.preprocessorTrace(params).get(30, TimeUnit.SECONDS));
             server.shutdown().get(10, TimeUnit.SECONDS);
@@ -80,6 +83,58 @@ public class SlangBranchProtocolTest {
             process.destroyForcibly();
             process.waitFor(10, TimeUnit.SECONDS);
         }
+    }
+
+    private static void checkContexts(SlangLanguageServer server, Path root) throws Exception {
+        Path header = root.resolve("Shared.slangh"), a = root.resolve("A.slang"), b = root.resolve("B.slang");
+        String text = "#if FLAG\n// on 😀\n#else\n// off\n#endif\n";
+        Files.writeString(header, text);
+        Files.writeString(a, "#define FLAG 1\n#include \"Shared.slangh\"\nfloat a;\n");
+        Files.writeString(b, "#define FLAG 0\n#include \"Bridge.slangh\"\nfloat b;\n");
+        Files.writeString(root.resolve("Bridge.slangh"), "#include \"Shared.slangh\"\n");
+        var target = new TextDocumentIdentifier(header.toUri().toString());
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(target.getUri(), "slang", 10, text)));
+        var fromA = new SlangPreprocessorTrace.Params(target, a.toUri().toString());
+        var fromB = new SlangPreprocessorTrace.Params(target, b.toUri().toString());
+        var on = server.preprocessorTrace(fromA).get(30, TimeUnit.SECONDS);
+        assertTrue(on.matchesContext(a.toUri().toString(), -1));
+        assertEquals(10, on.version());
+        assertTrue(on.directives().getFirst().active());
+        assertNotNull(SlangBranchPresentation.create(new DocumentImpl(text), on));
+        var off = server.preprocessorTrace(fromB).get(30, TimeUnit.SECONDS);
+        assertTrue(off.matchesContext(b.toUri().toString(), -1));
+        assertFalse(off.directives().getFirst().active());
+        assertNotNull(SlangBranchPresentation.create(new DocumentImpl(text), off));
+        assertTrue(server.preprocessorTrace(fromA).get(30, TimeUnit.SECONDS).directives().getFirst().active());
+        // A saved root is not implicitly opened or installed into ordinary LSP state.
+        assertNull(server.preprocessorTrace(new SlangPreprocessorTrace.Params(new TextDocumentIdentifier(a.toUri().toString())))
+                .get(30, TimeUnit.SECONDS));
+        String unsavedB = "#define FLAG 1\n#include \"Bridge.slangh\"\nfloat b;\n";
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(b.toUri().toString(), "slang", 4, unsavedB)));
+        var unsaved = server.preprocessorTrace(fromB).get(30, TimeUnit.SECONDS);
+        assertTrue(unsaved.matchesContext(b.toUri().toString(), 4));
+        assertTrue(unsaved.directives().getFirst().active());
+        server.getTextDocumentService().didChange(new DidChangeTextDocumentParams(
+                new VersionedTextDocumentIdentifier(target.getUri(), 11), List.of(new TextDocumentContentChangeEvent(
+                new Range(new Position(0, 4), new Position(0, 8)), "!FLAG"))));
+        var editedHeader = server.preprocessorTrace(fromA).get(30, TimeUnit.SECONDS);
+        assertEquals(11, editedHeader.version());
+        assertFalse(editedHeader.directives().getFirst().active());
+        Path skipped = root.resolve("Skipped.slang"), repeated = root.resolve("Repeated.slang");
+        Files.writeString(skipped, "#if 0\n#include \"Shared.slangh\"\n#endif\nfloat x;\n");
+        Files.writeString(repeated, "#define FLAG 1\n#include \"Shared.slangh\"\n#include \"Shared.slangh\"\nfloat x;\n");
+        var absent = server.preprocessorTrace(new SlangPreprocessorTrace.Params(target, skipped.toUri().toString())).get(30, TimeUnit.SECONDS);
+        assertEquals("notIncluded", absent.status());
+        assertEquals(0, absent.occurrenceCount());
+        assertTrue(absent.directives().isEmpty());
+        var duplicate = server.preprocessorTrace(new SlangPreprocessorTrace.Params(target, repeated.toUri().toString())).get(30, TimeUnit.SECONDS);
+        assertEquals("ambiguous", duplicate.status());
+        assertEquals(2, duplicate.occurrenceCount());
+        assertTrue(duplicate.directives().isEmpty());
+        assertNull(server.preprocessorTrace(new SlangPreprocessorTrace.Params(target, root.resolve("Missing.slang").toUri().toString()))
+                .get(30, TimeUnit.SECONDS));
+        server.getTextDocumentService().didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(b.toUri().toString())));
+        server.getTextDocumentService().didClose(new DidCloseTextDocumentParams(target));
     }
 
     private static final class Client implements LanguageClient {

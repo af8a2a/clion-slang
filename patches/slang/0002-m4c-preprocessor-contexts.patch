@@ -1,0 +1,308 @@
+diff --git a/source/compiler-core/slang-language-server-protocol.cpp b/source/compiler-core/slang-language-server-protocol.cpp
+index 01b09866b..d38854050 100644
+--- a/source/compiler-core/slang-language-server-protocol.cpp
++++ b/source/compiler-core/slang-language-server-protocol.cpp
+@@ -257,6 +257,7 @@ static const StructRttiInfo _makeSlangExperimentalServerCapabilitiesRtti()
+         "LanguageServerProtocol::SlangExperimentalServerCapabilities",
+         nullptr);
+     builder.addField("preprocessorTrace", &obj.preprocessorTrace);
++    builder.addField("preprocessorContexts", &obj.preprocessorContexts);
+     builder.ignoreUnknownFields();
+     return builder.make();
+ }
+@@ -597,6 +598,7 @@ static const StructRttiInfo _makePreprocessorTraceParamsRtti()
+         "LanguageServerProtocol::PreprocessorTraceParams",
+         &WorkDoneProgressParams::g_rttiInfo);
+     builder.addField("textDocument", &obj.textDocument);
++    builder.addField("contextUri", &obj.contextUri, StructRttiInfo::Flag::Optional);
+     builder.ignoreUnknownFields();
+     return builder.make();
+ }
+@@ -648,6 +650,10 @@ static const StructRttiInfo _makePreprocessorTraceRtti()
+     StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorTrace", nullptr);
+     builder.addField("uri", &obj.uri);
+     builder.addField("version", &obj.version);
++    builder.addField("contextUri", &obj.contextUri);
++    builder.addField("contextVersion", &obj.contextVersion);
++    builder.addField("status", &obj.status);
++    builder.addField("occurrenceCount", &obj.occurrenceCount);
+     builder.addField("directives", &obj.directives);
+     builder.addField("inactiveRegions", &obj.inactiveRegions);
+     builder.ignoreUnknownFields();
+diff --git a/source/compiler-core/slang-language-server-protocol.h b/source/compiler-core/slang-language-server-protocol.h
+index ae5094755..1b8d9dbc2 100644
+--- a/source/compiler-core/slang-language-server-protocol.h
++++ b/source/compiler-core/slang-language-server-protocol.h
+@@ -283,6 +283,7 @@ struct DocumentOnTypeFormattingOptions
+ struct SlangExperimentalServerCapabilities
+ {
+     int preprocessorTrace = 0;
++    int preprocessorContexts = 0;
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
+@@ -721,6 +722,7 @@ struct SemanticTokens
+ struct PreprocessorTraceParams : WorkDoneProgressParams
+ {
+     TextDocumentIdentifier textDocument;
++    String contextUri;
+ 
+     static const UnownedStringSlice methodName;
+     static const StructRttiInfo g_rttiInfo;
+@@ -754,6 +756,10 @@ struct PreprocessorTrace
+ {
+     String uri;
+     int version = 0;
++    String contextUri;
++    int contextVersion = -1;
++    String status;
++    int occurrenceCount = 0;
+     List<PreprocessorTraceDirective> directives;
+     List<PreprocessorTraceInactiveRegion> inactiveRegions;
+ 
+diff --git a/source/slang/slang-content-assist-info.h b/source/slang/slang-content-assist-info.h
+index d72c1c4fb..739b9ea95 100644
+--- a/source/slang/slang-content-assist-info.h
++++ b/source/slang/slang-content-assist-info.h
+@@ -77,8 +77,15 @@ struct FileIncludeContentAssistInfo
+     String path;
+ };
+ 
++struct PreprocessorTraceFileContentAssistInfo
++{
++    String rootPath;
++    SourceLoc beginLoc;
++};
++
+ struct ConditionalDirectiveContentAssistInfo
+ {
++    int fileIndex = -1;
+     String kind;
+     SourceLoc beginLoc;
+     SourceLoc endLoc;
+@@ -95,6 +102,7 @@ struct ConditionalDirectiveContentAssistInfo
+ 
+ struct InactiveRegionContentAssistInfo
+ {
++    int fileIndex = -1;
+     SourceLoc beginLoc;
+     SourceLoc endLoc;
+     int controllingDirective = -1;
+@@ -103,6 +111,7 @@ struct InactiveRegionContentAssistInfo
+ 
+ struct PreprocessorContentAssistInfo
+ {
++    List<PreprocessorTraceFileContentAssistInfo> traceFiles;
+     List<MacroDefinitionContentAssistInfo> macroDefinitions;
+     List<MacroInvocationContentAssistInfo> macroInvocations;
+     List<FileIncludeContentAssistInfo> fileIncludes;
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index 76c140f53..2bc440a3b 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -160,6 +160,7 @@ SlangResult LanguageServer::parseNextMessage()
+                     caps.semanticTokensProvider.full = true;
+                     caps.semanticTokensProvider.range = false;
+                     caps.experimental.preprocessorTrace = 1;
++                    caps.experimental.preprocessorContexts = 1;
+                     caps.signatureHelpProvider.triggerCharacters.add("(");
+                     caps.signatureHelpProvider.triggerCharacters.add("<");
+                     caps.signatureHelpProvider.triggerCharacters.add(",");
+@@ -1492,7 +1493,8 @@ SlangResult LanguageServer::preprocessorTrace(
+     const JSONValue& responseId)
+ {
+     auto result = m_core.preprocessorTrace(args);
+-    removePendingModuleToUpdateDiagnostics(args.textDocument.uri);
++    if (!args.contextUri.getLength())
++        removePendingModuleToUpdateDiagnostics(args.textDocument.uri);
+ 
+     if (SLANG_FAILED(result.returnCode) || result.isNull)
+     {
+@@ -1516,9 +1518,14 @@ LanguageServerCore::preprocessorTrace(
+     if (!m_workspace->openedDocuments.tryGetValue(canonicalPath, doc))
+         return std::nullopt;
+ 
+-    auto workspaceVersion = m_workspace->getCurrentVersion();
++    String contextUri = args.contextUri.getLength() ? args.contextUri : args.textDocument.uri;
++    String contextPath = uriToCanonicalPath(contextUri);
++    // Context traces must not pollute the ordinary LSP module/diagnostics cache.
++    RefPtr<WorkspaceVersion> workspaceVersion = args.contextUri.getLength()
++        ? m_workspace->createVersionForPreprocessorTrace()
++        : RefPtr<WorkspaceVersion>(m_workspace->getCurrentVersion());
+     SLANG_AST_BUILDER_RAII(workspaceVersion->linkage->getASTBuilder());
+-    if (!workspaceVersion->getOrLoadModule(canonicalPath))
++    if (!workspaceVersion->getOrLoadModule(contextPath, true))
+         return std::nullopt;
+ 
+     auto sourceManager = workspaceVersion->linkage->getSourceManager();
+@@ -1600,8 +1607,29 @@ LanguageServerCore::preprocessorTrace(
+     PreprocessorTrace response;
+     response.uri = args.textDocument.uri;
+     response.version = doc->getVersion();
++    response.contextUri = contextUri;
++    RefPtr<DocumentVersion> contextDoc;
++    if (m_workspace->openedDocuments.tryGetValue(contextPath, contextDoc))
++        response.contextVersion = contextDoc->getVersion();
+ 
+     auto& traceInfo = workspaceVersion->linkage->contentAssistInfo.preprocessorInfo;
++    int selectedFile = -1;
++    for (Index i = 0; i < traceInfo.traceFiles.getCount(); ++i)
++    {
++        auto& file = traceInfo.traceFiles[i];
++        String rootCanonical;
++        if (SLANG_FAILED(Path::getCanonical(file.rootPath, rootCanonical)))
++            rootCanonical = file.rootPath;
++        if (rootCanonical != contextPath ||
++            !isPrimaryPath(sourceManager->getHumaneLoc(file.beginLoc, SourceLocType::Actual)))
++            continue;
++        selectedFile = (int)i;
++        ++response.occurrenceCount;
++    }
++    response.status = response.occurrenceCount == 1 ? "ok"
++        : response.occurrenceCount == 0 ? "notIncluded" : "ambiguous";
++    if (response.occurrenceCount != 1)
++        return response;
+     List<int> oldToNewDirectiveIndex;
+     oldToNewDirectiveIndex.setCount(traceInfo.conditionalDirectives.getCount());
+     for (auto& index : oldToNewDirectiveIndex)
+@@ -1610,6 +1638,8 @@ LanguageServerCore::preprocessorTrace(
+     for (Index oldIndex = 0; oldIndex < traceInfo.conditionalDirectives.getCount(); ++oldIndex)
+     {
+         auto& source = traceInfo.conditionalDirectives[oldIndex];
++        if (source.fileIndex != selectedFile)
++            continue;
+         PreprocessorTraceDirective target;
+         if (!getDirectiveRanges(
+                 source.beginLoc,
+@@ -1648,6 +1678,8 @@ LanguageServerCore::preprocessorTrace(
+ 
+     for (auto& source : traceInfo.inactiveRegions)
+     {
++        if (source.fileIndex != selectedFile)
++            continue;
+         PreprocessorTraceInactiveRegion target;
+         if (!getInactiveRange(source.beginLoc, source.endLoc, source.endsAtDirective, target.range))
+             continue;
+diff --git a/source/slang/slang-preprocessor.cpp b/source/slang/slang-preprocessor.cpp
+index f57b0f7e1..f945a6bf2 100644
+--- a/source/slang/slang-preprocessor.cpp
++++ b/source/slang/slang-preprocessor.cpp
+@@ -988,6 +988,7 @@ struct InputFile
+     ExpansionInputStream* getExpansionStream() { return m_expansionStream; }
+ 
+     bool isIncludedFile() { return m_parent != nullptr; }
++    int traceFileIndex = -1;
+ 
+ private:
+     friend struct Preprocessor;
+@@ -1324,6 +1325,7 @@ struct Preprocessor
+ 
+     /// Stores macro definition and invocation info for language server.
+     PreprocessorContentAssistInfo* contentAssistInfo = nullptr;
++    String traceRootPath;
+ 
+     /// Pending inactive source range for the primary input file.
+     bool hasPendingInactiveRegion = false;
+@@ -2900,8 +2902,7 @@ static bool Expect(
+ 
+ static bool shouldRecordPreprocessorTrace(Preprocessor* preprocessor)
+ {
+-    return preprocessor->contentAssistInfo && preprocessor->m_currentInputFile &&
+-           !preprocessor->m_currentInputFile->isIncludedFile();
++    return preprocessor->contentAssistInfo && preprocessor->m_currentInputFile;
+ }
+ 
+ static int getConditionalDepth(Conditional* conditional)
+@@ -2933,6 +2934,7 @@ static int addConditionalDirectiveForContentAssist(
+         return -1;
+ 
+     ConditionalDirectiveContentAssistInfo info;
++    info.fileIndex = preprocessor->m_currentInputFile->traceFileIndex;
+     info.kind = kind;
+     info.beginLoc = context->m_beginLoc;
+     info.keywordLoc = context->m_directiveToken.loc;
+@@ -2973,6 +2975,7 @@ static void flushPendingInactiveRegion(
+         endLoc.getRaw() > preprocessor->pendingInactiveBeginLoc.getRaw())
+     {
+         InactiveRegionContentAssistInfo info;
++        info.fileIndex = preprocessor->m_currentInputFile->traceFileIndex;
+         info.beginLoc = preprocessor->pendingInactiveBeginLoc;
+         info.endLoc = endLoc;
+         info.controllingDirective = preprocessor->pendingInactiveControllingDirective;
+@@ -3800,6 +3803,17 @@ void Preprocessor::pushInputFile(InputFile* inputFile, SourceLoc loc, String fil
+     SourceView* sourceView = inputFile->getLexer()->m_sourceView;
+     sourceView->setAbsoluteLocationBase(absoluteSourceLocCounter);
+ 
++    if (contentAssistInfo)
++    {
++        if (!m_currentInputFile)
++            traceRootPath = sourceView->getSourceFile()->getPathInfo().foundPath;
++        PreprocessorTraceFileContentAssistInfo info;
++        info.rootPath = traceRootPath;
++        info.beginLoc = sourceView->getRange().begin;
++        inputFile->traceFileIndex = (int)contentAssistInfo->traceFiles.getCount();
++        contentAssistInfo->traceFiles.add(info);
++    }
++
+     inputFile->m_parent = m_currentInputFile;
+     m_currentInputFile = inputFile;
+     includedFiles.add(fileIdentity);
+@@ -5001,8 +5015,7 @@ static Token ReadToken(Preprocessor* preprocessor)
+         Token token = expansionStream->peekRawToken();
+         if (token.type == TokenType::EndOfFile)
+         {
+-            if (!inputFile->isIncludedFile())
+-                flushPendingInactiveRegion(preprocessor, token.loc);
++            flushPendingInactiveRegion(preprocessor, token.loc);
+             preprocessor->popInputFile();
+             continue;
+         }
+diff --git a/source/slang/slang-workspace-version.cpp b/source/slang/slang-workspace-version.cpp
+index 9bf44aa4e..14636ebb9 100644
+--- a/source/slang/slang-workspace-version.cpp
++++ b/source/slang/slang-workspace-version.cpp
+@@ -774,7 +774,7 @@ void WorkspaceVersion::ensureWorkspaceFlavor(UnownedStringSlice path)
+     }
+ }
+ 
+-Module* WorkspaceVersion::getOrLoadModule(String path)
++Module* WorkspaceVersion::getOrLoadModule(String path, bool allowDisk)
+ {
+     Module* module;
+     if (modules.tryGetValue(path, module))
+@@ -782,10 +782,12 @@ Module* WorkspaceVersion::getOrLoadModule(String path)
+         return module;
+     }
+     auto doc = workspace->openedDocuments.tryGetValue(path);
+-    if (!doc)
++    ComPtr<ISlangBlob> sourceBlob;
++    if (doc)
++        sourceBlob = StringBlob::create((*doc)->getText());
++    else if (!allowDisk || SLANG_FAILED(workspace->loadFile(path.getBuffer(), sourceBlob.writeRef())))
+         return nullptr;
+     ComPtr<ISlangBlob> diagnosticBlob;
+-    auto sourceBlob = StringBlob::create((*doc)->getText());
+ 
+     auto moduleName = getMangledNameFromNameString(path.getUnownedSlice());
+     linkage->contentAssistInfo.primaryModuleName = linkage->getNamePool()->getName(moduleName);
+diff --git a/source/slang/slang-workspace-version.h b/source/slang/slang-workspace-version.h
+index fd81cd7ce..3afd152c0 100644
+--- a/source/slang/slang-workspace-version.h
++++ b/source/slang/slang-workspace-version.h
+@@ -152,7 +152,7 @@ public:
+     RefPtr<Linkage> linkage;
+     Dictionary<String, DocumentDiagnostics> diagnostics;
+     ASTMarkup* getOrCreateMarkupAST(ModuleDecl* module);
+-    Module* getOrLoadModule(String path);
++    Module* getOrLoadModule(String path, bool allowDisk = false);
+     void ensureWorkspaceFlavor(UnownedStringSlice path);
+     MacroDefinitionContentAssistInfo* tryGetMacroDefinition(UnownedStringSlice name);
+ };
+@@ -196,6 +196,7 @@ public:
+     WorkspaceVersion* getCurrentVersion();
+     WorkspaceVersion* getCurrentCompletionVersion() { return currentCompletionVersion.Ptr(); }
+     WorkspaceVersion* createVersionForCompletion();
++    RefPtr<WorkspaceVersion> createVersionForPreprocessorTrace() { return createWorkspaceVersion(); }
+ 
+ public:
+     // Inherited via ISlangFileSystem

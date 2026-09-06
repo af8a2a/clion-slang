@@ -1,0 +1,8 @@
+// Open this header and select PreprocessorContextBlue / PreprocessorContextGreen.
+#if defined(CONTEXT_MODE) && CONTEXT_MODE == 1
+static const float3 contextTint = float3(0.0, 0.0, 1.0);
+#elif defined(CONTEXT_MODE) && CONTEXT_MODE == 2
+static const float3 contextTint = float3(0.0, 1.0, 0.0);
+#else
+static const float3 contextTint = float3(0.5, 0.5, 0.5);
+#endif

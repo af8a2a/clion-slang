@@ -1,5 +1,8 @@
 # M4a — Preprocessor trace baseline
 
+The optional [M4c context extension](preprocessor-contexts.md) adds `contextUri` and per-instance
+include tracing behind a separate capability. Requests without it retain the baseline below.
+
 The baseline described here is now consumed by [M4b client branch display](preprocessor-branch-display.md).
 Statements about absent automatic requests/UI below describe the original M4a milestone.
 
