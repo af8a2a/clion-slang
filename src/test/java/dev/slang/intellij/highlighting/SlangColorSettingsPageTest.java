@@ -32,7 +32,9 @@ public class SlangColorSettingsPageTest {
         SlangColorSettingsPage page = new SlangColorSettingsPage();
         Map<String, TextAttributesKey> tags = page.getAdditionalHighlightingTagToDescriptorMap();
 
-        assertEquals(27, tags.size());
+        assertEquals(29, tags.size());
+        assertSame(SlangSemanticColors.STRUCTURED_BUFFER, tags.get("semanticStructuredBuffer"));
+        assertSame(SlangSemanticColors.TYPE_ARGUMENT, tags.get("semanticTypeArgument"));
         assertSame(SlangSemanticColors.STRUCT, tags.get("semanticStruct"));
         assertSame(SlangSemanticColors.PARAMETER, tags.get("semanticParameter"));
         assertSame(SlangSemanticColors.INTRINSIC, tags.get("semanticIntrinsic"));
@@ -62,7 +64,16 @@ public class SlangColorSettingsPageTest {
         assertTrue(usedTags.containsAll(Arrays.asList(
                 "semanticNamespace", "semanticStruct", "semanticInterface", "semanticEnum",
                 "semanticTypeParameter", "semanticParameter", "semanticVariable",
-                "semanticProperty", "semanticFunction", "semanticIntrinsic", "semanticDecorator"
+                "semanticProperty", "semanticFunction", "semanticIntrinsic", "semanticDecorator",
+                "semanticStructuredBuffer", "semanticTypeArgument"
         )));
+    }
+
+    @Test public void structuredBuffersHaveTheSameConfigurableLexicalAndSemanticColor() {
+        var highlighter = new SlangSyntaxHighlighter();
+        assertSame(SlangSemanticColors.STRUCTURED_BUFFER, highlighter.getTokenHighlights(SlangTokenTypes.STRUCTURED_BUFFER_TYPE)[0]);
+        assertSame(SlangSyntaxHighlighter.TYPE, highlighter.getTokenHighlights(SlangTokenTypes.TYPE_KEYWORD)[0]);
+        assertSame(SlangSemanticColors.STRUCT, SlangSemanticColors.STRUCTURED_BUFFER.getFallbackAttributeKey());
+        assertSame(SlangSemanticColors.TYPE_PARAMETER, SlangSemanticColors.TYPE_ARGUMENT.getFallbackAttributeKey());
     }
 }

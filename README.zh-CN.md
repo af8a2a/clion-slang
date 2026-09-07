@@ -23,6 +23,8 @@
 - 可选的 [M4d 强制分支预览](docs/branch-preview.md)：右键 **Slang Branch Preview…** 临时定义／取消定义宏，
   叠加于所选上下文或 Variant；**Stop Slang Branch Preview**、关闭文件或切换上下文后清除覆盖。
   不修改源码或配置，仅影响分支显示；需要带 M4d 补丁的 `slangd`
+- [结构化缓冲区与泛型实参高亮](docs/structured-buffer-highlighting.md)：独立设置 `StructuredBuffer`／
+  `RWStructuredBuffer` 系列与 `HitEntry`、`uint`、嵌套泛型等类型实参的颜色；完整语义分类需要补丁 0005
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
   Inlay Hints、Formatting 等标准能力，实际能力取决于所用 `slangd`
 - 通过 Ctrl+左键、Ctrl+B 与 Ctrl+悬停进行定义导航。插件会直接复用当前 `slangd` 会话，

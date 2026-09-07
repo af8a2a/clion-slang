@@ -47,6 +47,7 @@ public final class SlangSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final TextAttributesKey[] EMPTY = TextAttributesKey.EMPTY_ARRAY;
     private static final TextAttributesKey[] KEYWORD_KEYS = pack(KEYWORD);
     private static final TextAttributesKey[] TYPE_KEYS = pack(TYPE);
+    private static final TextAttributesKey[] STRUCTURED_BUFFER_KEYS = pack(SlangSemanticColors.STRUCTURED_BUFFER);
     private static final TextAttributesKey[] NUMBER_KEYS = pack(NUMBER);
     private static final TextAttributesKey[] STRING_KEYS = pack(STRING);
     private static final TextAttributesKey[] BOOLEAN_KEYS = pack(BOOLEAN);
@@ -75,6 +76,7 @@ public final class SlangSyntaxHighlighter extends SyntaxHighlighterBase {
     public TextAttributesKey @NotNull [] getTokenHighlights(IElementType tokenType) {
         if (tokenType == SlangTokenTypes.KEYWORD) return KEYWORD_KEYS;
         if (tokenType == SlangTokenTypes.TYPE_KEYWORD) return TYPE_KEYS;
+        if (tokenType == SlangTokenTypes.STRUCTURED_BUFFER_TYPE) return STRUCTURED_BUFFER_KEYS;
         if (tokenType == SlangTokenTypes.NUMBER_LITERAL) return NUMBER_KEYS;
         if (tokenType == SlangTokenTypes.STRING_LITERAL || tokenType == SlangTokenTypes.CHARACTER_LITERAL) {
             return STRING_KEYS;

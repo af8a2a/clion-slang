@@ -26,7 +26,8 @@ public class SlangSemanticTokensSupportTest {
         List<String> tokenTypes = support.getTokenTypes();
         List<String> tokenModifiers = support.getTokenModifiers();
 
-        assertEquals(23, tokenTypes.size());
+        assertEquals(25, tokenTypes.size());
+        assertEquals(List.of("slangStructuredBuffer", "slangTypeArgument"), tokenTypes.subList(23, 25));
         assertEquals(tokenTypes.size(), new HashSet<>(tokenTypes).size());
         assertTrue(tokenTypes.containsAll(List.of(
                 "type", "enumMember", "variable", "parameter", "function", "property",
@@ -81,6 +82,10 @@ public class SlangSemanticTokensSupportTest {
 
     @Test
     public void mapsEnhancedTypesAndModifierCombinations() {
+        assertSame(SlangSemanticColors.STRUCTURED_BUFFER, color("slangStructuredBuffer"));
+        assertSame(SlangSemanticColors.STRUCTURED_BUFFER, color("slangStructuredBuffer", "defaultLibrary"));
+        assertSame(SlangSemanticColors.TYPE_ARGUMENT, color("slangTypeArgument"));
+        assertSame(SlangSemanticColors.TYPE_ARGUMENT, color("slangTypeArgument", "defaultLibrary"));
         assertSame(SlangSemanticColors.CLASS, color("class"));
         assertSame(SlangSemanticColors.STRUCT, color("struct"));
         assertSame(SlangSemanticColors.INTERFACE, color("interface"));

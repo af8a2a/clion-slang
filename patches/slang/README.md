@@ -17,6 +17,11 @@ build environments with `experimental.preprocessorVariants: 1`; see [M4e](../../
 It adds request-local macro overrides with `experimental.preprocessorPreview: 1`; see
 [M4d preview](../../docs/branch-preview.md). No compiler/session state is persisted by preview.
 
+`0005-structured-buffer-highlighting.patch` applies **after 0004**. It adds opt-in, AST-backed
+structured-buffer / generic-type-argument roles and standard type-parameter classification.
+Clients that do not advertise the new vocabulary retain the exact stock semantic legend and behavior.
+See [buffer highlighting](../../docs/structured-buffer-highlighting.md).
+
 The protocol and limitations are documented in [preprocessor-trace-protocol.md](../../docs/preprocessor-trace-protocol.md).
 
 ## Reproduce
@@ -35,6 +40,8 @@ git -C .slang-m4a-source apply --check ../patches/slang/0003-m4e-shader-variants
 git -C .slang-m4a-source apply ../patches/slang/0003-m4e-shader-variants.patch
 git -C .slang-m4a-source apply --check ../patches/slang/0004-m4d-branch-preview.patch
 git -C .slang-m4a-source apply ../patches/slang/0004-m4d-branch-preview.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0005-structured-buffer-highlighting.patch
+git -C .slang-m4a-source apply ../patches/slang/0005-structured-buffer-highlighting.patch
 ```
 
 Do not reuse an existing dirty checkout for these commands. Configure with CMake and an installed
@@ -60,6 +67,8 @@ python scripts/slangd-shader-variants-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 python scripts/slangd-branch-preview-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
+python scripts/slangd-structured-buffer-smoke.py `
+  --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 ```
 
 The verified local build used Windows x64, Visual Studio 18 / MSVC 14.51, and `RelWithDebInfo`.
@@ -79,3 +88,5 @@ its existing settings. Selecting the patched executable now enables the optional
 the [M4c context selector](../../docs/preprocessor-contexts.md). Original M4a requests remain compatible.
 With all three patches, [M4e Shader Variants](../../docs/shader-variants.md) is also available.
 With the fourth patch, [M4d temporary branch preview](../../docs/branch-preview.md) is available too.
+With the fifth patch and updated plugin, [structured-buffer / generic-argument colors](../../docs/structured-buffer-highlighting.md)
+are independently configurable without changing older clients' semantic tokens.

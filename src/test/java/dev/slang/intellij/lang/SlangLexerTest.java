@@ -22,7 +22,8 @@ public class SlangLexerTest {
                 "Interface.slang",
                 "ModernSyntax.slang",
                 "BrokenSyntax.slang",
-                "SemanticHighlighting.slang"
+                "SemanticHighlighting.slang",
+                "StructuredBufferHighlighting.slang"
         )) {
             String source = Files.readString(Path.of("src", "test", "testData", "slang", fileName));
             List<Token> tokens = lex(source);
@@ -144,6 +145,29 @@ public class SlangLexerTest {
         return lex(source).stream()
                 .filter(token -> token.type() != SlangTokenTypes.WHITE_SPACE)
                 .toList();
+    }
+
+    @Test public void recognizesStructuredBufferFamilyWithoutGuessingGenericOrComparisonIdentifiers() {
+        String source = "StructuredBuffer<HitEntry> g_GBuffer; RWStructuredBuffer<uint> output; "
+                + "AppendStructuredBuffer<Box<float4>> append; ConsumeStructuredBuffer<T> consume; "
+                + "RasterizerOrderedStructuredBuffer<T> ordered; StructuredBufferOther value; "
+                + "bool result = left < right && right > 0; /* RWStructuredBuffer<T> */ \"StructuredBuffer<X>\"";
+        var tokens = significantTokens(source);
+        for (String name : List.of("StructuredBuffer", "RWStructuredBuffer", "AppendStructuredBuffer",
+                "ConsumeStructuredBuffer", "RasterizerOrderedStructuredBuffer"))
+            assertToken(tokens, name, SlangTokenTypes.STRUCTURED_BUFFER_TYPE);
+        for (String name : List.of("HitEntry", "Box", "T", "left", "right", "StructuredBufferOther"))
+            assertToken(tokens, name, SlangTokenTypes.IDENTIFIER);
+        assertToken(tokens, "uint", SlangTokenTypes.TYPE_KEYWORD);
+        assertToken(tokens, "float4", SlangTokenTypes.TYPE_KEYWORD);
+        assertToken(tokens, "/* RWStructuredBuffer<T> */", SlangTokenTypes.BLOCK_COMMENT);
+        assertToken(tokens, "\"StructuredBuffer<X>\"", SlangTokenTypes.STRING_LITERAL);
+        for (Token expected : lex(source)) {
+            SlangLexer restarted = new SlangLexer();
+            restarted.start(source, expected.start(), source.length(), expected.state());
+            assertSame(expected.text(), expected.type(), restarted.getTokenType());
+            assertEquals(expected.text(), expected.end(), restarted.getTokenEnd());
+        }
     }
 
     private static List<Token> lex(String source) {

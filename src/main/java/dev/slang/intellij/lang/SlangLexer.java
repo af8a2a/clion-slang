@@ -73,13 +73,17 @@ public final class SlangLexer extends LexerBase {
             "RWTexture1D", "RWTexture1DArray", "RWTexture2D", "RWTexture2DArray", "RWTexture3D",
             "RasterizerOrderedTexture1D", "RasterizerOrderedTexture1DArray",
             "RasterizerOrderedTexture2D", "RasterizerOrderedTexture2DArray", "RasterizerOrderedTexture3D",
-            "Buffer", "RWBuffer", "StructuredBuffer", "RWStructuredBuffer",
-            "AppendStructuredBuffer", "ConsumeStructuredBuffer", "ByteAddressBuffer", "RWByteAddressBuffer",
+            "Buffer", "RWBuffer", "ByteAddressBuffer", "RWByteAddressBuffer",
             "RasterizerOrderedBuffer", "RasterizerOrderedByteAddressBuffer",
-            "RasterizerOrderedStructuredBuffer", "ConstantBuffer", "ParameterBlock",
+            "ConstantBuffer", "ParameterBlock",
             "InputPatch", "OutputPatch", "PointStream", "LineStream", "TriangleStream",
             "RaytracingAccelerationStructure", "RayDesc", "BuiltInTriangleIntersectionAttributes",
             "HitObject", "HitObjectAttributes", "DifferentialPair", "Atomic"
+    );
+
+    private static final Set<String> STRUCTURED_BUFFER_TYPES = words(
+            "StructuredBuffer", "RWStructuredBuffer", "AppendStructuredBuffer",
+            "ConsumeStructuredBuffer", "RasterizerOrderedStructuredBuffer"
     );
 
     private static final Set<String> ATTRIBUTE_NAMES = words(
@@ -589,6 +593,7 @@ public final class SlangLexer extends LexerBase {
         if (isLikelyAttributeIdentifier(tokenStart)) {
             return SlangTokenTypes.ATTRIBUTE;
         }
+        if (STRUCTURED_BUFFER_TYPES.contains(text)) return SlangTokenTypes.STRUCTURED_BUFFER_TYPE;
         if (BUILTIN_TYPES.contains(text) || NUMERIC_BUILTIN_TYPE.matcher(text).matches()) {
             return SlangTokenTypes.TYPE_KEYWORD;
         }

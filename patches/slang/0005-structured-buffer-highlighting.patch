@@ -1,0 +1,194 @@
+diff --git a/source/slang/slang-language-server-semantic-tokens.cpp b/source/slang/slang-language-server-semantic-tokens.cpp
+index b3801c0b0..a0ed6625f 100644
+--- a/source/slang/slang-language-server-semantic-tokens.cpp
++++ b/source/slang/slang-language-server-semantic-tokens.cpp
+@@ -20,7 +20,10 @@ const char* kSemanticTokenTypes[] = {
+     "namespace",
+     "keyword",
+     "macro",
+-    "string"};
++    "string",
++    "typeParameter",
++    "slangTypeArgument",
++    "slangStructuredBuffer"};
+ 
+ static const int kInitTokenLegnth = 6;
+ 
+@@ -57,10 +60,32 @@ List<SemanticToken> getSemanticTokens(
+     Linkage* linkage,
+     Module* module,
+     UnownedStringSlice fileName,
+-    DocumentVersion* doc)
++    DocumentVersion* doc,
++    bool structuredBufferRoles)
+ {
+     auto manager = linkage->getSourceManager();
+ 
++    // Record checked type arguments, not tokens guessed from '<' / '>'. Value arguments,
++    // comparison operators, namespace qualifiers and variable names keep their own roles.
++    HashSet<SourceLoc::RawValue> typeArgumentLocs;
++    HashSet<Expr*> scannedArguments;
++    if (structuredBufferRoles)
++        iterateASTWithLanguageServerFilter(fileName, manager, module->getModuleDecl(), [&](SyntaxNode* node)
++        {
++            auto app = as<GenericAppExpr>(node);
++            if (!app) return;
++            for (auto arg : app->arguments)
++            {
++                if (!arg || !as<TypeType>(arg->type) || !scannedArguments.add(arg)) continue;
++                iterateAST(arg, [](DeclBase*) { return false; }, [&](SyntaxNode* child)
++                {
++                    if (auto expr = as<Expr>(child)) scannedArguments.add(expr);
++                    if (auto reference = as<DeclRefExpr>(child))
++                        if (as<TypeType>(reference->type)) typeArgumentLocs.add(reference->loc.getRaw());
++                });
++            }
++        });
++
+     List<SemanticToken> result;
+     auto maybeInsertToken = [&](const SemanticToken& token)
+     {
+@@ -92,7 +117,7 @@ List<SemanticToken> getSemanticTokens(
+         auto target = decl;
+         if (as<AggTypeDecl>(target))
+         {
+-            if (target->hasModifier<BuiltinTypeModifier>())
++            if (target->hasModifier<BuiltinTypeModifier>() && !typeArgumentLocs.contains(loc.getRaw()))
+                 return;
+             token.type = SemanticTokenType::Type;
+             token.length = doc->getTokenLength(token.line, token.col);
+@@ -137,6 +162,21 @@ List<SemanticToken> getSemanticTokens(
+             token.type = SemanticTokenType::Namespace;
+         }
+ 
++        if (structuredBufferRoles && token.type == SemanticTokenType::Type)
++        {
++            if (as<GenericTypeParamDecl>(target)) token.type = SemanticTokenType::TypeParameter;
++            if (typeArgumentLocs.contains(loc.getRaw())) token.type = SemanticTokenType::TypeArgument;
++            // Resolve actual compiler intrinsics: a user-defined type with the same spelling
++            // (or an alias to a resource) is not automatically classified as the built-in.
++            if (auto magic = target->findModifier<MagicTypeModifier>())
++                if (magic->magicName == "HLSLStructuredBufferType" ||
++                    magic->magicName == "HLSLRWStructuredBufferType" ||
++                    magic->magicName == "HLSLAppendStructuredBufferType" ||
++                    magic->magicName == "HLSLConsumeStructuredBufferType" ||
++                    magic->magicName == "HLSLRasterizerOrderedStructuredBufferType")
++                    token.type = SemanticTokenType::StructuredBuffer;
++        }
++
+         if (as<CallableDecl>(target))
+         {
+             if (target->hasModifier<ImplicitConversionModifier>())
+@@ -194,6 +234,8 @@ List<SemanticToken> getSemanticTokens(
+                     SemanticToken token =
+                         _createSemanticToken(manager, typeDecl->getNameLoc(), typeDecl->getName());
+                     token.type = SemanticTokenType::Type;
++                    if (structuredBufferRoles && as<GenericTypeParamDecl>(typeDecl))
++                        token.type = SemanticTokenType::TypeParameter;
+                     maybeInsertToken(token);
+                 }
+             }
+diff --git a/source/slang/slang-language-server-semantic-tokens.h b/source/slang/slang-language-server-semantic-tokens.h
+index 8c6b916a1..2e9a415a5 100644
+--- a/source/slang/slang-language-server-semantic-tokens.h
++++ b/source/slang/slang-language-server-semantic-tokens.h
+@@ -21,6 +21,10 @@ enum class SemanticTokenType
+     Keyword,
+     Macro,
+     String,
++    // Append-only refinements, enabled only when the client advertises all three names.
++    TypeParameter,
++    TypeArgument,
++    StructuredBuffer,
+     NormalText
+ };
+ extern const char* kSemanticTokenTypes[(int)SemanticTokenType::NormalText];
+@@ -36,7 +40,16 @@ struct SemanticToken
+         if (line < other.line)
+             return true;
+         if (line == other.line)
+-            return col < other.col;
++        {
++            if (col != other.col) return col < other.col;
++            auto priority = [](SemanticTokenType value)
++            {
++                return value == SemanticTokenType::StructuredBuffer ? 3
++                    : value == SemanticTokenType::TypeArgument ? 2
++                    : value == SemanticTokenType::TypeParameter ? 1 : 0;
++            };
++            return priority(type) > priority(other.type);
++        }
+         return false;
+     }
+ };
+@@ -44,7 +57,8 @@ List<SemanticToken> getSemanticTokens(
+     Linkage* linkage,
+     Module* module,
+     UnownedStringSlice fileName,
+-    DocumentVersion* doc);
++    DocumentVersion* doc,
++    bool structuredBufferRoles = false);
+ List<uint32_t> getEncodedTokens(List<SemanticToken>& tokens);
+ 
+ } // namespace Slang
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index c1e415d7c..7fd69566e 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -130,6 +130,22 @@ SlangResult LanguageServer::parseNextMessage()
+                 InitializeParams args;
+                 m_connection->toNativeArgsOrSendError(call.params, &args, call.id);
+                 init(args);
++                // Preserve the stock legend and tokens unless the client opts into these roles.
++                auto container = m_connection->getContainer();
++                auto member = [&](JSONValue object, const char* key)
++                {
++                    return object.type == JSONValue::Type::Object
++                        ? container->findObjectValue(object, container->findKey(UnownedStringSlice(key)))
++                        : JSONValue::makeInvalid();
++                };
++                auto clientTypes = member(member(member(member(call.params, "capabilities"),
++                    "textDocument"), "semanticTokens"), "tokenTypes");
++                HashSet<String> requestedTypes;
++                if (clientTypes.type == JSONValue::Type::Array)
++                    for (auto value : container->getArray(clientTypes))
++                        if (value.getKind() == JSONValue::Kind::String) requestedTypes.add(container->getString(value));
++                m_core.m_structuredBufferSemanticTokens = requestedTypes.contains("typeParameter")
++                    && requestedTypes.contains("slangTypeArgument") && requestedTypes.contains("slangStructuredBuffer");
+                 auto fillCapability = [&](ServerCapabilities& caps)
+                 {
+                     caps.positionEncoding = "utf-16";
+@@ -167,8 +183,10 @@ SlangResult LanguageServer::parseNextMessage()
+                     caps.signatureHelpProvider.triggerCharacters.add("<");
+                     caps.signatureHelpProvider.triggerCharacters.add(",");
+                     caps.signatureHelpProvider.retriggerCharacters.add(",");
+-                    for (auto tokenType : kSemanticTokenTypes)
+-                        caps.semanticTokensProvider.legend.tokenTypes.add(tokenType);
++                    int typeCount = (int)(m_core.m_structuredBufferSemanticTokens
++                        ? SemanticTokenType::NormalText : SemanticTokenType::TypeParameter);
++                    for (int i = 0; i < typeCount; ++i)
++                        caps.semanticTokensProvider.legend.tokenTypes.add(kSemanticTokenTypes[i]);
+                 };
+                 ServerInfo serverInfo;
+                 serverInfo.name = "SlangLanguageServer";
+@@ -1469,7 +1487,7 @@ LanguageServerResult<LanguageServerProtocol::SemanticTokens> LanguageServerCore:
+         version->linkage,
+         parsedModule,
+         canonicalPath.getUnownedSlice(),
+-        doc.Ptr());
++        doc.Ptr(), m_structuredBufferSemanticTokens);
+     for (auto& token : tokens)
+     {
+         Index line, col;
+diff --git a/source/slang/slang-language-server.h b/source/slang/slang-language-server.h
+index f637b2db0..592f4d499 100644
+--- a/source/slang/slang-language-server.h
++++ b/source/slang/slang-language-server.h
+@@ -106,6 +106,7 @@ public:
+     Slang::InlayHintOptions m_inlayHintOptions;
+     List<LanguageServerProtocol::WorkspaceFolder> m_workspaceFolders;
+     LanguageServerStartupOptions m_options;
++    bool m_structuredBufferSemanticTokens = false;
+ 
+     LanguageServerCore(LanguageServerStartupOptions options)
+         : m_options(options)

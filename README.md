@@ -25,6 +25,8 @@ an external process.
   include paths and target/profile, plus an explicit CMake exporter; requires M4e-patched `slangd`
 - Optional [M4d branch preview](docs/branch-preview.md): temporarily define/undefine macros on the selected
   root or Variant, with explicit Stop and automatic cleanup on close/context switch; requires M4d-patched `slangd`
+- [Structured buffer and generic argument colors](docs/structured-buffer-highlighting.md): separate
+  `StructuredBuffer`/`RWStructuredBuffer` family and checked type-argument colors; full semantic support requires patch 0005
 - Standard Diagnostics, Completion, Hover, Signature Help, Definition, References, Semantic
   Tokens, Inlay Hints, and Formatting capabilities, depending on the selected `slangd`
 - Definition navigation through Ctrl+Click, Ctrl+B, and Ctrl+Hover. The plugin reuses the active

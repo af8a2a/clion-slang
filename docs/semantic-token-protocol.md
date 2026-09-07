@@ -1,5 +1,8 @@
 # Semantic token protocol baseline
 
+The later optional [structured-buffer extension](structured-buffer-highlighting.md) negotiates
+additional roles only with opted-in clients. The stock profile below is unchanged for older clients.
+
 This document freezes the M0 semantic-token contract used by the fixture and smoke tests. It
 describes two profiles: the `slangd` behavior that must remain usable today and the enhanced
 vocabulary that a future publisher can negotiate.
@@ -97,11 +100,15 @@ document version, or position encoding changes.
 
 ## CLion consumer
 
-The plugin advertises the complete LSP 3.17 standard token vocabulary and modifiers, then decodes
+The plugin advertises the complete LSP 3.17 standard token vocabulary and modifiers, plus the optional
+`slangStructuredBuffer` / `slangTypeArgument` names, then decodes
 the server-provided legend by name. Stock roles and enhanced refinements map to Slang-specific
 `TextAttributesKey` entries exposed under `Editor | Color Scheme | Slang | Semantic`.
 
-`defaultLibrary` takes precedence and selects built-in type, intrinsic, or other built-in symbol
+For standard roles, `defaultLibrary` takes precedence and selects built-in type, intrinsic, or other built-in symbol
 colors. `readonly` and `static` select dedicated value/member colors. Unknown future token names
 fall back to the Slang semantic identifier key, while a missing server keeps the lexical layer
 unchanged.
+
+The two specific shader roles use their dedicated colors even with `defaultLibrary`; no existing
+standard type or modifier index was reordered. See the extension document for exact negotiation.

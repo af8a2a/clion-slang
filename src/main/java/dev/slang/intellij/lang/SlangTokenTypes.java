@@ -15,6 +15,7 @@ public final class SlangTokenTypes {
     public static final IElementType IDENTIFIER = token("IDENTIFIER");
     public static final IElementType KEYWORD = token("KEYWORD");
     public static final IElementType TYPE_KEYWORD = token("TYPE_KEYWORD");
+    public static final IElementType STRUCTURED_BUFFER_TYPE = token("STRUCTURED_BUFFER_TYPE");
     public static final IElementType BOOLEAN_LITERAL = token("BOOLEAN_LITERAL");
     public static final IElementType NUMBER_LITERAL = token("NUMBER_LITERAL");
     public static final IElementType STRING_LITERAL = token("STRING_LITERAL");

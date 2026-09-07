@@ -39,6 +39,8 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             descriptor("Semantic//Types//Interface", SlangSemanticColors.INTERFACE),
             descriptor("Semantic//Types//Enum", SlangSemanticColors.ENUM),
             descriptor("Semantic//Types//Type parameter", SlangSemanticColors.TYPE_PARAMETER),
+            descriptor("Semantic//Types//Structured buffer", SlangSemanticColors.STRUCTURED_BUFFER),
+            descriptor("Semantic//Types//Generic type argument", SlangSemanticColors.TYPE_ARGUMENT),
             descriptor("Semantic//Values//Parameter", SlangSemanticColors.PARAMETER),
             descriptor("Semantic//Values//Variable", SlangSemanticColors.VARIABLE),
             descriptor("Semantic//Values//Static variable", SlangSemanticColors.STATIC_VARIABLE),
@@ -74,6 +76,8 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             Map.entry("semanticInterface", SlangSemanticColors.INTERFACE),
             Map.entry("semanticEnum", SlangSemanticColors.ENUM),
             Map.entry("semanticTypeParameter", SlangSemanticColors.TYPE_PARAMETER),
+            Map.entry("semanticStructuredBuffer", SlangSemanticColors.STRUCTURED_BUFFER),
+            Map.entry("semanticTypeArgument", SlangSemanticColors.TYPE_ARGUMENT),
             Map.entry("semanticParameter", SlangSemanticColors.PARAMETER),
             Map.entry("semanticVariable", SlangSemanticColors.VARIABLE),
             Map.entry("semanticStaticVariable", SlangSemanticColors.STATIC_VARIABLE),
@@ -144,6 +148,11 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
                 static uint <semanticStaticVariable>materialCount</semanticStaticVariable>;
                 static const uint <semanticReadonlyVariable>MAX_LIGHTS</semanticReadonlyVariable> = 8;
             }
+
+            struct <semanticStruct>HitEntry</semanticStruct> { uint index; };
+            <semanticStructuredBuffer>StructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>HitEntry</semanticTypeArgument>> g_GBuffer;
+            <semanticStructuredBuffer>RWStructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>uint</semanticTypeArgument>> g_CompactedGBuffer;
+            <semanticStructuredBuffer>RWStructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>uint</semanticTypeArgument>> g_CompactedGBufferLength;
 
             /// A compact compute entry point.
             [<semanticDecorator>shader</semanticDecorator>("compute")]

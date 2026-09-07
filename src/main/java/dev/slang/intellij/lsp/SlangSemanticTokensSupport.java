@@ -37,7 +37,9 @@ public final class SlangSemanticTokensSupport extends LspSemanticTokensSupport {
             "number",
             "regexp",
             "operator",
-            "decorator"
+            "decorator",
+            "slangStructuredBuffer",
+            "slangTypeArgument"
     );
 
     private static final List<String> TOKEN_MODIFIERS = List.of(
@@ -76,6 +78,9 @@ public final class SlangSemanticTokensSupport extends LspSemanticTokensSupport {
             @NotNull String tokenType,
             @NotNull List<String> modifiers
     ) {
+        // Specific shader roles must survive defaultLibrary on future/enhanced publishers.
+        if (tokenType.equals("slangStructuredBuffer")) return SlangSemanticColors.STRUCTURED_BUFFER;
+        if (tokenType.equals("slangTypeArgument")) return SlangSemanticColors.TYPE_ARGUMENT;
         if (modifiers.contains("defaultLibrary")) {
             if (isTypeToken(tokenType)) {
                 return SlangSemanticColors.BUILTIN_TYPE;

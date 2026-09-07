@@ -24,6 +24,10 @@ public final class SlangSemanticColors {
             "SLANG.SEMANTIC.ENUM", DefaultLanguageHighlighterColors.CLASS_NAME);
     public static final TextAttributesKey TYPE_PARAMETER = key(
             "SLANG.SEMANTIC.TYPE_PARAMETER", DefaultLanguageHighlighterColors.CLASS_REFERENCE);
+    public static final TextAttributesKey STRUCTURED_BUFFER = key(
+            "SLANG.SEMANTIC.STRUCTURED_BUFFER", STRUCT);
+    public static final TextAttributesKey TYPE_ARGUMENT = key(
+            "SLANG.SEMANTIC.TYPE_ARGUMENT", TYPE_PARAMETER);
 
     public static final TextAttributesKey PARAMETER = key(
             "SLANG.SEMANTIC.PARAMETER", DefaultLanguageHighlighterColors.PARAMETER);
