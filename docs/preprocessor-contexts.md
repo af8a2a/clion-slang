@@ -112,8 +112,9 @@ the unavailable JetBrains test-framework dependency. GUI acceptance is not claim
 Manual acceptance: create A/B roots defining `FLAG` as 1/0 and including a header with `#if FLAG`.
 Choose A/B and confirm the header colors switch. Check Auto/current/manual selection, search, splits,
 restart persistence, unsaved edits, root deletion/rename, stock/M4a fallback and skipped/repeated
-includes. M4e provides an explicit build/macro-set bridge; automatic extraction, forced branch preview
-and repeated-instance selection remain separate work. M4c is not Rider's complete shader project model.
+includes. M4e provides an explicit build/macro-set bridge, and [M4d](branch-preview.md) provides temporary
+macro overrides. Automatic extraction and repeated-instance selection remain separate work.
+M4c is not Rider's complete shader project model.
 
 A ready-made blue/green/current-file fixture is
 `src/test/testData/slang/PreprocessorContextShared.slangh` with the adjacent

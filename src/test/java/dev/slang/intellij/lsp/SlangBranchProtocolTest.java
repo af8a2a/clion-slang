@@ -76,6 +76,8 @@ public class SlangBranchProtocolTest {
                 checkContexts(server, root);
             if (SlangPreprocessorTrace.supportsVariants(initialized.getCapabilities()))
                 checkVariants(server, root);
+            if (SlangPreprocessorTrace.supportsPreview(initialized.getCapabilities()))
+                checkPreview(server, root);
 
             server.getTextDocumentService().didClose(new DidCloseTextDocumentParams(new TextDocumentIdentifier(uri)));
             assertNull(server.preprocessorTrace(params).get(30, TimeUnit.SECONDS));
@@ -86,6 +88,36 @@ public class SlangBranchProtocolTest {
             process.destroyForcibly();
             process.waitFor(10, TimeUnit.SECONDS);
         }
+    }
+
+    private static void checkPreview(SlangLanguageServer server, Path root) throws Exception {
+        Path file = root.resolve("Preview.slang");
+        String source = "#if MODE == 1\nfloat blue;\n#else\nfloat green; // 😀\n#endif\n";
+        Files.writeString(file, source);
+        var target = new TextDocumentIdentifier(file.toUri().toString());
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(target.getUri(), "slang", 30, source)));
+        var build = SlangVariantCatalog.parse(root.resolve("variants.json"), root,
+                "{\"version\":1,\"contexts\":[{\"id\":\"one\",\"root\":\"Preview.slang\",\"defines\":{\"MODE\":\"1\"}}]}")
+                .variants().getFirst().buildContext();
+        var preview = dev.slang.intellij.preprocessor.SlangMacroPreview.parse("MODE=2", "").wire();
+        var normal = new SlangPreprocessorTrace.Params(target, target.getUri(), build);
+        var baseline = server.preprocessorTrace(normal).get(30, TimeUnit.SECONDS);
+        for (var overrides : List.of(preview, dev.slang.intellij.preprocessor.SlangMacroPreview.parse("", "MODE").wire())) {
+            var result = server.preprocessorTrace(new SlangPreprocessorTrace.Params(target, target.getUri(), build, overrides)).get(30, TimeUnit.SECONDS);
+            assertTrue(result.matchesPreview(overrides));
+            assertTrue(result.matchesVariant(build));
+            assertTrue(result.matchesContext(target.getUri(), 30));
+            assertFalse(result.directives().getFirst().active());
+            var presentation = SlangBranchPresentation.create(new DocumentImpl(source), result);
+            assertNotNull(presentation);
+            assertEquals(source.indexOf("float blue"), presentation.inactive().getFirst().getStartOffset());
+            assertEquals(baseline, server.preprocessorTrace(normal).get(30, TimeUnit.SECONDS));
+        }
+        var rootPreview = server.preprocessorTrace(new SlangPreprocessorTrace.Params(target, null, null,
+                dev.slang.intellij.preprocessor.SlangMacroPreview.parse("MODE=1", "").wire())).get(30, TimeUnit.SECONDS);
+        assertTrue(rootPreview.directives().getFirst().active());
+        assertFalse(server.preprocessorTrace(new SlangPreprocessorTrace.Params(target)).get(30, TimeUnit.SECONDS).directives().getFirst().active());
+        server.getTextDocumentService().didClose(new DidCloseTextDocumentParams(target));
     }
 
     private static void checkVariants(SlangLanguageServer server, Path root) throws Exception {

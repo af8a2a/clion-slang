@@ -40,6 +40,9 @@ best handled by `slangd`.
   [M4e variants](shader-variants.md) add a strict, versioned build-context catalog, per-file variant
   selection and fingerprint gating; `cmake/SlangShaderVariants.cmake` exports explicit shader build
   data without importing host C++ flags. Only the selected variant is sent to an isolated compiler session.
+  [M4d preview](branch-preview.md) adds transactional editor macro input and an in-memory, per-target
+  session anchored to the resolved root/Variant and server. Stop/close/switch invalidates the session;
+  preview fingerprints and session identity reject late responses without persisting overrides.
 
 No component depends on CLion Classic/CIDR C++ PSI or on Radler internals.
 

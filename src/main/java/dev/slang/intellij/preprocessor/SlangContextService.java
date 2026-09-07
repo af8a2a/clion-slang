@@ -39,10 +39,31 @@ public final class SlangContextService implements Disposable {
     private Snapshot snapshot;
     // Status belongs to the most recent accepted display request, not just a popup selection.
     private final Map<String, String> status = new HashMap<>();
+    private final SlangPreviewState previews = new SlangPreviewState();
 
     public SlangContextService(Project project) { this.project = project; }
     public static SlangContextService getInstance(Project project) { return project.getService(SlangContextService.class); }
     public void invalidate() { epoch++; status.clear(); updateWidget(); }
+    public long revision() { return epoch; }
+    public SlangPreviewState previews() { return previews; }
+
+    public String selection(VirtualFile target) {
+        var settings = SlangProjectSettings.getInstance(project);
+        String variant = settings.getShaderVariant(target.getPath());
+        if (variant != null) return "variant:" + variant;
+        String pinned = settings.getPreprocessorContext(target.getPath());
+        return pinned == null ? "auto" : "root:" + pinned;
+    }
+
+    public SlangPreviewState.Baseline baseline(VirtualFile target, ResolvedContext resolved) {
+        return new SlangPreviewState.Baseline(selection(target), resolved.root().toString(),
+                resolved.variant() == null ? null : resolved.variant().buildContext().fingerprint());
+    }
+
+    public void stopPreview(VirtualFile target) {
+        previews.stop(target.getPath());
+        SlangBranchDisplayService.getInstance(project).refresh();
+    }
 
     public static Path path(VirtualFile file) { return file.toNioPath().toAbsolutePath().normalize(); }
 
@@ -96,6 +117,7 @@ public final class SlangContextService implements Disposable {
     }
 
     public void selectVariant(VirtualFile target, String id) {
+        previews.stop(target.getPath());
         SlangProjectSettings.getInstance(project).setShaderVariant(target.getPath(), id);
         SlangBranchDisplayService.getInstance(project).refresh();
     }
@@ -110,6 +132,7 @@ public final class SlangContextService implements Disposable {
     }
 
     public void select(VirtualFile target, Path root) {
+        previews.stop(target.getPath());
         SlangProjectSettings.getInstance(project).setPreprocessorContext(target.getPath(),
                 root == null ? null : root.toString());
         SlangBranchDisplayService.getInstance(project).refresh();
@@ -121,6 +144,11 @@ public final class SlangContextService implements Disposable {
     }
 
     public String description(VirtualFile target) {
+        var preview = target == null ? null : previews.peek(target.getPath());
+        return (preview == null ? "" : "PREVIEW (" + preview.macros().summary() + ") · ") + baseDescription(target);
+    }
+
+    private String baseDescription(VirtualFile target) {
         if (target == null) return "Select a Slang file";
         if (!SlangProjectSettings.getInstance(project).isShowPreprocessorBranches()) return "Branch display disabled";
         var servers = LspServerManager.getInstance(project).getServersForProvider(SlangLspServerSupportProvider.class);
@@ -214,6 +242,6 @@ public final class SlangContextService implements Disposable {
         if (bar != null) bar.updateWidget(SlangContextWidgetFactory.ID);
     }
 
-    @Override public void dispose() { disposed = true; epoch++; }
+    @Override public void dispose() { disposed = true; epoch++; previews.clear(); }
     private static final class ScanLimit extends RuntimeException {}
 }

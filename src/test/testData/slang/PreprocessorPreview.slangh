@@ -1,0 +1,21 @@
+// Physical UTF-16 trace positions remain unchanged during preview. 😀
+#line 700 "virtual-preview.slangh"
+#if MODE == 1
+// original branch
+#elif MODE == 2
+// temporary branch
+#else
+// undefined / other mode
+#endif
+#ifdef GLOBAL
+// inherited workspace macro
+#endif
+#ifdef REMOVED
+// initial macro that can be undefined
+#endif
+#ifdef EMPTY
+// empty replacement is still a definition
+#endif
+#ifdef ADDED
+// preview can restore a macro undefined by the Variant
+#endif

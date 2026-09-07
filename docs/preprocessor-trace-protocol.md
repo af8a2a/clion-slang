@@ -1,5 +1,8 @@
 # M4a — Preprocessor trace baseline
 
+The optional [M4d preview extension](branch-preview.md) adds request-local macro overrides and a
+separate preview fingerprint on top of M4c roots or M4e build contexts; baseline requests are unchanged.
+
 The optional [M4c context extension](preprocessor-contexts.md) adds `contextUri` and per-instance
 include tracing behind a separate capability. Requests without it retain the baseline below.
 

@@ -10,7 +10,8 @@ M4b consumes the [M4a compiler trace](preprocessor-trace-protocol.md) in the edi
 
 With an M4a-only server, the context is **the current file as its own compilation root**, with
 configured macros/search paths. [M4c](preprocessor-contexts.md) now adds includer discovery and root
-selection under an additional capability. Forced branches and shader permutations remain out of scope.
+selection under an additional capability. [M4e](shader-variants.md) supplies declared Shader Variants;
+[M4d](branch-preview.md) adds temporary macro-based branch preview on top of either selection.
 
 ## Enable and configure
 

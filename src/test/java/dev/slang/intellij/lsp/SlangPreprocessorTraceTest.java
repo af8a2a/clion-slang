@@ -12,6 +12,33 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class SlangPreprocessorTraceTest {
+    @Test public void previewIsCapabilityGatedAndHasIndependentResponseIdentity() {
+        var caps = new ServerCapabilities();
+        caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorContexts", 1, "preprocessorVariants", 1));
+        assertFalse(SlangPreprocessorTrace.supportsPreview(caps));
+        caps.setExperimental(JsonParser.parseString("{\"preprocessorTrace\":1,\"preprocessorContexts\":1,\"preprocessorPreview\":1}"));
+        assertTrue(SlangPreprocessorTrace.supportsPreview(caps)); // M4e isn't needed for root-only preview.
+        for (Object invalid : new Object[]{true, "1", 0, 2, 1.5}) {
+            caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorContexts", 1, "preprocessorPreview", invalid));
+            assertFalse(SlangPreprocessorTrace.supportsPreview(caps));
+        }
+        caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorPreview", 1));
+        assertFalse(SlangPreprocessorTrace.supportsPreview(caps));
+        var preview = dev.slang.intellij.preprocessor.SlangMacroPreview.parse("MODE=2", "FLAG").wire();
+        var trace = new SlangPreprocessorTrace("target", 1, java.util.List.of(), java.util.List.of(), "root", -1, "ok", 1,
+                "variant", "", preview.fingerprint());
+        assertTrue(trace.matchesPreview(preview));
+        assertFalse(trace.matchesPreview(null));
+        var legacy = new SlangPreprocessorTrace("target", 1, java.util.List.of(), java.util.List.of());
+        assertFalse(legacy.matchesPreview(preview));
+        assertTrue(legacy.matchesPreview(null));
+        assertFalse(trace.matchesPreview(dev.slang.intellij.preprocessor.SlangMacroPreview.parse("MODE=1", "FLAG").wire()));
+        var gson = new Gson();
+        var params = new SlangPreprocessorTrace.Params(new TextDocumentIdentifier("file:///test.slang"), "file:///root.slang", null, preview);
+        assertEquals(params, gson.fromJson(gson.toJson(params), SlangPreprocessorTrace.Params.class));
+        assertFalse(gson.toJson(params).contains("buildContext"));
+        assertEquals(trace, gson.fromJson(gson.toJson(trace), SlangPreprocessorTrace.class));
+    }
     @Test public void variantCapabilityAndFingerprintAreRequiredIndependently() {
         var caps = new ServerCapabilities();
         caps.setExperimental(Map.of("preprocessorTrace", 1, "preprocessorContexts", 1));

@@ -13,7 +13,13 @@ import java.util.Map;
 public record SlangPreprocessorTrace(
         String uri, int version, List<Directive> directives, List<InactiveRegion> inactiveRegions,
         String contextUri, int contextVersion, String status, int occurrenceCount,
-        String contextFingerprint, String contextError) {
+        String contextFingerprint, String contextError, String previewFingerprint) {
+    public SlangPreprocessorTrace(String uri, int version, List<Directive> directives, List<InactiveRegion> inactiveRegions,
+                                  String contextUri, int contextVersion, String status, int occurrenceCount,
+                                  String contextFingerprint, String contextError) {
+        this(uri, version, directives, inactiveRegions, contextUri, contextVersion, status, occurrenceCount,
+                contextFingerprint, contextError, null);
+    }
     public SlangPreprocessorTrace(String uri, int version, List<Directive> directives, List<InactiveRegion> inactiveRegions,
                                   String contextUri, int contextVersion, String status, int occurrenceCount) {
         this(uri, version, directives, inactiveRegions, contextUri, contextVersion, status, occurrenceCount, null, null);
@@ -21,18 +27,27 @@ public record SlangPreprocessorTrace(
     public SlangPreprocessorTrace(String uri, int version, List<Directive> directives, List<InactiveRegion> inactiveRegions) {
         this(uri, version, directives, inactiveRegions, null, -1, null, 0);
     }
-    public record Params(TextDocumentIdentifier textDocument, String contextUri, BuildContext buildContext) {
+    public record Params(TextDocumentIdentifier textDocument, String contextUri, BuildContext buildContext, Preview preview) {
+        public Params(TextDocumentIdentifier textDocument, String contextUri, BuildContext buildContext) {
+            this(textDocument, contextUri, buildContext, null);
+        }
         public Params(TextDocumentIdentifier textDocument) { this(textDocument, null, null); }
         public Params(TextDocumentIdentifier textDocument, String contextUri) { this(textDocument, contextUri, null); }
     }
 
     public record Macro(String name, String value) {}
+    public record Preview(int version, String fingerprint, List<Macro> defines, List<String> undefines) {}
     public record BuildContext(int version, String fingerprint, boolean inheritWorkspace,
                                List<Macro> defines, List<String> undefines, List<String> includePaths,
                                String target, String profile) {}
 
     public boolean matchesVariant(BuildContext requested) {
         return requested == null || requested.fingerprint().equals(contextFingerprint);
+    }
+
+    public boolean matchesPreview(Preview requested) {
+        return requested == null ? previewFingerprint == null || previewFingerprint.isEmpty()
+                : requested.fingerprint().equals(previewFingerprint);
     }
 
     public boolean matchesContext(String requestedUri, int requestedVersion) {
@@ -58,6 +73,10 @@ public record SlangPreprocessorTrace(
 
     public static boolean supportsVariants(ServerCapabilities capabilities) {
         return supportsContexts(capabilities) && supports(capabilities, "preprocessorVariants");
+    }
+
+    public static boolean supportsPreview(ServerCapabilities capabilities) {
+        return supportsContexts(capabilities) && supports(capabilities, "preprocessorPreview");
     }
 
     private static boolean supports(ServerCapabilities capabilities, String capability) {

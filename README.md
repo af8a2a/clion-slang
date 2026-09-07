@@ -23,6 +23,8 @@ an external process.
   search/select a compilation root, and remember the choice per file; requires M4c-patched `slangd`
 - Optional [M4e Shader Variants](docs/shader-variants.md): saved build contexts with per-variant macros,
   include paths and target/profile, plus an explicit CMake exporter; requires M4e-patched `slangd`
+- Optional [M4d branch preview](docs/branch-preview.md): temporarily define/undefine macros on the selected
+  root or Variant, with explicit Stop and automatic cleanup on close/context switch; requires M4d-patched `slangd`
 - Standard Diagnostics, Completion, Hover, Signature Help, Definition, References, Semantic
   Tokens, Inlay Hints, and Formatting capabilities, depending on the selected `slangd`
 - Definition navigation through Ctrl+Click, Ctrl+B, and Ctrl+Hover. The plugin reuses the active

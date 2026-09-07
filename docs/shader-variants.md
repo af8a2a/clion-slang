@@ -184,6 +184,7 @@ was not newly verified. Full IDE-fixture tests remain blocked by the unavailable
 dependency. GUI acceptance remains manual: check popup selection, split editors, saved/unsaved edits,
 manifest regeneration/deletion, project restart, and old-server fallback.
 
-M4d forced-branch preview was not implemented by this milestone. Automatic active-CMake-profile
+[M4d branch preview](branch-preview.md) now adds temporary macro overrides without rewriting the
+selected Variant or manifest. Automatic active-CMake-profile
 tracking, compile-command import, runtime capture/export integration, compiler capabilities, full
 LSP-context switching and repeated-include occurrence selection remain separate follow-ups.

@@ -46,6 +46,16 @@
         <statusBarWidgetFactory implementation="dev.slang.intellij.preprocessor.SlangContextWidgetFactory"/>
     </extensions>
     <actions>
+        <action id="Slang.PreviewPreprocessorBranch" class="dev.slang.intellij.preprocessor.SlangPreviewBranchAction"
+                text="Slang Branch Preview…" description="Temporarily define or undefine macros for branch display (M4d slangd)">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        <action id="Slang.StopPreprocessorPreview" class="dev.slang.intellij.preprocessor.SlangStopBranchPreviewAction"
+                text="Stop Slang Branch Preview" description="Remove temporary overrides and restore the selected context or Shader Variant">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
         <action id="Slang.SelectPreprocessorContext" class="dev.slang.intellij.preprocessor.SlangSelectContextAction"
                 text="Slang Preprocessor Context…" description="Choose the compilation root for Slang branch display">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>

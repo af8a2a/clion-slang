@@ -20,6 +20,9 @@
   按文件记忆编译上下文；通过编辑器右键或状态栏使用，需要带 M4c 补丁的 `slangd`
 - 可选的 [M4e 构建上下文与 Shader Variants](docs/shader-variants.md)：通过清单和 CMake 显式导出，
   按变体切换宏、include 路径与 target/profile；提供 metallic 示例，需要带 M4e 补丁的 `slangd`
+- 可选的 [M4d 强制分支预览](docs/branch-preview.md)：右键 **Slang Branch Preview…** 临时定义／取消定义宏，
+  叠加于所选上下文或 Variant；**Stop Slang Branch Preview**、关闭文件或切换上下文后清除覆盖。
+  不修改源码或配置，仅影响分支显示；需要带 M4d 补丁的 `slangd`
 - Diagnostics、Completion、Hover、Signature Help、Definition、References、Semantic Tokens、
   Inlay Hints、Formatting 等标准能力，实际能力取决于所用 `slangd`
 - 通过 Ctrl+左键、Ctrl+B 与 Ctrl+悬停进行定义导航。插件会直接复用当前 `slangd` 会话，

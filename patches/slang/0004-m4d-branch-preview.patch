@@ -1,0 +1,220 @@
+diff --git a/source/compiler-core/slang-language-server-protocol.cpp b/source/compiler-core/slang-language-server-protocol.cpp
+index 2582edeb6..9d26f0622 100644
+--- a/source/compiler-core/slang-language-server-protocol.cpp
++++ b/source/compiler-core/slang-language-server-protocol.cpp
+@@ -259,6 +259,7 @@ static const StructRttiInfo _makeSlangExperimentalServerCapabilitiesRtti()
+     builder.addField("preprocessorTrace", &obj.preprocessorTrace);
+     builder.addField("preprocessorContexts", &obj.preprocessorContexts);
+     builder.addField("preprocessorVariants", &obj.preprocessorVariants);
++    builder.addField("preprocessorPreview", &obj.preprocessorPreview);
+     builder.ignoreUnknownFields();
+     return builder.make();
+ }
+@@ -617,6 +618,18 @@ static const StructRttiInfo _makePreprocessorBuildContextRtti()
+ }
+ const StructRttiInfo PreprocessorBuildContext::g_rttiInfo = _makePreprocessorBuildContextRtti();
+ 
++static const StructRttiInfo _makePreprocessorPreviewRtti()
++{
++    PreprocessorPreview obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorPreview", nullptr);
++    builder.addField("version", &obj.version);
++    builder.addField("fingerprint", &obj.fingerprint);
++    builder.addField("defines", &obj.defines);
++    builder.addField("undefines", &obj.undefines);
++    return builder.make();
++}
++const StructRttiInfo PreprocessorPreview::g_rttiInfo = _makePreprocessorPreviewRtti();
++
+ static const StructRttiInfo _makePreprocessorTraceParamsRtti()
+ {
+     PreprocessorTraceParams obj;
+@@ -627,6 +640,7 @@ static const StructRttiInfo _makePreprocessorTraceParamsRtti()
+     builder.addField("textDocument", &obj.textDocument);
+     builder.addField("contextUri", &obj.contextUri, StructRttiInfo::Flag::Optional);
+     builder.addField("buildContext", &obj.buildContext, StructRttiInfo::Flag::Optional);
++    builder.addField("preview", &obj.preview, StructRttiInfo::Flag::Optional);
+     builder.ignoreUnknownFields();
+     return builder.make();
+ }
+@@ -684,6 +698,7 @@ static const StructRttiInfo _makePreprocessorTraceRtti()
+     builder.addField("occurrenceCount", &obj.occurrenceCount);
+     builder.addField("contextFingerprint", &obj.contextFingerprint);
+     builder.addField("contextError", &obj.contextError);
++    builder.addField("previewFingerprint", &obj.previewFingerprint);
+     builder.addField("directives", &obj.directives);
+     builder.addField("inactiveRegions", &obj.inactiveRegions);
+     builder.ignoreUnknownFields();
+diff --git a/source/compiler-core/slang-language-server-protocol.h b/source/compiler-core/slang-language-server-protocol.h
+index 1419fc877..ba6fc64be 100644
+--- a/source/compiler-core/slang-language-server-protocol.h
++++ b/source/compiler-core/slang-language-server-protocol.h
+@@ -285,6 +285,7 @@ struct SlangExperimentalServerCapabilities
+     int preprocessorTrace = 0;
+     int preprocessorContexts = 0;
+     int preprocessorVariants = 0;
++    int preprocessorPreview = 0;
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
+@@ -740,11 +741,21 @@ struct PreprocessorBuildContext
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
++struct PreprocessorPreview
++{
++    int version = 0;
++    String fingerprint;
++    List<PreprocessorBuildMacro> defines;
++    List<String> undefines;
++    static const StructRttiInfo g_rttiInfo;
++};
++
+ struct PreprocessorTraceParams : WorkDoneProgressParams
+ {
+     TextDocumentIdentifier textDocument;
+     String contextUri;
+     PreprocessorBuildContext buildContext;
++    JSONOptional<PreprocessorPreview> preview;
+ 
+     static const UnownedStringSlice methodName;
+     static const StructRttiInfo g_rttiInfo;
+@@ -784,6 +795,7 @@ struct PreprocessorTrace
+     int occurrenceCount = 0;
+     String contextFingerprint;
+     String contextError;
++    String previewFingerprint;
+     List<PreprocessorTraceDirective> directives;
+     List<PreprocessorTraceInactiveRegion> inactiveRegions;
+ 
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index 193549a85..c1e415d7c 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -162,6 +162,7 @@ SlangResult LanguageServer::parseNextMessage()
+                     caps.experimental.preprocessorTrace = 1;
+                     caps.experimental.preprocessorContexts = 1;
+                     caps.experimental.preprocessorVariants = 1;
++                    caps.experimental.preprocessorPreview = 1;
+                     caps.signatureHelpProvider.triggerCharacters.add("(");
+                     caps.signatureHelpProvider.triggerCharacters.add("<");
+                     caps.signatureHelpProvider.triggerCharacters.add(",");
+@@ -1494,7 +1495,8 @@ SlangResult LanguageServer::preprocessorTrace(
+     const JSONValue& responseId)
+ {
+     auto result = m_core.preprocessorTrace(args);
+-    if (!args.contextUri.getLength() && !args.buildContext.version && !args.buildContext.fingerprint.getLength())
++    if (!args.contextUri.getLength() && !args.buildContext.version && !args.buildContext.fingerprint.getLength()
++        && !args.preview.hasValue)
+         removePendingModuleToUpdateDiagnostics(args.textDocument.uri);
+ 
+     if (SLANG_FAILED(result.returnCode) || result.isNull)
+@@ -1526,14 +1528,16 @@ LanguageServerCore::preprocessorTrace(
+     response.version = doc->getVersion();
+     response.contextUri = contextUri;
+     response.contextFingerprint = args.buildContext.fingerprint;
++    if (args.preview.hasValue) response.previewFingerprint = args.preview.value.fingerprint;
+     RefPtr<DocumentVersion> contextDoc;
+     if (m_workspace->openedDocuments.tryGetValue(contextPath, contextDoc))
+         response.contextVersion = contextDoc->getVersion();
+     // Context traces must not pollute the ordinary LSP module/diagnostics cache.
+     bool hasBuildContext = args.buildContext.version || args.buildContext.fingerprint.getLength();
+-    RefPtr<WorkspaceVersion> workspaceVersion = args.contextUri.getLength() || hasBuildContext
++    RefPtr<WorkspaceVersion> workspaceVersion = args.contextUri.getLength() || hasBuildContext || args.preview.hasValue
+         ? m_workspace->createVersionForPreprocessorTrace(
+-            hasBuildContext ? &args.buildContext : nullptr, &response.contextError)
++            hasBuildContext ? &args.buildContext : nullptr, &response.contextError,
++            args.preview.hasValue ? &args.preview.value : nullptr)
+         : RefPtr<WorkspaceVersion>(m_workspace->getCurrentVersion());
+     if (!workspaceVersion)
+     {
+diff --git a/source/slang/slang-workspace-version.cpp b/source/slang/slang-workspace-version.cpp
+index 4dc6e1581..8bed7fdeb 100644
+--- a/source/slang/slang-workspace-version.cpp
++++ b/source/slang/slang-workspace-version.cpp
+@@ -478,7 +478,8 @@ void WorkspaceVersion::parseDiagnostics(String compilerOutput)
+ 
+ RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion(
+     const LanguageServerProtocol::PreprocessorBuildContext* buildContext,
+-    String* outError)
++    String* outError,
++    const LanguageServerProtocol::PreprocessorPreview* preview)
+ {
+     auto fail = [&](const char* message) -> RefPtr<WorkspaceVersion>
+     {
+@@ -496,6 +497,26 @@ RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion(
+         }
+         return true;
+     };
++    // Preview is request-local and last in the initial macro environment. Source directives
++    // still execute normally. Neither workspace settings nor ordinary LSP caches are changed.
++    HashSet<String> previewMacros;
++    if (preview)
++    {
++        if (preview->version != 1 || preview->fingerprint.getLength() != 64 ||
++            preview->defines.getCount() + preview->undefines.getCount() > 256)
++            return fail("Invalid preview version, fingerprint or limits");
++        for (char c : preview->fingerprint)
++            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
++                return fail("Preview fingerprint must be lowercase SHA-256");
++        for (auto& name : preview->undefines)
++            if (!validName(name) || !previewMacros.add(name)) return fail("Invalid or duplicate preview undefine");
++        for (auto& macro : preview->defines)
++        {
++            if (!validName(macro.name) || !previewMacros.add(macro.name) || macro.value.getLength() > 4096 ||
++                macro.value.indexOf('\0') >= 0 || macro.value.indexOf('\n') >= 0 || macro.value.indexOf('\r') >= 0)
++                return fail("Invalid, conflicting or duplicate preview definition");
++        }
++    }
+     HashSet<String> replacedMacros;
+     if (buildContext)
+     {
+@@ -573,6 +594,7 @@ RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion(
+     List<slang::PreprocessorMacroDesc> macroDescs;
+     for (auto& macro : predefinedMacros)
+     {
++        if (previewMacros.contains(macro.name)) continue;
+         if (buildContext && (!buildContext->inheritWorkspace || replacedMacros.contains(macro.name)))
+             continue;
+         slang::PreprocessorMacroDesc macroDesc;
+@@ -582,6 +604,15 @@ RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion(
+     }
+     if (buildContext)
+         for (auto& macro : buildContext->defines)
++        {
++            if (previewMacros.contains(macro.name)) continue;
++            slang::PreprocessorMacroDesc macroDesc;
++            macroDesc.name = macro.name.getBuffer();
++            macroDesc.value = macro.value.getBuffer();
++            macroDescs.add(macroDesc);
++        }
++    if (preview)
++        for (auto& macro : preview->defines)
+         {
+             slang::PreprocessorMacroDesc macroDesc;
+             macroDesc.name = macro.name.getBuffer();
+diff --git a/source/slang/slang-workspace-version.h b/source/slang/slang-workspace-version.h
+index b8d84fbd0..39e36c46a 100644
+--- a/source/slang/slang-workspace-version.h
++++ b/source/slang/slang-workspace-version.h
+@@ -169,7 +169,8 @@ private:
+     RefPtr<WorkspaceVersion> currentCompletionVersion;
+     RefPtr<WorkspaceVersion> createWorkspaceVersion(
+         const LanguageServerProtocol::PreprocessorBuildContext* buildContext = nullptr,
+-        String* outError = nullptr);
++        String* outError = nullptr,
++        const LanguageServerProtocol::PreprocessorPreview* preview = nullptr);
+ 
+ public:
+     List<String> rootDirectories;
+@@ -200,7 +201,9 @@ public:
+     WorkspaceVersion* createVersionForCompletion();
+     RefPtr<WorkspaceVersion> createVersionForPreprocessorTrace(
+         const LanguageServerProtocol::PreprocessorBuildContext* buildContext = nullptr,
+-        String* outError = nullptr) { return createWorkspaceVersion(buildContext, outError); }
++        String* outError = nullptr,
++        const LanguageServerProtocol::PreprocessorPreview* preview = nullptr)
++    { return createWorkspaceVersion(buildContext, outError, preview); }
+ 
+ public:
+     // Inherited via ISlangFileSystem

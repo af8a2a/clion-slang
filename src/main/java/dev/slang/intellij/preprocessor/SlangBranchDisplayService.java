@@ -93,7 +93,11 @@ public final class SlangBranchDisplayService implements Disposable {
                 if (isSlangFile(file)) refresh();
             }
             @Override public void fileClosed(@NotNull FileEditorManager manager, @NotNull VirtualFile file) {
-                if (isSlangFile(file)) refresh();
+                if (isSlangFile(file)) ui(() -> {
+                    SlangContextService.getInstance(project).previews().closeFile(file.getPath(),
+                            SlangContextService.path(file).toString(), manager.isFileOpen(file));
+                    invalidate();
+                });
             }
         });
         var appConnection = ApplicationManager.getApplication().getMessageBus().connect(this);
@@ -133,7 +137,10 @@ public final class SlangBranchDisplayService implements Disposable {
         LspServerManager.getInstance(project).addLspServerManagerListener(new LspServerManagerListener() {
             @Override public void serverStateChanged(@NotNull LspServer server) {
                 if (isOurServer(server)) ui(() -> {
-                    if (server.getState() != LspServerState.Running) awaitingSync.clear();
+                    if (server.getState() != LspServerState.Running) {
+                        awaitingSync.clear();
+                        SlangContextService.getInstance(project).previews().clear();
+                    }
                     invalidate();
                 });
             }
@@ -166,6 +173,9 @@ public final class SlangBranchDisplayService implements Disposable {
 
     private void invalidate() {
         generation++;
+        SlangContextService.getInstance(project).previews().invalidateRequests();
+        if (restartNeeded || !SlangProjectSettings.getInstance(project).isShowPreprocessorBranches())
+            SlangContextService.getInstance(project).previews().clear();
         SlangContextService.getInstance(project).invalidate();
         alarm.cancelAllRequests();
         for (Entry entry : entries.values()) {
@@ -206,6 +216,8 @@ public final class SlangBranchDisplayService implements Disposable {
                 document.getModificationStamp(), generation);
         Entry entry = new Entry();
         entries.put(document, entry);
+        var requestedPreview = SlangContextService.getInstance(project).previews().peek(file.getPath());
+        long previewRevision = SlangContextService.getInstance(project).previews().requestRevision();
         entry.request = AppExecutorUtil.getAppExecutorService().submit(() -> {
             try {
                 var contexts = SlangContextService.getInstance(project);
@@ -225,6 +237,12 @@ public final class SlangBranchDisplayService implements Disposable {
                         : new SlangContextService.ResolvedContext(SlangContextService.path(file), file.getName(), null);
                 var root = resolved.root();
                 var buildContext = resolved.variant() == null ? null : resolved.variant().buildContext();
+                var preview = contexts.previews().current(file.getPath(), requestedPreview, contexts.baseline(file, resolved), server, previewRevision);
+                if (preview != null && !SlangPreprocessorTrace.supportsPreview(server.getInitializeResult().getCapabilities())) {
+                    report(document, entry, file, "Branch preview requires M4d slangd; stop preview to restore the original context");
+                    return;
+                }
+                var overrides = preview == null ? null : preview.macros().wire();
                 VirtualFile rootFile = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(root);
                 if (rootFile == null || !rootFile.isValid()) {
                     report(document, entry, file, "Selected root is missing: " + contexts.relative(root));
@@ -239,13 +257,15 @@ public final class SlangBranchDisplayService implements Disposable {
                 });
                 SlangPreprocessorTrace trace = server.sendRequestSync(5_000, remote ->
                         remote instanceof SlangLanguageServer slang
-                                ? slang.preprocessorTrace(new SlangPreprocessorTrace.Params(identifier, supportsContexts ? context.uri : null, buildContext))
+                                ? slang.preprocessorTrace(new SlangPreprocessorTrace.Params(identifier, supportsContexts ? context.uri : null, buildContext, overrides))
                                 : CompletableFuture.completedFuture(null));
                 if (!contexts.isVariantCurrent(file, resolved)) {
                     ui(() -> { if (entries.get(document) == entry) invalidate(); });
                     return;
                 }
-                if (supportsContexts && (trace == null || !trace.matchesContext(context.uri, context.version) || !trace.matchesVariant(buildContext))) {
+                if (!contexts.previews().isCurrent(file.getPath(), preview)) return;
+                if (supportsContexts && (trace == null || !trace.matchesContext(context.uri, context.version)
+                        || !trace.matchesVariant(buildContext) || !trace.matchesPreview(overrides))) {
                     String reason = trace == null ? "Trace unavailable" : switch (String.valueOf(trace.status())) {
                         case "notIncluded" -> "Not included under this root's macros";
                         case "ambiguous" -> "Included " + trace.occurrenceCount() + " times — occurrence selection not yet supported";
@@ -261,6 +281,7 @@ public final class SlangBranchDisplayService implements Disposable {
                                 ? SlangBranchPresentation.create(document, trace) : null);
                 ui(() -> {
                     if (entries.get(document) != entry || !file.isValid() || !context.isCurrent() || !awaitingSync.isReady()
+                            || !contexts.previews().isCurrent(file.getPath(), preview)
                             || !SlangProjectSettings.getInstance(project).isShowPreprocessorBranches()
                             || !stamp.accepts(trace, runningServer(), server.getDocumentVersion(document),
                             document.getModificationStamp(), generation) || presentation == null) return;
@@ -295,7 +316,10 @@ public final class SlangBranchDisplayService implements Disposable {
                 || event instanceof VFileMoveEvent move && contexts.isVariantsPath(move.getOldPath())
                 || event instanceof VFilePropertyChangeEvent property && VirtualFile.PROP_NAME.equals(property.getPropertyName())
                 && event.getFile().getParent() != null && contexts.isVariantsPath(event.getFile().getParent().getPath() + "/" + property.getOldValue())))
+        {
+            contexts.previews().clear();
             invalidate(); // A manifest edit needs no restart: build contexts use isolated sessions.
+        }
         if (events.stream().anyMatch(SlangBranchDisplayService::affectsContexts))
             SlangContextService.getInstance(project).invalidate();
         if (runningServer() == null || !SlangProjectSettings.getInstance(project).isShowPreprocessorBranches()) return;

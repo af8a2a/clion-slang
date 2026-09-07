@@ -136,6 +136,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         settings.setShowPreprocessorBranches(branchDisplay.isSelected());
         settings.setShowPreprocessorBranchLabels(branchLabels.isSelected());
         settings.setShaderVariantsPath(variantsPath.getText());
+        dev.slang.intellij.preprocessor.SlangContextService.getInstance(project).previews().clear();
         updateResolvedPathPreview();
         SlangBranchDisplayService.getInstance(project).refresh();
 
