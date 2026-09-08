@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Slang palette mapped from the supplied Rider_Light.icls (Rider 2026.1.2.0.0).
+  This file is both a selectable scheme and
+  additionalTextAttributes for the platform's light schemes. Keep ONLY SLANG.* keys:
+  no global colors, fonts, or language defaults may be changed by the additive loader.
+  See docs/rider-light-color-scheme.md for the palette and inheritance boundaries.
+-->
+<scheme name="Slang Rider Light" version="142" parent_scheme="Default">
+  <attributes>
+    <!-- Keywords / directives: blue; include paths remain a separate warm brown. -->
+    <option name="SLANG.KEYWORD"><value><option name="FOREGROUND" value="0F54D6"/></value></option>
+    <option name="SLANG.TYPE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.NUMBER"><value><option name="FOREGROUND" value="AB2F6B"/></value></option>
+    <option name="SLANG.STRING"><value><option name="FOREGROUND" value="8C6C41"/></value></option>
+    <option name="SLANG.BOOLEAN"><value><option name="FOREGROUND" value="0F54D6"/></value></option>
+    <option name="SLANG.LINE_COMMENT"><value><option name="FOREGROUND" value="248700"/><option name="FONT_TYPE" value="2"/></value></option>
+    <option name="SLANG.BLOCK_COMMENT"><value><option name="FOREGROUND" value="248700"/><option name="FONT_TYPE" value="2"/></value></option>
+    <option name="SLANG.DOC_COMMENT"><value><option name="FOREGROUND" value="248700"/><option name="FONT_TYPE" value="2"/></value></option>
+    <option name="SLANG.PREPROCESSOR"><value><option name="FOREGROUND" value="0F54D6"/></value></option>
+    <option name="SLANG.INCLUDE_PATH"><value><option name="FOREGROUND" value="8C6C41"/></value></option>
+    <option name="SLANG.ATTRIBUTE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.SEMANTIC"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+
+    <!-- DEFAULT_CLASS_* for general types; ReSharper.STRUCT_IDENTIFIER for structs. -->
+    <option name="SLANG.SEMANTIC.NAMESPACE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.SEMANTIC.TYPE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.SEMANTIC.BUILTIN_TYPE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.SEMANTIC.CLASS"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.SEMANTIC.STRUCT"><value><option name="FOREGROUND" value="300073"/></value></option>
+    <option name="SLANG.SEMANTIC.INTERFACE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.SEMANTIC.ENUM"><value><option name="FOREGROUND" value="300073"/></value></option>
+    <option name="SLANG.SEMANTIC.TYPE_PARAMETER"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.SEMANTIC.STRUCTURED_BUFFER"><value><option name="FOREGROUND" value="300073"/></value></option>
+    <option name="SLANG.SEMANTIC.TYPE_ARGUMENT"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+
+    <!-- C++ fields are purple, C++ variables neutral; constants use DEFAULT_CONSTANT. -->
+    <option name="SLANG.SEMANTIC.IDENTIFIER"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.SEMANTIC.PARAMETER"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.SEMANTIC.VARIABLE"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.SEMANTIC.STATIC_VARIABLE"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.SEMANTIC.READONLY_VARIABLE"><value><option name="FOREGROUND" value="0093A1"/><option name="FONT_TYPE" value="1"/></value></option>
+    <option name="SLANG.SEMANTIC.PROPERTY"><value><option name="FOREGROUND" value="300073"/></value></option>
+    <option name="SLANG.SEMANTIC.STATIC_PROPERTY"><value><option name="FOREGROUND" value="300073"/></value></option>
+    <option name="SLANG.SEMANTIC.READONLY_PROPERTY"><value><option name="FOREGROUND" value="300073"/></value></option>
+    <option name="SLANG.SEMANTIC.ENUM_MEMBER"><value><option name="FOREGROUND" value="300073"/></value></option>
+
+    <!-- DEFAULT_FUNCTION_* / *_METHOD and C++ operators share the teal accent. -->
+    <option name="SLANG.SEMANTIC.FUNCTION"><value><option name="FOREGROUND" value="00855F"/></value></option>
+    <option name="SLANG.SEMANTIC.METHOD"><value><option name="FOREGROUND" value="00855F"/></value></option>
+    <option name="SLANG.SEMANTIC.STATIC_METHOD"><value><option name="FOREGROUND" value="00855F"/></value></option>
+    <option name="SLANG.SEMANTIC.INTRINSIC"><value><option name="FOREGROUND" value="00855F"/></value></option>
+    <option name="SLANG.SEMANTIC.MACRO"><value><option name="FOREGROUND" value="0F54D6"/></value></option>
+    <option name="SLANG.SEMANTIC.DECORATOR"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.SEMANTIC.BUILTIN_SYMBOL"><value><option name="FOREGROUND" value="000000"/></value></option>
+
+    <!-- Branch overlays must not paint a background over usage/selection highlights. -->
+    <option name="SLANG.PREPROCESSOR.INACTIVE_CODE"><value><option name="FOREGROUND" value="949494"/></value></option>
+    <option name="SLANG.PREPROCESSOR.ACTIVE_BRANCH"><value><option name="EFFECT_COLOR" value="0F54D6"/><option name="EFFECT_TYPE" value="1"/></value></option>
+    <option name="SLANG.PREPROCESSOR.BRANCH_LABEL"><value><option name="FOREGROUND" value="949494"/><option name="BACKGROUND" value="EBEBEB"/></value></option>
+
+    <option name="SLANG.OPERATOR"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.BRACES"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.BRACKETS"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.PARENTHESES"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.SEMICOLON"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.COMMA"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <option name="SLANG.DOT"><value><option name="FOREGROUND" value="383838"/></value></option>
+    <!-- Preserve the IDE's invalid-character indication rather than suppressing it. -->
+    <option name="SLANG.BAD_CHARACTER" baseAttributes="BAD_CHARACTER"/>
+  </attributes>
+</scheme>

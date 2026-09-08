@@ -7,6 +7,8 @@
 
 ## 功能
 
+- [Slang Rider Light](docs/rider-light-color-scheme.md)：按 Rider 导出的 C++ 配色映射的浅色预设，同时作为
+  Light / IntelliJ Light 的 Slang 默认颜色；保留显式自定义颜色和深色主题
 - `.slang` / `.slangh` 文件类型和图标
 - Slang/HLSL 常用关键字、内建类型、属性、语义、预处理器、字符串、数字与注释的词法高亮
 - 通过 `slangd` Semantic Tokens 提供语义配色，包括类型、命名空间、变量、参数、字段、
@@ -78,6 +80,9 @@
 语义颜色可在 **Settings | Editor | Color Scheme | Slang | Semantic** 中单独调整。服务器
 不可用时，插件会保留本地 Lexer 提供的基础颜色；使用 stock `slangd` 时显示其现有十类，
 增强版服务器发布更细分类和 modifiers 后会自动使用对应颜色。
+
+使用 Rider C++ 参考配色时，在 **Settings | Editor | Color Scheme** 选择 **Slang Rider Light**，
+然后在 **Slang** 子页调整。配色本身不需要更新语言服务器。
 
 本机开发时可避免下载另一份 CLion SDK：
 

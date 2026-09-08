@@ -18,16 +18,17 @@ role covers `AppendStructuredBuffer`, `ConsumeStructuredBuffer`, and
 
 Under **Settings | Editor | Color Scheme | Slang | Semantic | Types**, adjust:
 
-| Setting | Color key | Default inheritance |
+| Setting | Color key | Fallback inheritance outside the light preset |
 | --- | --- | --- |
 | Structured buffer | `SLANG.SEMANTIC.STRUCTURED_BUFFER` | Slang Struct |
 | Generic type argument | `SLANG.SEMANTIC.TYPE_ARGUMENT` | Slang Type parameter |
 | Type parameter (existing) | `SLANG.SEMANTIC.TYPE_PARAMETER` | Platform class reference |
 
-The first two are independent settings; defaults reuse the active theme / existing Slang colors,
-not hard-coded RGB values. In some schemes the inherited colors may be similar; disable inheritance
-for either entry to choose distinct colors. The color-settings preview includes the three declarations
-above so each category can be selected directly.
+The first two are independent settings. [Slang Rider Light](rider-light-color-scheme.md), also supplied
+as Slang defaults for Light / IntelliJ Light, uses deep purple (`#300073`) for buffers and violet
+(`#6B2FBA`) for type arguments. Other schemes keep the fallback chains above. In some schemes the
+inherited colors may be similar; disable inheritance for either entry to choose distinct colors.
+The color-settings preview includes the three declarations above so each category can be selected directly.
 
 Full semantic classification requires the optional server patch
 [`0005-structured-buffer-highlighting.patch`](../patches/slang/0005-structured-buffer-highlighting.patch),

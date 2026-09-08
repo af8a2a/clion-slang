@@ -8,6 +8,8 @@ an external process.
 
 ## Features
 
+- [Slang Rider Light](docs/rider-light-color-scheme.md): a light preset mapped from Rider's exported C++ colors,
+  also used as Slang defaults in Light / IntelliJ Light; preserves custom colors and dark themes
 - `.slang` and `.slangh` file types and icons
 - Lexical highlighting for common Slang/HLSL keywords, built-in types, attributes, semantics,
   preprocessor directives, strings, numbers, and comments
@@ -87,6 +89,9 @@ Semantic colors can be configured independently under
 retains the basic colors produced by its local lexer. A stock `slangd` exposes its existing ten
 categories; more detailed categories and modifiers are used automatically when an enhanced server
 publishes them.
+
+For the Rider C++ reference palette, select **Slang Rider Light** under **Settings | Editor | Color
+Scheme**. Customize it in the **Slang** section; no server update is needed for the palette itself.
 
 For local development, you can avoid downloading another CLion SDK:
 

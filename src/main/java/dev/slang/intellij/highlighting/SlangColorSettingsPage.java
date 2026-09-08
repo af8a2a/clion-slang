@@ -100,6 +100,7 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
     );
 
     private static final String DEMO_TEXT = """
+            // Slang Rider Light (Rider_Light.icls): blue directives, brown paths, green comments.
             #include "ClusterLightGridCommon.slang"
             #include <lighting/Common.slangh>
             #if BLUE
@@ -149,10 +150,27 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
                 static const uint <semanticReadonlyVariable>MAX_LIGHTS</semanticReadonlyVariable> = 8;
             }
 
-            struct <semanticStruct>HitEntry</semanticStruct> { uint index; };
-            <semanticStructuredBuffer>StructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>HitEntry</semanticTypeArgument>> g_GBuffer;
-            <semanticStructuredBuffer>RWStructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>uint</semanticTypeArgument>> g_CompactedGBuffer;
-            <semanticStructuredBuffer>RWStructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>uint</semanticTypeArgument>> g_CompactedGBufferLength;
+            // Structs / fields are deep purple; types violet; functions teal; numbers magenta.
+            struct <semanticStruct>HitEntry</semanticStruct>
+            {
+                uint <semanticProperty>instanceID</semanticProperty>;
+                uint <semanticProperty>primitiveIndex</semanticProperty>;
+                float2 <semanticProperty>barycentrics</semanticProperty>;
+                bool <semanticMethod>isValid</semanticMethod>()
+                {
+                    return <semanticProperty>instanceID</semanticProperty> != -1;
+                }
+            };
+            <semanticStructuredBuffer>StructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>HitEntry</semanticTypeArgument>> <semanticStaticVariable>g_GBuffer</semanticStaticVariable>;
+            <semanticStructuredBuffer>RWStructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>uint</semanticTypeArgument>> <semanticStaticVariable>g_CompactedGBuffer</semanticStaticVariable>;
+            <semanticStructuredBuffer>RWStructuredBuffer</semanticStructuredBuffer><<semanticTypeArgument>uint</semanticTypeArgument>> <semanticStaticVariable>g_CompactedGBufferLength</semanticStaticVariable>;
+
+            /* Linear RGB luminance, matching the reference's function / field contrast. */
+            float <semanticFunction>luminance</semanticFunction>(float3 <semanticParameter>color</semanticParameter>)
+            {
+                const float3 <semanticReadonlyVariable>weights</semanticReadonlyVariable> = float3(0.2126, 0.7152, 0.0722);
+                return <semanticIntrinsic>dot</semanticIntrinsic>(<semanticParameter>color</semanticParameter>, <semanticReadonlyVariable>weights</semanticReadonlyVariable>);
+            }
 
             /// A compact compute entry point.
             [<semanticDecorator>shader</semanticDecorator>("compute")]

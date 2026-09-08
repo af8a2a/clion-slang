@@ -31,6 +31,10 @@
                 language="Slang"
                 implementationClass="dev.slang.intellij.lang.SlangParserDefinition"/>
         <colorSettingsPage implementation="dev.slang.intellij.highlighting.SlangColorSettingsPage"/>
+        <bundledColorScheme id="Slang Rider Light" path="colorSchemes/SlangRiderLight"/>
+        <!-- Only light schemes: Default is also the parent of third-party dark schemes. -->
+        <additionalTextAttributes scheme="Light" file="colorSchemes/SlangRiderLight.xml"/>
+        <additionalTextAttributes scheme="IntelliJ Light" file="colorSchemes/SlangRiderLight.xml"/>
         <lang.commenter language="Slang" implementationClass="dev.slang.intellij.editor.SlangCommenter"/>
         <lang.braceMatcher language="Slang" implementationClass="dev.slang.intellij.editor.SlangBraceMatcher"/>
         <lang.quoteHandler language="Slang" implementationClass="dev.slang.intellij.editor.SlangQuoteHandler"/>
