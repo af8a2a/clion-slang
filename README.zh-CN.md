@@ -5,6 +5,29 @@
 一个面向 C++/CMake + Slang 项目的 CLion 插件。它把 CLion 的原生 LSP 客户端连接到官方
 `slangd`，同时保留不依赖外部进程的轻量词法高亮。
 
+## 使用展示
+
+以下展示 CLion 中的 Slang 路径追踪和 Bindless 着色器代码。颜色由当前编辑器配色方案决定；语义高亮和参数名内嵌提示
+取决于所配置的 `slangd` 与 IDE 设置。
+
+### 路径追踪与参数提示
+
+在路径追踪代码中区分头文件路径、资源类型、函数和注释，并在调用处显示参数名提示。
+
+![Slang 路径追踪代码：头文件路径、StructuredBuffer、函数配色及参数名内嵌提示](docs/screenshots/path-tracing.png)
+
+### Bindless 顶点与片元着色器
+
+展示 Shader 入口属性、HLSL 语义和嵌套泛型纹理句柄。
+
+![Bindless 顶点与片元着色器：Shader 属性、HLSL 语义和 DescriptorHandle 纹理类型](docs/screenshots/bindless-shaders.png)
+
+### 缓冲区操作与原子操作
+
+展示计算着色器中的资源句柄、字节寻址缓冲区读写，以及带参数名提示的原子操作。
+
+![计算着色器：RWByteAddressBuffer 句柄、缓冲区读写与原子操作参数提示](docs/screenshots/bindless-buffers.png)
+
 ## 功能
 
 - [Slang Rider Light](docs/rider-light-color-scheme.md)：按 Rider 导出的 C++ 配色映射的浅色预设，同时作为

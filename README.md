@@ -6,6 +6,31 @@ A CLion plugin for C++/CMake projects that use Slang. It connects CLion's native
 official `slangd` server while retaining lightweight lexical highlighting that does not depend on
 an external process.
 
+## Showcase
+
+Slang editing in CLion, from path-tracing code to bindless shaders. Colors follow the active editor
+scheme; semantic highlighting and inlay hints depend on the configured `slangd` and IDE settings.
+
+### Path tracing and inlay hints
+
+Distinct include paths, resource types, functions and comments, with inline parameter hints in
+path-tracing code.
+
+![Slang path-tracing code with include-path and StructuredBuffer highlighting, colored functions, and parameter hints](docs/screenshots/path-tracing.png)
+
+### Bindless vertex and fragment shaders
+
+Shader entry-point attributes, HLSL semantics and nested generic texture handles in one editor view.
+
+![Bindless vertex and fragment shaders showing shader attributes, HLSL semantics, and DescriptorHandle texture types](docs/screenshots/bindless-shaders.png)
+
+### Buffer operations and atomics
+
+Compute shader resource handles, byte-address buffer reads/writes and atomic operations with
+inline argument names.
+
+![Compute shader code with RWByteAddressBuffer handles, load/store calls, and atomic-operation parameter hints](docs/screenshots/bindless-buffers.png)
+
 ## Features
 
 - [Slang Rider Light](docs/rider-light-color-scheme.md): a light preset mapped from Rider's exported C++ colors,
