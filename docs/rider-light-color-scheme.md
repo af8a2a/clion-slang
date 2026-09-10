@@ -1,55 +1,35 @@
 # Slang Rider Light
 
-## 使用 / Usage
+## 使用 / Usage（0.7.2）
 
-根据用户提供的 `Rider_Light.icls`（Rider 2026.1.2.0.0）中的 C++ 专属属性及语言默认属性映射
-的 Slang 默认预设，替代最初的截图估色，覆盖词法、语义、结构化缓冲区／泛型和预处理分支显示。
-它是一套**配色**，不是新的语义分类器，也不是完整复制 Rider 的 UI 主题。
+这是一套只应用于 Slang 的 Rider 风格配色，不再注册独立的全局编辑器方案。
 
-- 安装插件后，在 **Settings | Editor | Color Scheme** 选择 **Slang Rider Light**。
-- CLion 内置 **Light**（包括使用该编辑器方案的 Islands Light）和 **IntelliJ Light** 也默认
-  获得相同的 Slang 专属颜色；已有的显式 Slang 自定义值仍然优先。
-- 在 **Editor | Color Scheme | Slang** 点击预览中的元素即可调整对应颜色。需要修改内置
-  方案时可先 Duplicate，再编辑副本；勾选 **Inherit values from** 可恢复该项的原有继承链。
-- 插件不会自动切换方案或重写已保存的配置；自动补充的默认值只包含 `SLANG.*`，不覆盖字体、
-  字号、全局背景、选中背景或 C++ 配色。**Slang Rider Light** 从 CLion 的 **Light** 继承
-  非 Slang 设置，只覆盖 `SLANG.*`；C++ 的语言默认值、注释、字符串和编辑器背景继续来自 Light。
-  **Darcula / Dark / Islands Dark / High contrast** 保留原有主题继承。旧 **Default** 和其他
-  第三方方案不主动注入这套颜色；需要时显式选择 **Slang Rider Light**。
+1. 安装修复版并重启 CLion，在 **Settings | Editor | Color Scheme** 选择 **Light** 或
+   **IntelliJ Light**。无需选择旧的 Slang Rider Light。
+2. 在 **Color Scheme | Slang** 中调整颜色。需要保留 C++ 自定义时，继续使用已有的 Light
+   或其副本；插件只补充 `SLANG.*` 默认值，已有显式自定义优先。
+3. 旧 Slang Rider Light 副本不会被自动删除或改写。若它仍被选中，请手动切回 Light。
+   如果启动错误导致无法进入设置，可先禁用旧插件，进入设置切回 Light，再安装修复版。
 
-Select **Slang Rider Light** under **Settings | Editor | Color Scheme**. The built-in **Light** and
-**IntelliJ Light** schemes also receive these Slang-only defaults. Explicit user overrides win;
-duplicate a scheme to customize it under **Color Scheme | Slang**, or enable **Inherit values from**
-for a setting to restore its fallback. Installation never switches the active scheme or rewrites
-saved preferences. Additive defaults contain no fonts, global editor colors, other-language keys,
-or project settings. The standalone preset inherits non-Slang settings from CLion's **Light**,
-not the legacy platform **Default**. C++ and editor colors keep their Light defaults. Dark/high-contrast
-schemes and unrelated third-party schemes retain their existing defaults.
+Keep **Light** or **IntelliJ Light** selected, and customize **Color Scheme | Slang**. The plugin
+adds only Slang-specific attributes; it never changes the current global scheme, C++ colors, fonts
+or selection backgrounds. Existing explicit overrides are preserved. Old standalone preset users
+should switch back to Light; saved copies are not automatically deleted or migrated.
 
-### C++ isolation / C++ 配色隔离（0.7.1）
+## Startup failure and C++ isolation
 
-0.7.0 的可选预设虽然只定义了 Slang 属性，但父方案是通用 `Default`。从 CLion 的 `Light`
-切换过去时，C++ 和全局编辑器样式也随父方案改变。0.7.1 将父方案修正为 **Light**，不将 Rider
-或用户导出文件中的全局／C++ 属性复制到运行时预设，Slang 的 Rider 色值保持不变。
+0.7.0 的独立方案继承通用 Default，导致从 CLion Light 切换时 C++ 外观改变。0.7.1 改为继承
+Light，但实际启动报出了 `PluginException: Light`，根因在 `AbstractColorsScheme.resolveParent`：
+解析出的父方案不存在或不是只读方案时，该方法会抛出 `InvalidDataException`。
 
-用户提供的 `Light.icls`（CLion 2026.2.2.0.0）用于核对非 Slang 属性；其中已经包含 Slang
-配色及少量自定义值，不作为新的 Slang 默认值导入，也不会被修改。非 Slang 样本见
-[`ClionLightReference.xml`](../src/test/resources/colorSchemes/ClionLightReference.xml)。
+**0.7.2 removes the bundled scheme entirely.** The XML is now a plain attribute fragment with no
+name, version or parent. Only `additionalTextAttributes` registrations for Light / IntelliJ Light
+remain. This eliminates the plugin's bundled-scheme parent resolution instead of relying on startup
+ordering or reverting to the wrong Default colors. Dark and unrelated schemes keep their fallbacks.
 
-- **保留当前 C++ 自定义颜色的首选方式**：继续使用 **Light** 或已有的 Light 副本。
-  插件会给内置 Light 补充 Slang 默认值，已有的显式自定义仍优先，不必切换整套方案。
-- 安装修正版后也可选择 **Slang Rider Light**，它保留 CLion 内置 Light 的非 Slang 配色。
-  若从其他自定义方案切换过来，那套方案自己的 C++／全局覆盖并不会自动转移。
-- 如果旧保存副本仍继承 `Default`，切回 **Light**，或从更新后的内置预设新建副本。
-  插件不会迁移、删除或重写已有副本来强制恢复外观。
-
-In 0.7.0, selecting the preset also switched the parent from CLion Light to the platform's legacy
-Default. Version 0.7.1 fixes the parent to Light while keeping only Slang-specific overrides.
-To retain an existing customized C++ appearance, keep using Light or its existing customized copy;
-the plugin already supplies Slang defaults on Light. A new standalone preset inherits the built-in
-Light defaults, not arbitrary custom overrides from the previously selected scheme. Old saved copies
-may retain their old parent: switch back to Light or create a fresh copy of the updated preset.
-No automatic migration of saved schemes is performed.
+The supplied `Light.icls` is reference data, not imported into runtime settings; its existing Slang
+customizations and other-language settings are not overwritten. The Rider-derived Slang RGB values
+remain unchanged. The original export files are not modified.
 
 ## Palette
 
@@ -120,50 +100,34 @@ underlines, usage highlights, inlay hints and inactive-branch overlays can furth
 
 ## Implementation and validation
 
-[`SlangRiderLight.xml`](../src/main/resources/colorSchemes/SlangRiderLight.xml) is the single palette
-source. It is registered both as a selectable `bundledColorScheme` (path without `.xml`) and as
-`additionalTextAttributes` for the two supported light scheme names. The latter loader reads only
-the `<attributes>` child. **Keep only `SLANG.*` keys in this resource**, with no global colors or font
-options. Do not inject into `Default`: it is also the parent of unrelated third-party dark schemes.
-The standalone scheme must inherit **Light**, which in turn inherits platform Default; skipping
-Light loses CLion's non-Slang defaults and its scheme-specific language contributions.
-Do not add startup migration code that rewrites the user's saved scheme.
+[`SlangRiderLight.xml`](../src/main/resources/colorSchemes/SlangRiderLight.xml) is the single runtime
+palette source: `<list><attributes>...</attributes></list>`. The platform additive loader reads the
+attributes child. Do not add `bundledColorScheme`, `parent_scheme`, global colors or non-`SLANG.*`
+keys. Do not inject into Default, change the active scheme, or rewrite saved user schemes.
 
-This uses the platform's documented [scheme-specific defaults](https://plugins.jetbrains.com/docs/intellij/color-scheme-management.html)
-and [bundled scheme registration](https://plugins.jetbrains.com/docs/intellij/creating-theme-project.html#bundling-color-schemes).
-The existing Java fallback keys remain unchanged outside the supplied preset.
+The existing Java fallback keys remain unchanged. There are no extra LSP requests or server changes.
 
-A [minimal reference subset](../src/test/resources/colorSchemes/RiderLightReference.xml) retains only
-the 35 source attributes used by the mapping, including their original short hex values. It is test
-data only, not shipped in the plugin. Original export SHA-256:
-`3e66d9439c6c66f9fd05aced5eb2165c32fae756fd2d7904a8ac5811b454aae5`.
+Regression coverage:
 
-`SlangRiderLightColorSchemeTest` checks resource registration, exhaustive settings-key coverage,
-palette values through the actual platform attribute reader, comment italics, branch effects,
-user override / fallback behavior, dark isolation and invalid-character inheritance. It also checks
-every mapped Slang role against that portable reference using the platform attribute reader,
-including foreground/background, font styles and effects, without accessing a user's home directory.
-The existing
-settings preview includes screenshot-inspired `HitEntry` fields, `isValid`, `luminance`, buffer
-declarations, include paths, and inactive/active branches, without needing a running server.
-
-`SlangRiderLightColorSchemePlatformTest` separately checks full scheme loading and extension
-registration using an IDE application. This test needs the JetBrains test-framework dependency;
-it is not part of the standalone attribute-reader test run.
-The portable CLion reference tests ensure non-Slang foregrounds, font styles and editor colors
-remain unchanged through the declared parent and user overrides. The IDE-fixture test additionally
-compares all non-Slang keys and colors in the installed Light inheritance chain against the registered
-preset, including CLion's language-specific contributions.
+- Registration tests forbid a bundled scheme and a parent/name on the fragment, catching the startup
+  failure path that 0.7.1's synthetic parent-inheritance test did not exercise.
+- Actual platform attribute-reader tests check every mapped Slang role against the 35-attribute
+  [Rider reference](../src/test/resources/colorSchemes/RiderLightReference.xml), including font styles.
+- The [CLion reference](../src/test/resources/colorSchemes/ClionLightReference.xml) checks 15 non-Slang
+  attributes and four editor colors remain unchanged after additive application, including overrides.
+- IDE-fixture tests initialize the actual scheme manager and compare non-Slang attributes/colors
+  before and after loading the fragment. They require the JetBrains test-framework dependency;
+  standalone unit tests do not replace startup/GUI acceptance.
 
 Manual acceptance after installing the ZIP:
 
-1. Select **Slang Rider Light**, inspect **Color Scheme | Slang**, then open
-   [`StructuredBufferHighlighting.slang`](../src/test/testData/slang/StructuredBufferHighlighting.slang).
-2. With the supported slangd, verify buffer / argument colors, purple fields, teal calls and warm
-   include paths. Disable slangd and check lexical fallback separately.
-3. Duplicate the preset, customize one Slang color, restart the IDE and confirm the override remains.
-4. Switch between **Light**, **IntelliJ Light**, **Darcula** and **High contrast**; check that dark
-   schemes have not received light-only colors and that usage/selection backgrounds remain usable.
+1. Restart CLion and confirm no new `PluginException: Light`; select Light or IntelliJ Light.
+2. Open C++ and Slang files side by side. C++ should retain its original scheme; Slang should use
+   the Rider-derived colors. Confirm selection backgrounds and custom C++ overrides are unchanged.
+3. Adjust one Slang color, restart, and confirm the explicit override survives. Switch to Darcula
+   and High contrast to confirm no light-only palette is forced onto them.
+4. Use a supported slangd to inspect the [buffer fixture](../src/test/testData/slang/StructuredBufferHighlighting.slang),
+   then disable slangd to check lexical fallback independently.
 
-Automated attribute-reader tests do not replace this GUI acceptance or claim pixel-identical Rider
-rendering. The plugin's declared CLion 2026.1.3 / Java 21 baseline is unchanged.
+The declared CLion 2026.1.3 / Java 21 baseline is unchanged. No GUI acceptance is claimed solely
+from successful unit tests or packaging; the previous startup failure demonstrated that distinction.

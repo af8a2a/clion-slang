@@ -12,25 +12,27 @@ import java.awt.Color;
 
 /** Full scheme loading needs an application service; run with the platform test framework. */
 public class SlangRiderLightColorSchemePlatformTest extends BasePlatformTestCase {
-    public void testStandaloneResourceLoadsWithTheRealClionLightParent() throws Exception {
+    public void testAttributeFragmentLoadsWithoutParentResolution() throws Exception {
         var manager = EditorColorsManager.getInstance();
-        var scheme = new EditorColorsSchemeImpl(null);
+        var scheme = new EditorColorsSchemeImpl(manager.getScheme("Light"));
         try (var input = getClass().getClassLoader().getResourceAsStream("colorSchemes/SlangRiderLight.xml")) {
             assertNotNull(input);
-            scheme.readExternal(JDOMUtil.load(input));
+            scheme.readAttributes(JDOMUtil.load(input).getChild("attributes"));
         }
-        scheme.resolveParent(manager::getScheme);
         assertSame(manager.getScheme("Light"), scheme.getParentScheme());
-        assertEquals("Slang Rider Light", scheme.getName());
         assertEquals(Color.WHITE, scheme.getDefaultBackground());
         assertEquals(new Color(0x0F54D6), scheme.getAttributes(SlangSyntaxHighlighter.KEYWORD).getForegroundColor());
         assertEquals(new Color(0x00855F), scheme.getAttributes(SlangSemanticColors.FUNCTION).getForegroundColor());
     }
 
-    public void testRegisteredPresetPreservesAllNonSlangAttributesAndEditorColors() {
+    public void testAdditivePalettePreservesAllNonSlangAttributesAndEditorColors() throws Exception {
         var manager = EditorColorsManager.getInstance();
         var light = manager.getScheme("Light");
-        var preset = manager.getScheme("Slang Rider Light");
+        var preset = new EditorColorsSchemeImpl(light);
+        try (var input = getClass().getClassLoader().getResourceAsStream("colorSchemes/SlangRiderLight.xml")) {
+            assertNotNull(input);
+            preset.readAttributes(JDOMUtil.load(input).getChild("attributes"));
+        }
         assertNotNull(light);
         assertNotNull(preset);
         // Include inherited and CLion-provided C++ keys, not just a few language defaults.
@@ -49,7 +51,7 @@ public class SlangRiderLightColorSchemePlatformTest extends BasePlatformTestCase
 
     public void testExtensionsLoadThePresetAndOnlyLightDefaults() {
         var manager = EditorColorsManager.getInstance();
-        for (String name : new String[]{"Slang Rider Light", "Light", "IntelliJ Light"}) {
+        for (String name : new String[]{"Light", "IntelliJ Light"}) {
             var scheme = manager.getScheme(name);
             assertNotNull("Missing registered scheme: " + name, scheme);
             assertEquals(name, new Color(0x0F54D6), scheme.getAttributes(SlangSyntaxHighlighter.KEYWORD).getForegroundColor());

@@ -19,7 +19,6 @@ import java.awt.Font;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,18 +26,15 @@ import static org.junit.Assert.*;
 
 /** Tests the actual platform XML reader without an IDE application or language server. */
 public class SlangRiderLightColorSchemeTest {
-    private static final String NAME = "Slang Rider Light";
     private static final String PATH = "colorSchemes/SlangRiderLight";
 
     @Test
-    public void registersOneSelectablePresetAndOnlySupportedLightDefaults() throws Exception {
+    public void registersOnlyAdditiveDefaultsWithoutBundledParentResolution() throws Exception {
         Element extensions = resource("META-INF/plugin.xml").getChildren("extensions").stream()
                 .filter(element -> "com.intellij".equals(element.getAttributeValue("defaultExtensionNs")))
                 .findFirst().orElseThrow();
         var bundles = extensions.getChildren("bundledColorScheme");
-        assertEquals(1, bundles.size());
-        assertEquals(NAME, bundles.getFirst().getAttributeValue("id"));
-        assertEquals(PATH, bundles.getFirst().getAttributeValue("path"));
+        assertTrue("No bundled scheme: resolving Light at startup caused InvalidDataException", bundles.isEmpty());
 
         Set<String> schemes = new HashSet<>();
         for (Element defaults : extensions.getChildren("additionalTextAttributes")) {
@@ -48,14 +44,12 @@ public class SlangRiderLightColorSchemeTest {
         // Default is a shared ancestor of third-party light AND dark schemes. Do not inject into it.
         assertEquals(Set.of("Light", "IntelliJ Light"), schemes);
         Element preset = resource(PATH + ".xml");
-        assertEquals("scheme", preset.getName());
-        assertEquals(NAME, preset.getAttributeValue("name"));
-        assertEquals("142", preset.getAttributeValue("version"));
-        assertEquals("Light", preset.getAttributeValue("parent_scheme"));
+        assertEquals("list", preset.getName());
+        assertTrue("No scheme identity or parent allowed", preset.getAttributes().isEmpty());
     }
 
     @Test
-    public void standalonePresetPreservesExportedClionColorsAndChangesOnlySlang() throws Exception {
+    public void additivePalettePreservesExportedClionColorsAndChangesOnlySlang() throws Exception {
         Element reference = resource("colorSchemes/ClionLightReference.xml");
         var legacyDefault = new EditorColorsSchemeImpl(null);
         legacyDefault.setAttributes(DefaultLanguageHighlighterColors.KEYWORD, color(0x000080));
@@ -63,11 +57,8 @@ public class SlangRiderLightColorSchemeTest {
         clionLight.readAttributes(reference.getChild("attributes"));
         clionLight.readColors(reference.getChild("colors"));
         Element palette = resource(PATH + ".xml");
-        // Resolve the declared parent, not a hard-coded test parent: catches a regression to Default.
-        var parent = Map.of("Default", legacyDefault, "Light", clionLight)
-                .get(palette.getAttributeValue("parent_scheme"));
-        assertNotNull(parent);
-        var standalone = new EditorColorsSchemeImpl(parent);
+        // Add attributes to an existing scheme without reading a new scheme or resolving a parent.
+        var standalone = new EditorColorsSchemeImpl(clionLight);
         standalone.readAttributes(palette.getChild("attributes"));
 
         for (Element entry : reference.getChild("attributes").getChildren("option")) {

@@ -115,12 +115,11 @@ retains the basic colors produced by its local lexer. A stock `slangd` exposes i
 categories; more detailed categories and modifiers are used automatically when an enhanced server
 publishes them.
 
-For the Rider C++ reference palette, select **Slang Rider Light** under **Settings | Editor | Color
-Scheme**. Customize it in the **Slang** section; no server update is needed for the palette itself.
-
-The preset inherits CLion **Light**, preserving its C++ and editor colors and overriding only Slang.
-To keep existing custom C++ colors, stay on **Light** or your customized Light copy; Slang defaults
-are already supplied on Light. See [migration from the old preset](docs/rider-light-color-scheme.md).
+For the Rider-inspired Slang palette, keep **Light** or **IntelliJ Light** under **Settings | Editor |
+Color Scheme**, then customize the **Slang** section. Only Slang attributes are added; C++ and editor
+colors are unchanged. Version 0.7.2 removes the standalone **Slang Rider Light** scheme to avoid a
+startup parent-resolution error. Existing custom schemes are not rewritten; switch old preset users
+back to Light. See [migration instructions](docs/rider-light-color-scheme.md).
 
 For local development, you can avoid downloading another CLion SDK:
 

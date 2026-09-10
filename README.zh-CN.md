@@ -104,12 +104,10 @@
 不可用时，插件会保留本地 Lexer 提供的基础颜色；使用 stock `slangd` 时显示其现有十类，
 增强版服务器发布更细分类和 modifiers 后会自动使用对应颜色。
 
-使用 Rider C++ 参考配色时，在 **Settings | Editor | Color Scheme** 选择 **Slang Rider Light**，
-然后在 **Slang** 子页调整。配色本身不需要更新语言服务器。
-
-该预设继承 CLion **Light**，保留其 C++ 与编辑器配色，只覆盖 Slang。若要保留已有的 C++
-自定义颜色，继续使用 **Light** 或已有的 Light 副本即可；Light 本身已获得 Slang 默认配色。
-旧预设副本的切换方式见[配色隔离说明](docs/rider-light-color-scheme.md)。
+使用 Rider 风格的 Slang 配色时，保持 **Settings | Editor | Color Scheme** 为 **Light** 或
+**IntelliJ Light**，在 **Slang** 子页调整即可。只补充 Slang 属性，不改变 C++ 与编辑器颜色。
+0.7.2 已取消独立的 **Slang Rider Light** 全局方案，修复启动时父方案解析异常；旧预设用户
+请切回 Light。已有自定义方案不会被重写，详见[迁移说明](docs/rider-light-color-scheme.md)。
 
 本机开发时可避免下载另一份 CLion SDK：
 
