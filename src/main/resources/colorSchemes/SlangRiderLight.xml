@@ -6,7 +6,8 @@
   no global colors, fonts, or language defaults may be changed by the additive loader.
   See docs/rider-light-color-scheme.md for the palette and inheritance boundaries.
 -->
-<scheme name="Slang Rider Light" version="142" parent_scheme="Default">
+<!-- Inherit CLion's Light defaults (including C++), not the platform's legacy Default. -->
+<scheme name="Slang Rider Light" version="142" parent_scheme="Light">
   <attributes>
     <!-- Keywords / directives: blue; include paths remain a separate warm brown. -->
     <option name="SLANG.KEYWORD"><value><option name="FOREGROUND" value="0F54D6"/></value></option>

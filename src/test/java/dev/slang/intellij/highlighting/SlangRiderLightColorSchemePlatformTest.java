@@ -2,6 +2,8 @@ package dev.slang.intellij.highlighting;
 
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
+import com.intellij.openapi.editor.colors.TextAttributesKey;
+import com.intellij.openapi.editor.colors.impl.AbstractColorsScheme;
 import com.intellij.openapi.editor.colors.impl.EditorColorsSchemeImpl;
 import com.intellij.openapi.util.JDOMUtil;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
@@ -10,7 +12,7 @@ import java.awt.Color;
 
 /** Full scheme loading needs an application service; run with the platform test framework. */
 public class SlangRiderLightColorSchemePlatformTest extends BasePlatformTestCase {
-    public void testStandaloneResourceLoadsWithTheRealDefaultParent() throws Exception {
+    public void testStandaloneResourceLoadsWithTheRealClionLightParent() throws Exception {
         var manager = EditorColorsManager.getInstance();
         var scheme = new EditorColorsSchemeImpl(null);
         try (var input = getClass().getClassLoader().getResourceAsStream("colorSchemes/SlangRiderLight.xml")) {
@@ -18,10 +20,31 @@ public class SlangRiderLightColorSchemePlatformTest extends BasePlatformTestCase
             scheme.readExternal(JDOMUtil.load(input));
         }
         scheme.resolveParent(manager::getScheme);
+        assertSame(manager.getScheme("Light"), scheme.getParentScheme());
         assertEquals("Slang Rider Light", scheme.getName());
         assertEquals(Color.WHITE, scheme.getDefaultBackground());
         assertEquals(new Color(0x0F54D6), scheme.getAttributes(SlangSyntaxHighlighter.KEYWORD).getForegroundColor());
         assertEquals(new Color(0x00855F), scheme.getAttributes(SlangSemanticColors.FUNCTION).getForegroundColor());
+    }
+
+    public void testRegisteredPresetPreservesAllNonSlangAttributesAndEditorColors() {
+        var manager = EditorColorsManager.getInstance();
+        var light = manager.getScheme("Light");
+        var preset = manager.getScheme("Slang Rider Light");
+        assertNotNull(light);
+        assertNotNull(preset);
+        // Include inherited and CLion-provided C++ keys, not just a few language defaults.
+        for (var current = light; current instanceof AbstractColorsScheme scheme; current = scheme.getParentScheme()) {
+            for (String name : scheme.getDirectlyDefinedAttributes().keySet()) {
+                if (!name.startsWith("SLANG.")) {
+                    var key = TextAttributesKey.createTextAttributesKey(name);
+                    assertEquals(name, light.getAttributes(key), preset.getAttributes(key));
+                }
+            }
+            for (var key : scheme.getDirectlyDefinedColors().keySet()) {
+                assertEquals(key.toString(), light.getColor(key), preset.getColor(key));
+            }
+        }
     }
 
     public void testExtensionsLoadThePresetAndOnlyLightDefaults() {

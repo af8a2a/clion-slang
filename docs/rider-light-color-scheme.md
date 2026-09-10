@@ -12,8 +12,8 @@
 - 在 **Editor | Color Scheme | Slang** 点击预览中的元素即可调整对应颜色。需要修改内置
   方案时可先 Duplicate，再编辑副本；勾选 **Inherit values from** 可恢复该项的原有继承链。
 - 插件不会自动切换方案或重写已保存的配置；自动补充的默认值只包含 `SLANG.*`，不覆盖字体、
-  字号、全局背景、选中背景或 C++ 配色。主动选择 **Slang Rider Light** 时，其他编辑器设置
-  按常规方案切换规则继承浅色 **Default**，因此从另一套方案切换过来时仍可能变化。
+  字号、全局背景、选中背景或 C++ 配色。**Slang Rider Light** 从 CLion 的 **Light** 继承
+  非 Slang 设置，只覆盖 `SLANG.*`；C++ 的语言默认值、注释、字符串和编辑器背景继续来自 Light。
   **Darcula / Dark / Islands Dark / High contrast** 保留原有主题继承。旧 **Default** 和其他
   第三方方案不主动注入这套颜色；需要时显式选择 **Slang Rider Light**。
 
@@ -22,9 +22,34 @@ Select **Slang Rider Light** under **Settings | Editor | Color Scheme**. The bui
 duplicate a scheme to customize it under **Color Scheme | Slang**, or enable **Inherit values from**
 for a setting to restore its fallback. Installation never switches the active scheme or rewrites
 saved preferences. Additive defaults contain no fonts, global editor colors, other-language keys,
-or project settings. Explicitly selecting the standalone preset inherits non-Slang settings from
-the light **Default** scheme, so they can change as with any normal scheme switch. Dark/high-contrast
+or project settings. The standalone preset inherits non-Slang settings from CLion's **Light**,
+not the legacy platform **Default**. C++ and editor colors keep their Light defaults. Dark/high-contrast
 schemes and unrelated third-party schemes retain their existing defaults.
+
+### C++ isolation / C++ 配色隔离（0.7.1）
+
+0.7.0 的可选预设虽然只定义了 Slang 属性，但父方案是通用 `Default`。从 CLion 的 `Light`
+切换过去时，C++ 和全局编辑器样式也随父方案改变。0.7.1 将父方案修正为 **Light**，不将 Rider
+或用户导出文件中的全局／C++ 属性复制到运行时预设，Slang 的 Rider 色值保持不变。
+
+用户提供的 `Light.icls`（CLion 2026.2.2.0.0）用于核对非 Slang 属性；其中已经包含 Slang
+配色及少量自定义值，不作为新的 Slang 默认值导入，也不会被修改。非 Slang 样本见
+[`ClionLightReference.xml`](../src/test/resources/colorSchemes/ClionLightReference.xml)。
+
+- **保留当前 C++ 自定义颜色的首选方式**：继续使用 **Light** 或已有的 Light 副本。
+  插件会给内置 Light 补充 Slang 默认值，已有的显式自定义仍优先，不必切换整套方案。
+- 安装修正版后也可选择 **Slang Rider Light**，它保留 CLion 内置 Light 的非 Slang 配色。
+  若从其他自定义方案切换过来，那套方案自己的 C++／全局覆盖并不会自动转移。
+- 如果旧保存副本仍继承 `Default`，切回 **Light**，或从更新后的内置预设新建副本。
+  插件不会迁移、删除或重写已有副本来强制恢复外观。
+
+In 0.7.0, selecting the preset also switched the parent from CLion Light to the platform's legacy
+Default. Version 0.7.1 fixes the parent to Light while keeping only Slang-specific overrides.
+To retain an existing customized C++ appearance, keep using Light or its existing customized copy;
+the plugin already supplies Slang defaults on Light. A new standalone preset inherits the built-in
+Light defaults, not arbitrary custom overrides from the previously selected scheme. Old saved copies
+may retain their old parent: switch back to Light or create a fresh copy of the updated preset.
+No automatic migration of saved schemes is performed.
 
 ## Palette
 
@@ -100,6 +125,8 @@ source. It is registered both as a selectable `bundledColorScheme` (path without
 `additionalTextAttributes` for the two supported light scheme names. The latter loader reads only
 the `<attributes>` child. **Keep only `SLANG.*` keys in this resource**, with no global colors or font
 options. Do not inject into `Default`: it is also the parent of unrelated third-party dark schemes.
+The standalone scheme must inherit **Light**, which in turn inherits platform Default; skipping
+Light loses CLion's non-Slang defaults and its scheme-specific language contributions.
 Do not add startup migration code that rewrites the user's saved scheme.
 
 This uses the platform's documented [scheme-specific defaults](https://plugins.jetbrains.com/docs/intellij/color-scheme-management.html)
@@ -123,6 +150,10 @@ declarations, include paths, and inactive/active branches, without needing a run
 `SlangRiderLightColorSchemePlatformTest` separately checks full scheme loading and extension
 registration using an IDE application. This test needs the JetBrains test-framework dependency;
 it is not part of the standalone attribute-reader test run.
+The portable CLion reference tests ensure non-Slang foregrounds, font styles and editor colors
+remain unchanged through the declared parent and user overrides. The IDE-fixture test additionally
+compares all non-Slang keys and colors in the installed Light inheritance chain against the registered
+preset, including CLion's language-specific contributions.
 
 Manual acceptance after installing the ZIP:
 

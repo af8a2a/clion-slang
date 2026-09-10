@@ -2,6 +2,7 @@ package dev.slang.intellij.highlighting;
 
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.HighlighterColors;
+import com.intellij.openapi.editor.colors.ColorKey;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.editor.colors.impl.AbstractColorsScheme;
 import com.intellij.openapi.editor.colors.impl.EditorColorsSchemeImpl;
@@ -18,6 +19,7 @@ import java.awt.Font;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,7 +51,51 @@ public class SlangRiderLightColorSchemeTest {
         assertEquals("scheme", preset.getName());
         assertEquals(NAME, preset.getAttributeValue("name"));
         assertEquals("142", preset.getAttributeValue("version"));
-        assertEquals("Default", preset.getAttributeValue("parent_scheme"));
+        assertEquals("Light", preset.getAttributeValue("parent_scheme"));
+    }
+
+    @Test
+    public void standalonePresetPreservesExportedClionColorsAndChangesOnlySlang() throws Exception {
+        Element reference = resource("colorSchemes/ClionLightReference.xml");
+        var legacyDefault = new EditorColorsSchemeImpl(null);
+        legacyDefault.setAttributes(DefaultLanguageHighlighterColors.KEYWORD, color(0x000080));
+        var clionLight = new EditorColorsSchemeImpl(legacyDefault);
+        clionLight.readAttributes(reference.getChild("attributes"));
+        clionLight.readColors(reference.getChild("colors"));
+        Element palette = resource(PATH + ".xml");
+        // Resolve the declared parent, not a hard-coded test parent: catches a regression to Default.
+        var parent = Map.of("Default", legacyDefault, "Light", clionLight)
+                .get(palette.getAttributeValue("parent_scheme"));
+        assertNotNull(parent);
+        var standalone = new EditorColorsSchemeImpl(parent);
+        standalone.readAttributes(palette.getChild("attributes"));
+
+        for (Element entry : reference.getChild("attributes").getChildren("option")) {
+            var key = TextAttributesKey.createTextAttributesKey(entry.getAttributeValue("name"));
+            assertEquals(key.toString(), clionLight.getAttributes(key), standalone.getAttributes(key));
+        }
+        for (Element entry : reference.getChild("colors").getChildren("option")) {
+            var key = ColorKey.createColorKey(entry.getAttributeValue("name"));
+            assertEquals(key.toString(), clionLight.getColor(key), standalone.getColor(key));
+        }
+        foreground(standalone, 0x0033B3, DefaultLanguageHighlighterColors.KEYWORD);
+        foreground(standalone, 0x067D17, DefaultLanguageHighlighterColors.STRING);
+        foreground(standalone, 0x8C8C8C, DefaultLanguageHighlighterColors.LINE_COMMENT);
+        foreground(standalone, 0x0F54D6, SlangSyntaxHighlighter.KEYWORD);
+        foreground(standalone, 0x8C6C41, SlangSyntaxHighlighter.STRING);
+        foreground(standalone, 0x248700, SlangSyntaxHighlighter.LINE_COMMENT);
+        assertTrue(standalone.getDirectlyDefinedColors().isEmpty());
+        assertTrue(standalone.getDirectlyDefinedAttributes().keySet().stream().allMatch(key -> key.startsWith("SLANG.")));
+
+        // Parent changes remain inherited instead of being frozen into copied C++ attributes.
+        clionLight.setAttributes(DefaultLanguageHighlighterColors.INSTANCE_FIELD, color(0x123456));
+        foreground(standalone, 0x123456, DefaultLanguageHighlighterColors.INSTANCE_FIELD);
+        foreground(standalone, 0x300073, SlangSemanticColors.PROPERTY);
+        var customized = new EditorColorsSchemeImpl(standalone);
+        customized.setAttributes(DefaultLanguageHighlighterColors.NUMBER, color(0x456789));
+        standalone.readAttributes(palette.getChild("attributes"));
+        foreground(customized, 0x456789, DefaultLanguageHighlighterColors.NUMBER);
+        foreground(customized, 0xAB2F6B, SlangSyntaxHighlighter.NUMBER);
     }
 
     @Test

@@ -107,6 +107,10 @@
 使用 Rider C++ 参考配色时，在 **Settings | Editor | Color Scheme** 选择 **Slang Rider Light**，
 然后在 **Slang** 子页调整。配色本身不需要更新语言服务器。
 
+该预设继承 CLion **Light**，保留其 C++ 与编辑器配色，只覆盖 Slang。若要保留已有的 C++
+自定义颜色，继续使用 **Light** 或已有的 Light 副本即可；Light 本身已获得 Slang 默认配色。
+旧预设副本的切换方式见[配色隔离说明](docs/rider-light-color-scheme.md)。
+
 本机开发时可避免下载另一份 CLion SDK：
 
 ```powershell
