@@ -33,6 +33,9 @@ inline argument names.
 
 ## Features
 
+- Hover signature syntax highlighting using the active Slang color scheme (including stock slangd)
+- [Type alias hover details](docs/type-hover.md): vector/matrix expansion, element types and dimensions,
+  with built-in/user alias distinction; requires optional slangd patch 0006 (not bundled)
 - [Slang Rider Light](docs/rider-light-color-scheme.md): a light preset mapped from Rider's exported C++ colors,
   also used as Slang defaults in Light / IntelliJ Light; preserves custom colors and dark themes
 - `.slang` and `.slangh` file types and icons

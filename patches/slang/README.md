@@ -1,4 +1,4 @@
-# Optional M4a / M4c / M4e / M4d slangd patches
+# Optional slangd patches
 
 `0001-m4a-preprocessor-trace.patch` is a standalone patch against upstream Slang commit
 `5f9227cf6e5055b6a9ee742fdd729aab9162cf25` (`v2026.4.2-29-g5f9227cf6`). Do not apply it on top
@@ -22,6 +22,10 @@ structured-buffer / generic-type-argument roles and standard type-parameter clas
 Clients that do not advertise the new vocabulary retain the exact stock semantic legend and behavior.
 See [buffer highlighting](../../docs/structured-buffer-highlighting.md).
 
+`0006-type-alias-hover.patch` applies **after 0005**. It adds semantic alias expansion,
+vector/matrix dimensions and builtin origin labels to standard hover. No custom capability
+or plugin upgrade is needed; see [type hover](../../docs/type-hover.md).
+
 The protocol and limitations are documented in [preprocessor-trace-protocol.md](../../docs/preprocessor-trace-protocol.md).
 
 ## Reproduce
@@ -42,6 +46,8 @@ git -C .slang-m4a-source apply --check ../patches/slang/0004-m4d-branch-preview.
 git -C .slang-m4a-source apply ../patches/slang/0004-m4d-branch-preview.patch
 git -C .slang-m4a-source apply --check ../patches/slang/0005-structured-buffer-highlighting.patch
 git -C .slang-m4a-source apply ../patches/slang/0005-structured-buffer-highlighting.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0006-type-alias-hover.patch
+git -C .slang-m4a-source apply ../patches/slang/0006-type-alias-hover.patch
 ```
 
 Do not reuse an existing dirty checkout for these commands. Configure with CMake and an installed
@@ -69,6 +75,8 @@ python scripts/slangd-branch-preview-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 python scripts/slangd-structured-buffer-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
+python scripts/slangd-type-hover-smoke.py `
+  --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 ```
 
 The verified local build used Windows x64, Visual Studio 18 / MSVC 14.51, and `RelWithDebInfo`.
@@ -90,3 +98,5 @@ With all three patches, [M4e Shader Variants](../../docs/shader-variants.md) is 
 With the fourth patch, [M4d temporary branch preview](../../docs/branch-preview.md) is available too.
 With the fifth patch and updated plugin, [structured-buffer / generic-argument colors](../../docs/structured-buffer-highlighting.md)
 are independently configurable without changing older clients' semantic tokens.
+With the sixth patch, [type alias hover](../../docs/type-hover.md) expands vector/matrix aliases
+and distinguishes builtin origins using standard LSP hover, without a client protocol change.

@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Reframes slangd messages after adapting singleton definition locations.
+ * Reframes slangd messages after adapting singleton definition locations and hover language tags.
  *
  * <p>Slang 1.8 emits a single {@code Location} JSON object although LSP4J's
  * definition response adapter accepts only arrays. The normalizer sits at the
@@ -180,6 +180,10 @@ final class SlangLspProtocolInputStream extends InputStream {
                 return payload;
             }
             JsonObject response = message.getAsJsonObject();
+            if (requestTracker.consumeHoverResponse(response)) {
+                return SlangHoverHighlighting.normalize(response)
+                        ? GSON.toJson(response).getBytes(StandardCharsets.UTF_8) : payload;
+            }
             if (!requestTracker.consumeDefinitionResponse(response)) {
                 return payload;
             }

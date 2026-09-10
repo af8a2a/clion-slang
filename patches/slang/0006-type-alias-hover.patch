@@ -1,0 +1,46 @@
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index 7fd6956..e51f080 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -718,7 +718,40 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::hover(
+     {
+         if (declRef.getDecl())
+         {
+-            sb << "```\n" << getDeclSignatureString(declRef, version) << "\n```\n";
++            if (auto alias = as<TypeDefDecl>(declRef.getDecl()); alias && alias->type.type)
++            {
++                auto astBuilder = version->linkage->getASTBuilder();
++                auto type = as<Type>(alias->type.type->substitute(astBuilder, SubstitutionSet(declRef)));
++                auto vectorType = as<VectorExpressionType>(type);
++                auto matrixType = as<MatrixExpressionType>(type);
++                auto loc = version->linkage->getSourceManager()->getHumaneLoc(
++                    declRef.getLoc(), SourceLocType::Actual);
++                // Same synthetic-module origin check used by go-to-definition; never use
++                // the alias spelling (a user declaration may shadow a builtin).
++                bool builtin = !File::exists(loc.pathInfo.foundPath) &&
++                    (loc.pathInfo.getName() == "core" || loc.pathInfo.getName() == "glsl");
++                sb << "```slang\ntypedef\n";
++                if (vectorType)
++                    sb << "vector<" << vectorType->getElementType()->toString() << ", "
++                       << vectorType->getElementCount()->toString() << ">";
++                else if (matrixType)
++                    sb << "matrix<" << matrixType->getElementType()->toString() << ", "
++                       << matrixType->getRowCount()->toString() << ", "
++                       << matrixType->getColumnCount()->toString() << ">";
++                else
++                    sb << type->toString();
++                sb << " " << getText(declRef.getName()) << "\n```\n\n";
++                sb << (builtin ? "**Built-in type alias**" : "**Type alias**") << "\n\n";
++                if (vectorType)
++                    sb << "Element type: `" << vectorType->getElementType()->toString()
++                       << "`  \nComponents: `" << vectorType->getElementCount()->toString() << "`\n\n";
++                else if (matrixType)
++                    sb << "Element type: `" << matrixType->getElementType()->toString()
++                       << "`  \nRows: `" << matrixType->getRowCount()->toString()
++                       << "`  \nColumns: `" << matrixType->getColumnCount()->toString() << "`\n\n";
++            }
++            else
++                sb << "```\n" << getDeclSignatureString(declRef, version) << "\n```\n";
+ 
+             _tryGetDocumentation(sb, version, declRef.getDecl());
+ 

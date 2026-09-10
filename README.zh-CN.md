@@ -30,6 +30,9 @@
 
 ## 功能
 
+- 悬停签名使用当前 Slang 配色进行语法高亮（兼容官方 slangd）
+- [类型别名悬停详情](docs/type-hover.md)：展开向量/矩阵类型，展示元素类型、分量数或行列数，
+  区分内建类型与用户别名；需要可选 slangd 补丁 0006（不随插件打包）
 - [Slang Rider Light](docs/rider-light-color-scheme.md)：按 Rider 导出的 C++ 配色映射的浅色预设，同时作为
   Light / IntelliJ Light 的 Slang 默认颜色；保留显式自定义颜色和深色主题
 - `.slang` / `.slangh` 文件类型和图标

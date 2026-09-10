@@ -10,12 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Correlates definition requests with server responses without changing JSON-RPC ids. */
+/** Correlates definition/hover requests with responses without changing JSON-RPC ids. */
 final class SlangLspRequestTracker {
     private static final String DEFINITION_METHOD = "textDocument/definition";
     private static final int MAX_TRACKED_REQUESTS = 4_096;
 
     private final Set<String> definitionRequestIds = ConcurrentHashMap.newKeySet();
+    private final Set<String> hoverRequestIds = ConcurrentHashMap.newKeySet();
 
     void recordOutgoingPayload(byte @NotNull [] payload) {
         try {
@@ -26,6 +27,12 @@ final class SlangLspRequestTracker {
             JsonObject request = message.getAsJsonObject();
             JsonElement method = request.get("method");
             JsonElement id = request.get("id");
+            if (id != null && !id.isJsonNull() && isMethod(method, "textDocument/hover")) {
+                if (hoverRequestIds.size() >= MAX_TRACKED_REQUESTS) {
+                    hoverRequestIds.clear();
+                }
+                hoverRequestIds.add(id.toString());
+            }
             if (id != null
                     && !id.isJsonNull()
                     && isMethod(method, DEFINITION_METHOD)) {
@@ -45,6 +52,13 @@ final class SlangLspRequestTracker {
             return false;
         }
         return definitionRequestIds.remove(id.toString());
+    }
+
+    boolean consumeHoverResponse(@NotNull JsonObject response) {
+        JsonElement id = response.get("id");
+        return id != null && !id.isJsonNull() && !response.has("method")
+                && (response.has("result") || response.has("error"))
+                && hoverRequestIds.remove(id.toString());
     }
 
     private static boolean isMethod(JsonElement element, String expected) {
