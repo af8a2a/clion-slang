@@ -26,6 +26,10 @@ See [buffer highlighting](../../docs/structured-buffer-highlighting.md).
 vector/matrix dimensions and builtin origin labels to standard hover. No custom capability
 or plugin upgrade is needed; see [type hover](../../docs/type-hover.md).
 
+`0007-struct-hover.patch` applies **after 0006**. It adds struct namespace, natural
+size/alignment/padding, array stride and compact definition links to standard hover,
+including parameter type references. See [struct hover](../../docs/struct-hover.md).
+
 The protocol and limitations are documented in [preprocessor-trace-protocol.md](../../docs/preprocessor-trace-protocol.md).
 
 ## Reproduce
@@ -48,6 +52,8 @@ git -C .slang-m4a-source apply --check ../patches/slang/0005-structured-buffer-h
 git -C .slang-m4a-source apply ../patches/slang/0005-structured-buffer-highlighting.patch
 git -C .slang-m4a-source apply --check ../patches/slang/0006-type-alias-hover.patch
 git -C .slang-m4a-source apply ../patches/slang/0006-type-alias-hover.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0007-struct-hover.patch
+git -C .slang-m4a-source apply ../patches/slang/0007-struct-hover.patch
 ```
 
 Do not reuse an existing dirty checkout for these commands. Configure with CMake and an installed
@@ -77,6 +83,8 @@ python scripts/slangd-structured-buffer-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 python scripts/slangd-type-hover-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
+python scripts/slangd-struct-hover-smoke.py `
+  --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 ```
 
 The verified local build used Windows x64, Visual Studio 18 / MSVC 14.51, and `RelWithDebInfo`.
@@ -100,3 +108,6 @@ With the fifth patch and updated plugin, [structured-buffer / generic-argument c
 are independently configurable without changing older clients' semantic tokens.
 With the sixth patch, [type alias hover](../../docs/type-hover.md) expands vector/matrix aliases
 and distinguishes builtin origins using standard LSP hover, without a client protocol change.
+
+With the seventh patch, [struct hover](../../docs/struct-hover.md) shows namespaces and natural
+layout details at parameter type references, with compact definition file links.

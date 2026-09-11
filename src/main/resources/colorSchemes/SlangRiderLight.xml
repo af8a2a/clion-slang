@@ -67,7 +67,7 @@
     <option name="SLANG.SEMICOLON"><value><option name="FOREGROUND" value="383838"/></value></option>
     <option name="SLANG.COMMA"><value><option name="FOREGROUND" value="383838"/></value></option>
     <option name="SLANG.DOT"><value><option name="FOREGROUND" value="383838"/></value></option>
-    <!-- Preserve the IDE's invalid-character indication rather than suppressing it. -->
-    <option name="SLANG.BAD_CHARACTER" baseAttributes="BAD_CHARACTER"/>
+    <!-- BAD_CHARACTER uses the Java fallback only. An XML inheritance marker can
+         resolve to null before Slang's keys initialize and crash startup scheme comparison. -->
   </attributes>
 </list>

@@ -1,0 +1,253 @@
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -13,6 +13,7 @@
+ #include "../core/slang-char-util.h"
+ #include "../core/slang-secure-crt.h"
+ #include "../core/slang-string-util.h"
++#include "slang-ast-natural-layout.h"
+ #include "slang-ast-print.h"
+ #include "slang-check-impl.h"
+ #include "slang-com-helper.h"
+@@ -25,6 +26,7 @@
+ #include "slang-mangle.h"
+ #include "slang-workspace-version.h"
+ 
++#include <limits>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -652,6 +654,200 @@
+     return SLANG_OK;
+ }
+ 
++// Request-local natural layout, following slang-ast-natural-layout. Keep substituted
++// fields and instance filtering here: hover must also work for generic structs and
++// must not count static storage. This does not change compiler sizeof/ABI behavior.
++struct HoverNaturalLayout
++{
++    struct Info
++    {
++        NaturalSize size = NaturalSize::makeInvalid();
++        Count payload = 0; // Bytes occupied by leaves, excluding nested padding.
++    };
++
++    ASTBuilder* astBuilder;
++    Dictionary<Type*, Info> cache;
++    Count remaining = 4096;
++    static constexpr Count maxSize = (std::numeric_limits<Count>::max)();
++
++    bool append(Info& result, const Info& field)
++    {
++        if (!field.size || result.size.size > maxSize - (field.size.alignment - 1))
++            return false;
++        auto offset = NaturalSize::calcAligned(result.size.size, field.size.alignment);
++        if (field.size.size > maxSize - offset)
++            return false;
++        result.size.append(field.size);
++        result.payload += field.payload;
++        return true;
++    }
++
++    Info repeat(const Info& element, IntVal* countVal)
++    {
++        auto count = as<ConstantIntVal>(countVal);
++        if (!element.size || !count || count->getValue() <= 0 || count->getValue() > maxSize ||
++            element.size.size > maxSize - (element.size.alignment - 1))
++            return {};
++        auto n = Count(count->getValue());
++        auto stride = element.size.getStride();
++        if (stride && n - 1 > (maxSize - element.size.size) / stride)
++            return {};
++        return {element.size * n, element.payload * n};
++    }
++
++    Info calc(Type* type, Index depth = 0)
++    {
++        if (!type || depth >= 64 || --remaining < 0)
++            return {};
++        if (auto found = cache.tryGetValue(type))
++            return *found;
++        // Poison before descending so incomplete/recursive source cannot loop.
++        cache.add(type, Info{});
++        auto result = calcImpl(type, depth + 1);
++        cache.set(type, result);
++        return result;
++    }
++
++    Info calcImpl(Type* type, Index depth)
++    {
++        if (auto named = as<NamedExpressionType>(type))
++            return calc(named->getCanonicalType(), depth);
++        if (auto vector = as<VectorExpressionType>(type))
++            return repeat(calc(vector->getElementType(), depth), vector->getElementCount());
++        if (auto matrix = as<MatrixExpressionType>(type))
++            return repeat(
++                repeat(calc(matrix->getElementType(), depth), matrix->getColumnCount()),
++                matrix->getRowCount());
++        if (auto array = as<ArrayExpressionType>(type))
++        {
++            if (array->isUnsized())
++                return {};
++            return repeat(calc(array->getElementType(), depth), array->getElementCount());
++        }
++        if (auto atomic = as<AtomicType>(type))
++            return calc(atomic->getElementType(), depth);
++        if (as<BasicExpressionType>(type) || as<BFloat16Type>(type) || as<Fp8Type>(type))
++        {
++            ASTNaturalLayoutContext context(astBuilder);
++            auto size = context.calcSize(type);
++            return {size, size.size};
++        }
++        // Builtin resource/pointer types also derive from DeclRefType, but their
++        // empty intrinsic declarations do not describe zero-byte user structs.
++        if (as<BuiltinType>(type))
++            return {};
++        if (auto refType = as<DeclRefType>(type))
++        {
++            auto declRef = refType->getDeclRef();
++            if (auto enumRef = declRef.as<EnumDecl>())
++                return calc(getTagType(astBuilder, enumRef), depth);
++            if (auto alias = declRef.as<TypeDefDecl>())
++                return calc(getType(astBuilder, alias), depth);
++            if (auto structRef = declRef.as<StructDecl>())
++            {
++                Info result{NaturalSize::makeEmpty(), 0};
++                for (auto base : getMembersOfType<InheritanceDecl>(astBuilder, structRef))
++                {
++                    auto baseType = getSup(astBuilder, base);
++                    if (isInterfaceType(baseType))
++                        continue;
++                    if (!append(result, calc(baseType, depth)))
++                        return {};
++                }
++                for (auto field : getFields(astBuilder, structRef, MemberFilterStyle::Instance))
++                {
++                    if (!append(result, calc(getType(astBuilder, field), depth)))
++                        return {};
++                }
++                return result;
++            }
++        }
++        // Resources, pointers, interfaces and unspecialized types have no fixed
++        // AST natural layout. Do not invent target-specific storage sizes.
++        return {};
++    }
++};
++
++static void appendStructHover(StringBuilder& sb, DeclRef<Decl> declRef, WorkspaceVersion* version)
++{
++    auto astBuilder = version->linkage->getASTBuilder();
++    String namespaceName;
++    for (auto parent = declRef.getParent(); parent; parent = parent.getParent())
++    {
++        if (parent.as<NamespaceDecl>())
++        {
++            ASTPrinter printer(astBuilder);
++            printer.addDeclPath(parent);
++            namespaceName = printer.getString();
++            break;
++        }
++    }
++    auto signature = getDeclSignatureString(declRef, version);
++    if (namespaceName.getLength())
++    {
++        StringBuilder prefix;
++        prefix << "struct " << namespaceName << "::";
++        if (signature.startsWith(prefix.getUnownedSlice()))
++            signature = String("struct ") + signature.getUnownedSlice().tail(prefix.getLength());
++    }
++    sb << "```slang\n" << signature << "\n```\n\n";
++    if (namespaceName.getLength())
++        sb << "(namespace `" << namespaceName << "`)\n\n";
++    HoverNaturalLayout context{astBuilder};
++    auto layout = context.calc(DeclRefType::create(astBuilder, declRef));
++    if (layout.size &&
++        layout.size.size <= HoverNaturalLayout::maxSize - (layout.size.alignment - 1))
++    {
++        sb << "**Natural layout (bytes)**  \nSize: `" << layout.size.size << "`  \nAlignment: `"
++           << layout.size.alignment << "`  \nPadding: `" << layout.size.size - layout.payload
++           << "`\n\n";
++        if (layout.size.getStride() != layout.size.size)
++            sb << "Array stride: `" << layout.size.getStride() << "`\n\n";
++    }
++    else
++        sb << "Layout unavailable for this type.\n\n";
++}
++
++static void appendStructDefinitionLocation(StringBuilder& sb, const HumaneSourceLoc& loc)
++{
++    auto path = loc.pathInfo.foundPath;
++    if (path.getLength() == 0)
++        return;
++    Path::getCanonical(path, path);
++    auto name = Path::getFileName(path);
++    sb << "\n---\n\n[";
++    for (auto c : name)
++    {
++        if (c == '[' || c == ']' || c == '\\' || c == '`' || c == '*' || c == '_' || c == '<' ||
++            c == '>')
++            sb << '\\';
++        sb << c;
++    }
++    sb << ":" << loc.line << "](<file://";
++#if SLANG_WINDOWS_FAMILY
++    if (!path.startsWith("\\\\") && !path.startsWith("//"))
++        sb << "/";
++    else
++        path = path.getUnownedSlice().tail(2);
++#endif
++    // Encode unsigned UTF-8 bytes, including Markdown delimiters. Keep the drive
++    // colon intact so IDE file-URL handlers can resolve Windows paths directly.
++    const char* hex = "0123456789ABCDEF";
++    for (auto c : path)
++    {
++        if (URI::isSafeURIChar(c) || c == ':')
++            sb << c;
++        else if (c == '\\')
++            sb << '/';
++        else
++        {
++            auto byte = uint8_t(c);
++            sb << '%' << hex[byte >> 4] << hex[byte & 15];
++        }
++    }
++    sb << "#L" << loc.line << ">)\n";
++}
++
+ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::hover(
+     const LanguageServerProtocol::HoverParams& args)
+ {
+@@ -716,6 +912,11 @@
+ 
+     auto fillDeclRefHoverInfo = [&](DeclRef<Decl> declRef, Name* name)
+     {
++        // At a generic declaration's name the lookup returns its GenericDecl
++        // wrapper; references to specializations already return the inner struct.
++        if (auto generic = declRef.as<GenericDecl>();
++            generic && as<StructDecl>(generic.getDecl()->inner))
++            declRef = generic.getDecl()->inner->getDefaultDeclRef();
+         if (declRef.getDecl())
+         {
+             if (auto alias = as<TypeDefDecl>(declRef.getDecl()); alias && alias->type.type)
+@@ -750,6 +951,8 @@
+                        << "`  \nRows: `" << matrixType->getRowCount()->toString()
+                        << "`  \nColumns: `" << matrixType->getColumnCount()->toString() << "`\n\n";
+             }
++            else if (declRef.as<StructDecl>())
++                appendStructHover(sb, declRef, version);
+             else
+                 sb << "```\n" << getDeclSignatureString(declRef, version) << "\n```\n";
+ 
+@@ -827,7 +1030,10 @@
+             auto humaneLoc = version->linkage->getSourceManager()->getHumaneLoc(
+                 declRef.getLoc(),
+                 SourceLocType::Actual);
+-            appendDefinitionLocation(sb, m_workspace, humaneLoc);
++            if (declRef.as<StructDecl>())
++                appendStructDefinitionLocation(sb, humaneLoc);
++            else
++                appendDefinitionLocation(sb, m_workspace, humaneLoc);
+             maybeAppendAdditionalOverloadsHint();
+             auto nodeHumaneLoc = version->linkage->getSourceManager()->getHumaneLoc(leafNode->loc);
+             doc->oneBasedUTF8LocToZeroBasedUTF16Loc(

@@ -90,7 +90,7 @@ public class SlangRiderLightColorSchemeTest {
     }
 
     @Test
-    public void coversEverySlangSettingWithoutChangingGlobalColorsOrFonts() throws Exception {
+    public void coversEveryPaletteSettingWithoutChangingGlobalColorsOrFonts() throws Exception {
         Element preset = resource(PATH + ".xml");
         assertEquals(1, preset.getChildren().size());
         assertEquals("attributes", preset.getChildren().getFirst().getName());
@@ -100,24 +100,23 @@ public class SlangRiderLightColorSchemeTest {
             String name = option.getAttributeValue("name");
             assertTrue(name, name.startsWith("SLANG."));
             assertTrue("Duplicate palette key: " + name, keys.add(name));
-            if (option.getAttributeValue("baseAttributes") != null) {
-                assertEquals(SlangSyntaxHighlighter.BAD_CHARACTER.getExternalName(), name);
-                assertEquals(HighlighterColors.BAD_CHARACTER.getExternalName(), option.getAttributeValue("baseAttributes"));
-                assertNull(option.getChild("value"));
-            } else {
-                assertNotNull(name, option.getChild("value"));
-                Set<String> properties = new HashSet<>();
-                for (Element property : option.getChild("value").getChildren()) {
-                    String key = property.getAttributeValue("name");
-                    assertTrue(properties.add(key));
-                    assertTrue(Set.of("FOREGROUND", "BACKGROUND", "EFFECT_COLOR", "EFFECT_TYPE", "FONT_TYPE").contains(key));
-                    assertTrue(property.getAttributeValue("value").matches(
-                            Set.of("EFFECT_TYPE", "FONT_TYPE").contains(key) ? "[0-9]+" : "[0-9A-F]{6}"));
-                }
+            assertNull("Cold startup cannot resolve Java fallbacks: " + name,
+                    option.getAttributeValue("baseAttributes"));
+            assertNotNull(name, option.getChild("value"));
+            Set<String> properties = new HashSet<>();
+            for (Element property : option.getChild("value").getChildren()) {
+                String key = property.getAttributeValue("name");
+                assertTrue(properties.add(key));
+                assertTrue(Set.of("FOREGROUND", "BACKGROUND", "EFFECT_COLOR", "EFFECT_TYPE", "FONT_TYPE").contains(key));
+                assertTrue(property.getAttributeValue("value").matches(
+                        Set.of("EFFECT_TYPE", "FONT_TYPE").contains(key) ? "[0-9]+" : "[0-9A-F]{6}"));
             }
         }
         Set<String> settings = Arrays.stream(new SlangColorSettingsPage().getAttributeDescriptors())
                 .map(AttributesDescriptor::getKey).map(TextAttributesKey::getExternalName).collect(Collectors.toSet());
+        // Invalid characters retain their existing Java fallback, without a startup XML marker.
+        assertTrue(settings.remove(SlangSyntaxHighlighter.BAD_CHARACTER.getExternalName()));
+        assertFalse(keys.contains(SlangSyntaxHighlighter.BAD_CHARACTER.getExternalName()));
         assertEquals(settings, keys);
     }
 

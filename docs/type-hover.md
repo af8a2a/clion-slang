@@ -60,3 +60,8 @@ Slang 配色进行词法高亮。该功能不需要更新 slangd；类型别名�
 
 应用第六个补丁并重新构建 slangd，在插件设置中选用该服务器后重启语言服务即可。
 本次不需要更新插件 ZIP；官方未打补丁的 slangd 保持原有悬停信息。
+
+## Struct types
+
+Patch 0007 adds [struct hover details](struct-hover.md), including function parameter type
+references, namespace, natural layout and compact definition links. Alias behavior above is retained.

@@ -1,11 +1,13 @@
 # Slang Rider Light
 
-## 使用 / Usage（0.7.2）
+## 使用 / Usage（0.7.4）
 
 这是一套只应用于 Slang 的 Rider 风格配色，不再注册独立的全局编辑器方案。
 
-1. 安装修复版并重启 CLion，在 **Settings | Editor | Color Scheme** 选择 **Light** 或
-   **IntelliJ Light**。无需选择旧的 Slang Rider Light。
+1. 安装 0.7.4 并重启 CLion。保留当前主题默认的 **Light（浅色）** 或已有的 **IntelliJ Light**
+   配色，不需要切换到 **Classic Light（经典浅色）**，也不需要选择旧的 Slang Rider Light。
+   如果之前的异常已导致经典浅色被保存，请在 **Settings | Appearance | Editor color scheme**
+   重新选择标有“主题默认”的浅色。
 2. 在 **Color Scheme | Slang** 中调整颜色。需要保留 C++ 自定义时，继续使用已有的 Light
    或其副本；插件只补充 `SLANG.*` 默认值，已有显式自定义优先。
 3. 旧 Slang Rider Light 副本不会被自动删除或改写。若它仍被选中，请手动切回 Light。
@@ -30,6 +32,41 @@ ordering or reverting to the wrong Default colors. Dark and unrelated schemes ke
 The supplied `Light.icls` is reference data, not imported into runtime settings; its existing Slang
 customizations and other-language settings are not overwritten. The Rider-derived Slang RGB values
 remain unchanged. The original export files are not modified.
+
+## Classic Light fallback on startup (0.7.4)
+
+CLion 2026.2.2 (`262.10315.131`) could fail to initialize `EditorColorsManagerImpl`
+with plugin 0.7.3, leaving the editor on Classic Light even though the saved scheme
+was `_@user_Light` and the UI theme was Islands Light. The failure occurred in
+`hideIntellijLightSchemeIfNeeded` → `settingsEqual` → `compareAttributes`.
+
+The palette's `SLANG.BAD_CHARACTER` entry used `baseAttributes="BAD_CHARACTER"`.
+The platform XML reader stores an inheritance marker, but does not register the
+Java fallback key. Before `SlangSyntaxHighlighter` initializes, resolving that marker
+returns null. The startup comparison dereferences it and aborts loading the saved
+scheme. Tests that initialized Slang's keys first masked this failure.
+
+**0.7.4 removes only that XML entry.** Invalid characters still use the existing
+`SlangSyntaxHighlighter.BAD_CHARACTER` → `HighlighterColors.BAD_CHARACTER` Java
+fallback. All explicit palette colors, saved user overrides and scheme registrations
+remain unchanged. The plugin does not call `setGlobalScheme` or rewrite user settings.
+
+The [cold-start probe](../scripts/SlangColorSchemeStartupProbe.java) runs in a fresh JVM
+using the installed IDE's own attribute reader and comparison, with no Slang key
+initialization. It reproduced the exact null-pointer stack on the old palette and
+passes with 0.7.4:
+
+```powershell
+$clionHome = 'C:\path\to\CLion'
+& "$clionHome/jbr/bin/java.exe" --class-path "$clionHome/lib/*" `
+  scripts/SlangColorSchemeStartupProbe.java src/main/resources/colorSchemes/SlangRiderLight.xml
+```
+
+Validation used the installed CLion 2026.2.2 libraries: the cold-start probe and all
+12 palette/color-settings JUnit tests passed, including invalid-character fallback
+and preservation of non-Slang colors. The full Gradle platform-fixture suite could
+not resolve JetBrains' test-framework dependency because its repository DNS lookup
+failed. These checks do not claim a manual GUI installation test.
 
 ## Palette
 
@@ -103,7 +140,9 @@ underlines, usage highlights, inlay hints and inactive-branch overlays can furth
 [`SlangRiderLight.xml`](../src/main/resources/colorSchemes/SlangRiderLight.xml) is the single runtime
 palette source: `<list><attributes>...</attributes></list>`. The platform additive loader reads the
 attributes child. Do not add `bundledColorScheme`, `parent_scheme`, global colors or non-`SLANG.*`
-keys. Do not inject into Default, change the active scheme, or rewrite saved user schemes.
+keys. Do not add `baseAttributes` inheritance markers: startup can read the fragment before
+Java fallback registration. Keep fallback-only keys out of the XML. Do not inject into Default,
+change the active scheme, or rewrite saved user schemes.
 
 The existing Java fallback keys remain unchanged. There are no extra LSP requests or server changes.
 
@@ -121,7 +160,8 @@ Regression coverage:
 
 Manual acceptance after installing the ZIP:
 
-1. Restart CLion and confirm no new `PluginException: Light`; select Light or IntelliJ Light.
+1. Restart CLion and confirm no new `PluginException: Light` or `compareAttributes` startup error;
+   the saved theme-default Light scheme must remain selected, without switching to Classic Light.
 2. Open C++ and Slang files side by side. C++ should retain its original scheme; Slang should use
    the Rider-derived colors. Confirm selection backgrounds and custom C++ overrides are unchanged.
 3. Adjust one Slang color, restart, and confirm the explicit override survives. Switch to Darcula
