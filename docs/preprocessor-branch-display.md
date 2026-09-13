@@ -15,16 +15,17 @@ selection under an additional capability. [M4e](shader-variants.md) supplies dec
 
 ## Enable and configure
 
-1. Build/select a `slangd` with the [standalone M4a patch](../patches/slang/README.md).
-2. Install the plugin ZIP and select that executable under **Settings | Languages & Frameworks | Slang**.
+1. Install the 0.8.0 plugin ZIP, which includes the patched Windows x64 server.
+2. Select **Bundled enhanced slangd (Windows x64)** under **Settings | Languages & Frameworks | Slang**.
+   Alternatively, use an external build with the [server patches](../patches/slang/README.md).
 3. Leave **Show preprocessor branches** enabled. The independent **Show branch source labels** option
    hides only the inline labels, retaining dimming and active-branch marks.
 4. Adjust **Inactive code**, **Active branch**, and **Source label** under
    **Settings | Editor | Color Scheme | Slang | Preprocessor branches**.
 
 Stock `slangd` remains supported: if `experimental.preprocessorTrace` is not numeric version 1,
-no custom trace requests or decorations are produced. The plugin ZIP does not bundle the patched
-server. The feature applies to ordinary local `.slang` / `.slangh` editors, including splits; diff,
+no custom trace requests or decorations are produced. See [server selection](bundled-slangd.md).
+The feature applies to ordinary local `.slang` / `.slangh` editors, including splits; diff,
 preview, console and synthetic built-in documents are excluded.
 
 ## Refresh and ownership

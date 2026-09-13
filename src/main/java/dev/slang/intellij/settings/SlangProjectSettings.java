@@ -17,6 +17,8 @@ import java.util.Map;
 )
 public final class SlangProjectSettings implements PersistentStateComponent<SlangProjectSettings.SettingsState> {
     public static final class SettingsState {
+        /** Null identifies settings saved before the server-source selector existed. */
+        public SlangServerSource serverSource;
         public boolean autoDetectSlangd = true;
         public String slangdPath = "";
         public boolean showPreprocessorBranches = true;
@@ -30,6 +32,7 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
         }
 
         private SettingsState(@NotNull SettingsState other) {
+            serverSource = other.serverSource;
             autoDetectSlangd = other.autoDetectSlangd;
             slangdPath = other.slangdPath;
             showPreprocessorBranches = other.showPreprocessorBranches;
@@ -49,7 +52,9 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
 
     @Override
     public synchronized @NotNull SettingsState getState() {
-        return new SettingsState(state);
+        SettingsState snapshot = new SettingsState(state);
+        snapshot.serverSource = getServerSource();
+        return snapshot;
     }
 
     @Override
@@ -58,6 +63,25 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
         if (this.state.slangdPath == null) {
             this.state.slangdPath = "";
         }
+        // Older releases gave any saved path priority, even with auto-detection enabled.
+        if (this.state.serverSource == null && !this.state.slangdPath.isBlank()) {
+            this.state.autoDetectSlangd = false;
+        }
+    }
+
+    public synchronized @NotNull SlangServerSource getServerSource() {
+        return effectiveServerSource(state, SlangServerSource.isBundledSupported());
+    }
+
+    static @NotNull SlangServerSource effectiveServerSource(SettingsState state, boolean bundledSupported) {
+        if (state.serverSource != null) return state.serverSource;
+        // Preserve a deliberate external path (or deliberately disabled discovery) on upgrade.
+        boolean manual = !state.autoDetectSlangd || (state.slangdPath != null && !state.slangdPath.isBlank());
+        return bundledSupported && !manual ? SlangServerSource.BUNDLED : SlangServerSource.EXTERNAL;
+    }
+
+    public synchronized void setServerSource(@NotNull SlangServerSource source) {
+        state.serverSource = source;
     }
 
     public synchronized boolean isAutoDetectSlangd() {

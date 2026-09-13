@@ -7,8 +7,8 @@ navigation, diagnostics, semantic tokens and code generation are not switched.
 
 ## Quick start
 
-1. Build/select `slangd` with [patches 0001, 0002 and 0003](../patches/slang/README.md), then install the
-   plugin ZIP. M4e requires `experimental.preprocessorVariants: 1`; no server binary is bundled.
+1. Select [bundled enhanced slangd](bundled-slangd.md) in plugin 0.8.0, or use an external build with
+   [patches 0001–0003](../patches/slang/README.md). M4e requires `experimental.preprocessorVariants: 1`.
 2. Copy [slang-variants.example.json](../slang-variants.example.json) to `slang-variants.json` at the
    project root, or set **Shader Variants manifest** in Slang settings to a generated JSON file.
    The setting accepts a project-relative or absolute path, including a specific build configuration.

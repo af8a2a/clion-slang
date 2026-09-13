@@ -84,7 +84,7 @@ the resolved `slangd` version as part of its persistent key.
 
 1. Differential LSP tests against the official VS Code extension using the same `slangd` binary.
 2. Optional `.hlsl`/`.hlsli` ownership setting, disabled by default.
-3. Native variants that bundle matching `slangd` binaries per OS/architecture.
+3. Extend the [Windows x64 bundled runtime](bundled-slangd.md) to additional OS/architecture pairs.
 4. Compile and Reflection actions backed by `slangc`.
 5. A non-blocking background cache for very large synthetic modules.
 

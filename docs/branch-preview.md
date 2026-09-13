@@ -13,8 +13,8 @@ workspace / Variant macro entries**. Textual include and repeated-instance rules
 
 ## Use
 
-1. Build/select a server with patches **0001 → 0002 → 0003 → 0004**, as described in
-   [patch instructions](../patches/slang/README.md). The plugin ZIP does not bundle this binary.
+1. Select [bundled enhanced slangd](bundled-slangd.md) in plugin 0.8.0, or an external server built
+   with patches **0001 → 0002 → 0003 → 0004** from the [patch instructions](../patches/slang/README.md).
 2. Enable **Show preprocessor branches** in Slang settings. Select the desired root or Shader Variant
    with **Slang Preprocessor Context…** (or click the Slang status-bar widget).
 3. In the target `.slang` / `.slangh` editor, choose **Slang Branch Preview…**. The dialog shows the

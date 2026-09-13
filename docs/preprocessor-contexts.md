@@ -8,8 +8,8 @@ separate server capability. The rest of this page documents the root-only M4c ba
 
 ## Use
 
-1. Apply both [server patches](../patches/slang/README.md), build `slangd`, and select it under
-   **Settings | Languages & Frameworks | Slang**. The plugin ZIP does not bundle the server.
+1. Select **Bundled enhanced slangd (Windows x64)** under **Settings | Languages & Frameworks | Slang**
+   in plugin 0.8.0, or use an external build with the [server patches](../patches/slang/README.md).
 2. Open a local `.slang` or `.slangh` file. Click the **Slang** status-bar widget, or choose
    **Slang Preprocessor Context…** from the editor popup / Tools menu / Find Action.
 3. Type to filter roots. Each row shows a project-relative root → include → target chain.

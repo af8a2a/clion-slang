@@ -19,11 +19,9 @@ this does not reproduce Rider's proprietary popup pixel for pixel.
 
 ## Enable
 
-Apply patch 0006 after patches 0001–0005 using the [server build instructions](../patches/slang/README.md).
-Select the rebuilt `slangd` in the plugin's existing language-server settings, then
-restart the language server (or CLion). Keep its matching compiler DLL next to the
-executable. The plugin does not bundle this server. Unpatched official servers keep
-their existing hover behavior; no upgrade of the plugin ZIP is needed for this change.
+Plugin 0.8.0 includes this patch in **Bundled enhanced slangd (Windows x64)**. Select it in
+Slang settings and Apply; see [server selection](bundled-slangd.md). Custom builds can still follow
+the [patch instructions](../patches/slang/README.md). External official servers keep their existing hover.
 
 ```powershell
 python scripts/slangd-type-hover-smoke.py --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
@@ -43,8 +41,9 @@ and active editor color scheme. This works with stock servers as well as patch 0
 Install plugin 0.7.3 for this client-side enhancement; the alias expansion described
 above still requires the patched server independently.
 
-Explicit fence languages, plaintext responses, documentation prose and subsequent
-example fences are not rewritten. Only responses correlated to `textDocument/hover`
+For ordinary hovers, explicit fence languages, plaintext responses, documentation prose and
+subsequent example fences are not rewritten. Plugin 0.8.1 separately formats the recognized
+patch-0007 [struct details](struct-hover.md) with theme-aware labels and stable line breaks. Only responses correlated to `textDocument/hover`
 are adapted; hover ranges and UTF-8 frame lengths are preserved. This is lexical
 signature highlighting, not a second semantic-token request for the popup. It does
 not change C++ colors or force the IDE's documentation highlighting preferences.
@@ -58,8 +57,8 @@ Slang 配色进行词法高亮。该功能不需要更新 slangd；类型别名�
 分量数或行列数，并区分内建类型与用户别名。用户自定义的同名 `uint2` 不会误标为内建类型。
 保留原有文档和定义位置，不推测矩阵内存布局，也不修改 C++ 配色。
 
-应用第六个补丁并重新构建 slangd，在插件设置中选用该服务器后重启语言服务即可。
-本次不需要更新插件 ZIP；官方未打补丁的 slangd 保持原有悬停信息。
+0.8.0 已自带第六个补丁，在 Slang 设置中选择自带增强版并应用即可。
+外部公版 slangd 保持原有悬停信息。
 
 ## Struct types
 

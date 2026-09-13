@@ -1,0 +1,124 @@
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -808,6 +808,102 @@
+         sb << "Layout unavailable for this type.\n\n";
+ }
+ 
++
++// Offsets are relative to the declaring struct, using the same substituted,
++// instance-only natural layout as struct hover. A preceding unknown field or
++// base invalidates the offset; it must never turn into a guessed zero.
++static bool getHoverFieldOffset(
++    HoverNaturalLayout& context,
++    DeclRef<StructDecl> owner,
++    Decl* target,
++    Count& offset)
++{
++    HoverNaturalLayout::Info prefix{NaturalSize::makeEmpty(), 0};
++    for (auto base : getMembersOfType<InheritanceDecl>(context.astBuilder, owner))
++    {
++        auto baseType = getSup(context.astBuilder, base);
++        if (isInterfaceType(baseType))
++            continue;
++        if (!context.append(prefix, context.calc(baseType)))
++            return false;
++    }
++    for (auto field : getFields(context.astBuilder, owner, MemberFilterStyle::Instance))
++    {
++        auto layout = context.calc(getType(context.astBuilder, field));
++        if (!context.append(prefix, layout))
++            return false;
++        if (field.getDecl() == target)
++        {
++            offset = prefix.size.size - layout.size.size;
++            return true;
++        }
++    }
++    return false;
++}
++
++static bool isStructFieldHover(DeclRef<Decl> declRef)
++{
++    return declRef.as<VarDeclBase>() && declRef.getParent().as<StructDecl>();
++}
++
++static void appendFieldHover(StringBuilder& sb, DeclRef<Decl> declRef, WorkspaceVersion* version)
++{
++    auto astBuilder = version->linkage->getASTBuilder();
++    auto field = declRef.as<VarDeclBase>();
++    auto owner = declRef.getParent().as<StructDecl>();
++    auto type = getType(astBuilder, field);
++    bool isStatic = isEffectivelyStatic(field.getDecl());
++    sb << "```slang\n";
++    switch (getDeclVisibility(field.getDecl()))
++    {
++    case DeclVisibility::Public: sb << "public "; break;
++    case DeclVisibility::Private: sb << "private "; break;
++    case DeclVisibility::Internal: sb << "internal "; break;
++    default: break;
++    }
++    if (isStatic)
++        sb << "static ";
++    sb << "field\n";
++    if (field.getDecl()->findModifier<ConstModifier>())
++        sb << "const ";
++    ASTPrinter printer(astBuilder, ASTPrinter::OptionFlag::SimplifiedBuiltinType |
++                                       ASTPrinter::OptionFlag::NoInternalKeywords);
++    printer.addType(type);
++    sb << printer.getString() << " " << getText(field.getName());
++    // Retain the existing hover's folded initializer (e.g. static const uint count = 3).
++    ASTPrinter signaturePrinter(
++        astBuilder,
++        ASTPrinter::OptionFlag::ParamNames | ASTPrinter::OptionFlag::NoInternalKeywords |
++            ASTPrinter::OptionFlag::SimplifiedBuiltinType | ASTPrinter::OptionFlag::DefaultParamValues);
++    signaturePrinter.getStringBuilder() << getDeclKindString(declRef);
++    signaturePrinter.addDeclSignature(declRef);
++    auto signaturePrefix = signaturePrinter.getString();
++    auto signature = getDeclSignatureString(declRef, version);
++    if (signature.startsWith(signaturePrefix.getUnownedSlice()))
++        sb << signature.getUnownedSlice().tail(signaturePrefix.getLength());
++    sb << "\n```\n\n";
++    ASTPrinter ownerPrinter(astBuilder);
++    ownerPrinter.addDeclPath(owner);
++    sb << "(in struct `" << ownerPrinter.getString() << "`)\n\n";
++
++    HoverNaturalLayout context{astBuilder};
++    auto layout = context.calc(type);
++    sb << "**Natural field layout (bytes)**  \nSize: ";
++    if (layout.size)
++        sb << "`" << layout.size.size << "`  \nAlignment: `" << layout.size.alignment << "`";
++    else
++        sb << "unavailable  \nAlignment: unavailable";
++    sb << "  \nOffset: ";
++    Count offset = 0;
++    if (isStatic)
++        sb << "not applicable (static field)";
++    else if (layout.size && getHoverFieldOffset(context, owner, field.getDecl(), offset))
++        sb << "`" << offset << "`";
++    else
++        sb << "unavailable";
++    sb << "\n\n";
++}
++
+ static void appendStructDefinitionLocation(StringBuilder& sb, const HumaneSourceLoc& loc)
+ {
+     auto path = loc.pathInfo.foundPath;
+@@ -953,6 +1049,8 @@
+             }
+             else if (declRef.as<StructDecl>())
+                 appendStructHover(sb, declRef, version);
++            else if (isStructFieldHover(declRef))
++                appendFieldHover(sb, declRef, version);
+             else
+                 sb << "```\n" << getDeclSignatureString(declRef, version) << "\n```\n";
+ 
+@@ -1030,7 +1128,7 @@
+             auto humaneLoc = version->linkage->getSourceManager()->getHumaneLoc(
+                 declRef.getLoc(),
+                 SourceLocType::Actual);
+-            if (declRef.as<StructDecl>())
++            if (declRef.as<StructDecl>() || isStructFieldHover(declRef))
+                 appendStructDefinitionLocation(sb, humaneLoc);
+             else
+                 appendDefinitionLocation(sb, m_workspace, humaneLoc);

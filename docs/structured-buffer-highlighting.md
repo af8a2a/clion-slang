@@ -34,8 +34,8 @@ Full semantic classification requires the optional server patch
 [`0005-structured-buffer-highlighting.patch`](../patches/slang/0005-structured-buffer-highlighting.patch),
 applied **after patches 0001–0004** on the same pinned upstream base. See
 [reproducible build instructions](../patches/slang/README.md). Install the updated plugin and select
-the rebuilt `slangd` in Slang settings, then restart that language server. The plugin ZIP does not
-bundle the executable or its dependent compiler libraries.
+**Bundled enhanced slangd (Windows x64)** in Slang settings; 0.8.0 includes this patch and its
+matching compiler libraries. Custom external builds remain supported; see [server selection](bundled-slangd.md).
 
 Without a server, the lexical highlighter recognizes the five resource names and uses the same
 Structured buffer color. Generic built-ins retain lexical built-in coloring; arbitrary identifiers

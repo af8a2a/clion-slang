@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -27,6 +28,8 @@ public final class SlangSettingsConfigurable implements Configurable {
     private final Project project;
 
     private JPanel panel;
+    private JComboBox<SlangServerSource> serverSource;
+    private JLabel serverDescription;
     private JCheckBox autoDetect;
     private JTextField slangdPath;
     private JLabel resolvedPath;
@@ -56,6 +59,14 @@ public final class SlangSettingsConfigurable implements Configurable {
         constraints.weightx = 1.0;
         constraints.insets = new Insets(4, 0, 8, 0);
 
+        form.add(new JLabel("Language server:"), constraints);
+        constraints.gridy++;
+        serverSource = new JComboBox<>(SlangServerSource.values());
+        form.add(serverSource, constraints);
+        constraints.gridy++;
+        serverDescription = new JLabel();
+        form.add(serverDescription, constraints);
+        constraints.gridy++;
         autoDetect = new JCheckBox("Automatically detect slangd (SLANGD_PATH, VULKAN_SDK, PATH)");
         form.add(autoDetect, constraints);
 
@@ -94,6 +105,10 @@ public final class SlangSettingsConfigurable implements Configurable {
         form.add(variantsPath, constraints);
         branchDisplay.addActionListener(event -> branchLabels.setEnabled(branchDisplay.isSelected()));
 
+        serverSource.addActionListener(event -> {
+            updateFieldEnabledState();
+            updateResolvedPathPreview();
+        });
         autoDetect.addActionListener(event -> {
             updateFieldEnabledState();
             updateResolvedPathPreview();
@@ -111,8 +126,9 @@ public final class SlangSettingsConfigurable implements Configurable {
             return false;
         }
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
-        String uiPath = autoDetect.isSelected() ? "" : slangdPath.getText().trim();
-        return autoDetect.isSelected() != settings.isAutoDetectSlangd()
+        String uiPath = slangdPath.getText().trim();
+        return selectedSource() != settings.getServerSource()
+                || autoDetect.isSelected() != settings.isAutoDetectSlangd()
                 || !Objects.equals(uiPath, settings.getSlangdPath())
                 || branchDisplay.isSelected() != settings.isShowPreprocessorBranches()
                 || branchLabels.isSelected() != settings.isShowPreprocessorBranchLabels()
@@ -126,13 +142,15 @@ public final class SlangSettingsConfigurable implements Configurable {
         }
 
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
-        String uiPath = autoDetect.isSelected() ? "" : slangdPath.getText().trim();
-        boolean serverChanged = autoDetect.isSelected() != settings.isAutoDetectSlangd()
-                || !Objects.equals(uiPath, settings.getSlangdPath());
+        String uiPath = slangdPath.getText().trim();
+        boolean serverChanged = selectedSource() != settings.getServerSource()
+                || (selectedSource() == SlangServerSource.EXTERNAL
+                    && (autoDetect.isSelected() != settings.isAutoDetectSlangd()
+                        || (!autoDetect.isSelected() && !Objects.equals(uiPath, settings.getSlangdPath()))));
+        settings.setServerSource(selectedSource());
         settings.setAutoDetectSlangd(autoDetect.isSelected());
-        // Clearing the manual value makes the resolution contract unambiguous:
-        // any stored non-empty path is always the highest-priority choice.
-        settings.setSlangdPath(autoDetect.isSelected() ? "" : slangdPath.getText().trim());
+        // Retain the external configuration while bundled mode or automatic discovery is selected.
+        settings.setSlangdPath(uiPath);
         settings.setShowPreprocessorBranches(branchDisplay.isSelected());
         settings.setShowPreprocessorBranchLabels(branchLabels.isSelected());
         settings.setShaderVariantsPath(variantsPath.getText());
@@ -152,6 +170,7 @@ public final class SlangSettingsConfigurable implements Configurable {
             return;
         }
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
+        serverSource.setSelectedItem(settings.getServerSource());
         autoDetect.setSelected(settings.isAutoDetectSlangd());
         slangdPath.setText(settings.getSlangdPath());
         branchDisplay.setSelected(settings.isShowPreprocessorBranches());
@@ -165,6 +184,8 @@ public final class SlangSettingsConfigurable implements Configurable {
     @Override
     public void disposeUIResources() {
         panel = null;
+        serverSource = null;
+        serverDescription = null;
         autoDetect = null;
         slangdPath = null;
         resolvedPath = null;
@@ -173,9 +194,18 @@ public final class SlangSettingsConfigurable implements Configurable {
         variantsPath = null;
     }
 
+    private SlangServerSource selectedSource() {
+        return (SlangServerSource) serverSource.getSelectedItem();
+    }
+
     private void updateFieldEnabledState() {
         if (slangdPath != null && autoDetect != null) {
-            slangdPath.setEnabled(!autoDetect.isSelected());
+            boolean external = selectedSource() == SlangServerSource.EXTERNAL;
+            autoDetect.setEnabled(external);
+            slangdPath.setEnabled(external && !autoDetect.isSelected());
+            serverDescription.setText(external
+                    ? "Uses your installed SDK. Enhanced hover and branch features depend on that server."
+                    : "Includes struct/field layout hover, type alias details, buffer colors and preprocessor branch tools.");
         }
     }
 
@@ -185,15 +215,17 @@ public final class SlangSettingsConfigurable implements Configurable {
         }
 
         try {
-            Path path = new SlangServerLocator().resolve(
+            Path path = new SlangServerLocator().preview(
                     project,
-                    autoDetect.isSelected() ? "" : slangdPath.getText().trim(),
+                    selectedSource(),
+                    slangdPath.getText().trim(),
                     autoDetect.isSelected()
             );
             resolvedPath.setText("Resolved slangd: " + path);
             resolvedPath.setToolTipText(path.toString());
         } catch (ExecutionException exception) {
-            resolvedPath.setText("slangd not found");
+            resolvedPath.setText(selectedSource() == SlangServerSource.BUNDLED
+                    ? "Bundled slangd unavailable; see tooltip" : "External slangd not found; see tooltip");
             resolvedPath.setToolTipText(exception.getMessage());
         }
     }

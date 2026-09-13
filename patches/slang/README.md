@@ -1,10 +1,11 @@
-# Optional slangd patches
+# Enhanced slangd patches
 
 `0001-m4a-preprocessor-trace.patch` is a standalone patch against upstream Slang commit
 `5f9227cf6e5055b6a9ee742fdd729aab9162cf25` (`v2026.4.2-29-g5f9227cf6`). Do not apply it on top
 of the obsolete M2/M3 patches. The base commit is pinned for reproducibility, not a claim that it
-is the latest upstream version. Slang retains its upstream license; this repository does not ship
-its source tree or a server binary in the plugin ZIP.
+is the latest upstream version. Slang retains its upstream license. Plugin 0.8.2 ships a Windows x64
+build with patches 0001–0008, matching DLLs, licenses and the complete patch series; see
+[bundling and server selection](../../docs/bundled-slangd.md). The source checkout remains outside Git.
 
 `0002-m4c-preprocessor-contexts.patch` applies **after 0001**, on the same pinned base. It adds
 per-instance include tracing, isolated root compilation and `experimental.preprocessorContexts: 1`.
@@ -30,6 +31,10 @@ or plugin upgrade is needed; see [type hover](../../docs/type-hover.md).
 size/alignment/padding, array stride and compact definition links to standard hover,
 including parameter type references. See [struct hover](../../docs/struct-hover.md).
 
+`0008-field-hover.patch` applies **after 0007**. It adds field visibility, specialized type,
+declaring struct, natural size/alignment/offset and compact links to standard hover.
+Plugin 0.8.2 supplies the Rider-style presentation; see [field hover](../../docs/field-hover.md).
+
 The protocol and limitations are documented in [preprocessor-trace-protocol.md](../../docs/preprocessor-trace-protocol.md).
 
 ## Reproduce
@@ -54,6 +59,8 @@ git -C .slang-m4a-source apply --check ../patches/slang/0006-type-alias-hover.pa
 git -C .slang-m4a-source apply ../patches/slang/0006-type-alias-hover.patch
 git -C .slang-m4a-source apply --check ../patches/slang/0007-struct-hover.patch
 git -C .slang-m4a-source apply ../patches/slang/0007-struct-hover.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0008-field-hover.patch
+git -C .slang-m4a-source apply ../patches/slang/0008-field-hover.patch
 ```
 
 Do not reuse an existing dirty checkout for these commands. Configure with CMake and an installed
@@ -62,7 +69,7 @@ server does not require:
 
 ```powershell
 cmake -S .slang-m4a-source -B .slang-m4a-build `
-  -DSLANG_ENABLE_SLANGD=ON `
+  -DSLANG_ENABLE_SLANGD=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
   -DSLANG_ENABLE_CUDA=OFF -DSLANG_ENABLE_OPTIX=OFF `
   -DSLANG_ENABLE_NVAPI=OFF -DSLANG_ENABLE_AFTERMATH=OFF `
   -DSLANG_ENABLE_DXIL=OFF -DSLANG_ENABLE_PREBUILT_BINARIES=OFF `
@@ -70,7 +77,7 @@ cmake -S .slang-m4a-source -B .slang-m4a-build `
   -DSLANG_ENABLE_SLANGI=OFF -DSLANG_ENABLE_SLANGRT=OFF `
   -DSLANG_ENABLE_SLANG_GLSLANG=OFF -DSLANG_ENABLE_SLANG_RHI=OFF `
   -DSLANG_ENABLE_TESTS=OFF -DSLANG_ENABLE_EXAMPLES=OFF -DSLANG_ENABLE_REPLAYER=OFF
-cmake --build .slang-m4a-build --target slangd --config RelWithDebInfo --parallel 8
+cmake --build .slang-m4a-build --target slangd slang-glsl-module --config RelWithDebInfo --parallel 8
 python scripts/slangd-preprocessor-trace-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 python scripts/slangd-preprocessor-context-smoke.py `
@@ -85,6 +92,8 @@ python scripts/slangd-type-hover-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 python scripts/slangd-struct-hover-smoke.py `
   --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
+python scripts/slangd-field-hover-smoke.py `
+  --slangd .slang-m4a-build/RelWithDebInfo/bin/slangd.exe
 ```
 
 The verified local build used Windows x64, Visual Studio 18 / MSVC 14.51, and `RelWithDebInfo`.
@@ -98,8 +107,8 @@ through `SLANG_OVERRIDE_{UNORDERED_DENSE,MINIZ,LZ4,VULKAN_HEADERS,SPIRV_HEADERS,
 dependency-only overrides; no old compiler modifications are used. A fully initialized fresh clone
 does not need them.
 
-The generated directories are ignored by Git. The plugin still selects an external server through
-its existing settings. Selecting the patched executable now enables the optional
+The generated directories are ignored by Git. The plugin can select its bundled enhanced server or
+an external executable in Slang settings. The patched server enables the optional
 [M4b branch display](../../docs/preprocessor-branch-display.md) and, with both patches,
 the [M4c context selector](../../docs/preprocessor-contexts.md). Original M4a requests remain compatible.
 With all three patches, [M4e Shader Variants](../../docs/shader-variants.md) is also available.

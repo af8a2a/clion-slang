@@ -26,8 +26,8 @@ inlays. The separate `#include` / include-path color setting is lexical and work
   files and imported modules are filtered out of the response.
 - Opening a header directly evaluates it as its own root. This is not the context of a file that
   includes it. Reverse-include discovery and multiple shader permutations are later milestones.
-- The plugin continues to use the selected/existing external `slangd`. M4a does not bundle a binary
-  or restore the removed M2/M3 patch stack.
+- M4a is a standalone protocol patch and does not restore the removed M2/M3 stack. Plugin 0.8.0
+  includes it in [bundled enhanced slangd](bundled-slangd.md); external servers remain selectable.
 
 ## Capability and request
 

@@ -1,7 +1,7 @@
 # Struct hover
 
-Optional server patch `0007-struct-hover.patch`, applied after patches 0001–0006,
-adds Rider-inspired struct details to standard `textDocument/hover`. Hover the
+Bundled slangd includes `0007-struct-hover.patch`, applied after patches 0001–0006,
+which adds Rider-inspired struct details to standard `textDocument/hover`. Hover the
 **type name** in a parameter such as `UnifiedRT::Hit hit` or
 `GPUDrivenPreviewParams params` to see:
 
@@ -14,8 +14,22 @@ adds Rider-inspired struct details to standard `textDocument/hover`. Hover the
 The same information is available at struct declarations and other type references.
 Parameter names and function hovers retain their existing behavior. Nested type
 names retain their enclosing type; namespace prefixes move to the namespace line.
-The IDE continues to own popup rendering, colors and chrome. This is standard
-Markdown content, not a replacement for the IDE's native documentation UI.
+The server returns standard Markdown. The IDE continues to own the native documentation popup.
+Plugin 0.8.1 adapts the exact patch-0007 struct format using the IDE's supported embedded HTML:
+
+- A bold type name and an indented namespace line, colored from the active Slang scheme.
+- Separate rows for size, alignment, nonzero wasted padding, and optional array stride.
+  Zero padding is hidden, matching Rider. Numeric values have no inline-code background.
+- Chinese labels in a Chinese IDE, English labels otherwise. The layout paragraph retains
+  `Slang natural layout (bytes)` as its title metadata; the large bold heading is removed.
+- One separator above a compact code-style filename link. Its original file URI and line fragment
+  are preserved; the line number is in the link title rather than the visible filename.
+
+Explicit `<br/>` breaks survive CLion's documentation Markdown converter, which merges the
+server's Markdown hard breaks. Documentation prose/examples remain unchanged, and unmatched
+server formats, aliases and other hovers keep their existing presentation. This is a plugin-side
+change; the bundled compiler and its layout calculations are unchanged. Native window chrome,
+font preferences and actions remain controlled by CLion.
 
 ## Layout semantics
 
@@ -42,11 +56,10 @@ The change does not alter compiler `sizeof`, code generation or shader layouts.
 
 ## Enable and verify
 
-Follow the [server build instructions](../patches/slang/README.md), including patch
-0007, then use the rebuilt executable in the plugin's existing language-server
-settings. Keep the matching compiler DLL beside it and restart the language server.
-No new plugin ZIP, protocol capability or setting is required. Stock servers retain
-their original struct hover.
+In plugin 0.8.0, select **Bundled enhanced slangd (Windows x64)** in Slang settings and Apply.
+The matching compiler and module DLLs are included. See [server selection](bundled-slangd.md).
+For other platforms or custom builds, follow the [patch instructions](../patches/slang/README.md).
+External stock servers retain their original struct hover.
 
 ```powershell
 python scripts/slangd-struct-hover-smoke.py `
@@ -69,4 +82,19 @@ Native popup layout and clicking definition links still require a manual CLion c
 
 数值明确采用 Slang 自然布局。该布局与 C/C++ 的尾部填充规则不同，因此数组步长与大小
 不同时另行显示；不将这些数值当作特定 GPU 缓冲区的内存布局。无法确定布局时保留其他
-信息并显示不可用。应用补丁 0007、重新构建并重启语言服务器即可，无需重新安装插件。
+信息并显示不可用。0.8.0 已自带补丁 0007；在 Slang 设置中选择自带增强版并应用即可。
+
+
+## Presentation verification (0.8.1)
+
+`SlangStructHoverPresentationTest` checks Chinese/English content, theme colors, zero/nonzero
+padding, stride, generic HTML escaping, decoded filenames, URI/range preservation, and fallbacks.
+It runs the actual IDE LSP documentation splitter and Markdown converter, then checks that Swing
+places size and alignment on different rows. `scripts/SlangStructHoverRenderProbe.java` can be
+compiled with the plugin classes and installed IDE libraries to render real hover samples in light
+and dark palettes. It accepts a JSON object mapping names to raw hover Markdown and an output
+folder. Those standalone renders verify converted content, not the complete installed IDE popup.
+
+0.8.1 在插件侧调整悬停样式：类型名加粗、命名空间缩进、大小／对齐／非零填充逐行显示，
+数字使用当前配色且无灰底；文件链接只显示文件名。中英文标签跟随 IDE 语言，数值仍为
+Slang 自然布局；数组步长不同于大小时继续显示。无需重新编译 slangd。

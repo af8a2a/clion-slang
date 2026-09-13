@@ -16,6 +16,11 @@ final class SlangHoverHighlighting {
         if (!isString(markup.get("kind")) || !"markdown".equals(markup.get("kind").getAsString())
                 || !isString(markup.get("value"))) return false;
         String original = markup.get("value").getAsString();
+        String styled = SlangFieldHoverPresentation.format(SlangStructHoverPresentation.format(original));
+        if (!styled.equals(original)) {
+            markup.addProperty("value", styled);
+            return true;
+        }
         // Keep explicit languages and plaintext intact. Only the first fenced signature
         // is known to be Slang; later fences may contain prose or other languages.
         if (!original.startsWith("```\n") && !original.startsWith("```\r\n")) return false;

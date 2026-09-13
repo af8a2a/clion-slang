@@ -6,7 +6,8 @@
     <description><![CDATA[
       Language support for the Slang shading language in CLion. The plugin provides
       built-in lexical highlighting and editor assistance, then connects CLion's native
-      LSP client to the official <code>slangd</code> language server for diagnostics,
+      LSP client to bundled enhanced <code>slangd</code> (Windows x64) or an external official
+      server for diagnostics,
       completion, navigation, semantic highlighting, inlay hints, and formatting.
     ]]></description>
 

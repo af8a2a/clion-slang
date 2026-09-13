@@ -3,7 +3,7 @@
 English | [简体中文](README.zh-CN.md)
 
 A CLion plugin for C++/CMake projects that use Slang. It connects CLion's native LSP client to the
-official `slangd` server while retaining lightweight lexical highlighting that does not depend on
+bundled enhanced `slangd` (Windows x64) or an external official server while retaining lightweight lexical highlighting that does not depend on
 an external process.
 
 ## Showcase
@@ -33,11 +33,14 @@ inline argument names.
 
 ## Features
 
+- [Bundled or external slangd](docs/bundled-slangd.md), with automatic restart when switching sources
 - Hover signature syntax highlighting using the active Slang color scheme (including stock slangd)
 - [Type alias hover details](docs/type-hover.md): vector/matrix expansion, element types and dimensions,
-  with built-in/user alias distinction; requires optional slangd patch 0006 (not bundled)
+  with built-in/user alias distinction; included in bundled slangd (patch 0006)
+- [Field hover details](docs/field-hover.md): Rider-style declaration and owner, natural size/alignment/offset,
+  and compact definition links; included in bundled slangd (patch 0008)
 - [Struct hover details](docs/struct-hover.md): namespaces, natural size/alignment/padding and compact
-  definition links at parameter type references; requires optional slangd patch 0007 (not bundled)
+  definition links at parameter type references; included in bundled slangd (patch 0007)
 - [Slang Rider Light](docs/rider-light-color-scheme.md): a light preset mapped from Rider's exported C++ colors,
   also used as Slang defaults in Light / IntelliJ Light; preserves custom colors and dark themes
 - `.slang` and `.slangh` file types and icons
@@ -50,22 +53,22 @@ inline argument names.
   lexical and semantic roles
 - A project-wide `slangd` client built on the JetBrains Native LSP API
 - Optional [preprocessor branch display](docs/preprocessor-branch-display.md): inactive-code dimming,
-  active-branch marks and branch source labels, requiring M4a-patched `slangd` (not bundled)
+  active-branch marks and branch source labels, included in bundled slangd
 - Optional [M4c context selector](docs/preprocessor-contexts.md): discover direct/transitive includers,
-  search/select a compilation root, and remember the choice per file; requires M4c-patched `slangd`
+  search/select a compilation root, and remember the choice per file; included in bundled slangd
 - Optional [M4e Shader Variants](docs/shader-variants.md): saved build contexts with per-variant macros,
-  include paths and target/profile, plus an explicit CMake exporter; requires M4e-patched `slangd`
+  include paths and target/profile, plus an explicit CMake exporter; included in bundled slangd
 - Optional [M4d branch preview](docs/branch-preview.md): temporarily define/undefine macros on the selected
-  root or Variant, with explicit Stop and automatic cleanup on close/context switch; requires M4d-patched `slangd`
+  root or Variant, with explicit Stop and automatic cleanup on close/context switch; included in bundled slangd
 - [Structured buffer and generic argument colors](docs/structured-buffer-highlighting.md): separate
-  `StructuredBuffer`/`RWStructuredBuffer` family and checked type-argument colors; full semantic support requires patch 0005
+  `StructuredBuffer`/`RWStructuredBuffer` family and checked type-argument colors; included in bundled slangd (patch 0005)
 - Standard Diagnostics, Completion, Hover, Signature Help, Definition, References, Semantic
   Tokens, Inlay Hints, and Formatting capabilities, depending on the selected `slangd`
 - Definition navigation through Ctrl+Click, Ctrl+B, and Ctrl+Hover. The plugin reuses the active
   `slangd` session to work around CLion 2026.1 Native LSP not issuing Definition requests on the
   Ctrl+mouse path, and accepts servers that return a single definition as a `Location` instead of
   the standard array form
-- `slangd` discovery in this order: explicit project setting, `SLANGD_PATH`, `VULKAN_SDK`, `PATH`
+- External `slangd`: manual project path or automatic discovery via `SLANGD_PATH`, `VULKAN_SDK`, `PATH`
 - `workspace/configuration` mapping for `slangdconfig.json`, including `${workspaceFolder}`
   expansion
 - Navigation to `slang-synth://<module>` built-in modules, generated and cached through
@@ -82,16 +85,16 @@ Slang compiler front end, avoiding divergence as the language evolves.
   not set an artificial `until-build`
 - Plugin Verifier 1.410: Compatible with CLion 2026.1.5 (261.27258.50) and 2026.2.1 (262.9437.136)
 - Build JDK: 25, producing `--release 21` bytecode; the Gradle Wrapper uses Gradle 9.0.0
-- A working `slangd` is required at runtime. Slang binaries are not currently bundled
+- Bundled enhanced slangd supports Windows x64; other platforms require an external server
 
 The project uses the pre-2026.1.4 Native LSP type names as its compatibility entry point.
 JetBrains renamed these APIs in 2026.1.4 but retained the old types for existing plugins.
 
 ## Installation and usage
 
-1. Obtain a `slangd` that matches the Slang compiler used by your project. It is typically provided
-   by the Slang SDK or Vulkan SDK.
-2. Build the plugin:
+1. Use the release ZIP, which includes enhanced slangd for Windows x64. To use your SDK instead,
+   choose **External / official slangd** in Slang settings.
+2. To build from source, first [build and stage bundled slangd](docs/bundled-slangd.md), then build the plugin:
 
    ```powershell
    .\gradlew.bat clean test buildPlugin
@@ -110,8 +113,9 @@ JetBrains renamed these APIs in 2026.1.4 but retained the old types for existing
 
 3. In CLion, open **Settings | Plugins | ⚙ | Install Plugin from Disk...** and select the generated
    ZIP under `build/distributions/`.
-4. Under **Settings | Languages & Frameworks | Slang**, enable automatic discovery or specify the
-   full path to `slangd` / `slangd.exe`.
+4. Under **Settings | Languages & Frameworks | Slang**, select **Bundled enhanced slangd (Windows x64)**
+   or **External / official slangd**. Apply restarts the server; the resolved path is shown below.
+   Existing manual configurations stay external on upgrade; automatic configurations default to bundled on Windows x64.
 5. Open a `.slang` or `.slangh` file. The Language Services status bar shows the `slangd` status.
 
 Semantic colors can be configured independently under
@@ -192,7 +196,7 @@ Launch CLion in the development sandbox:
   future CLion HLSL support.
 - There is no full PSI, so deep IntelliJ language features such as local structural refactoring
   depend on the capabilities exposed through LSP.
-- Platform-specific `slangd` binaries are not bundled, and Compile, Reflection, and Playground tool
+- Bundled `slangd` currently supports Windows x64 only. Compile, Reflection, and Playground tool
   windows are not yet implemented.
 - The first generation of a large built-in `slang-synth` module may introduce noticeable latency;
   later accesses use the cache.

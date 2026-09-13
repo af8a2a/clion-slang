@@ -4,6 +4,7 @@ import com.intellij.execution.ExecutionException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.SystemInfo;
 import dev.slang.intellij.settings.SlangProjectSettings;
+import dev.slang.intellij.settings.SlangServerSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,27 +27,40 @@ public final class SlangServerLocator {
             : List.of("slangd", "slangd.exe");
 
     private final Map<String, String> environment;
+    private final SlangBundledRuntime bundledRuntime;
 
     public SlangServerLocator() {
         this(System.getenv());
     }
 
     SlangServerLocator(@NotNull Map<String, String> environment) {
-        this.environment = environment;
+        this(environment, new SlangBundledRuntime());
     }
 
-    /**
-     * Resolution order is the manually configured path, SLANGD_PATH, VULKAN_SDK,
-     * then every directory in PATH. Manual mode deliberately does not fall back:
-     * a typo in an explicit path should be visible instead of silently using a
-     * different SDK installation.
-     */
+    SlangServerLocator(@NotNull Map<String, String> environment, @NotNull SlangBundledRuntime bundledRuntime) {
+        this.environment = environment;
+        this.bundledRuntime = bundledRuntime;
+    }
+
+    /** The selected source is authoritative, including for synthetic built-in module navigation. */
     public @NotNull Path resolve(@NotNull Project project) throws ExecutionException {
         SlangProjectSettings settings = SlangProjectSettings.getInstance(project);
-        return resolve(project, settings.getSlangdPath(), settings.isAutoDetectSlangd());
+        return resolve(project, settings.getServerSource(), settings.getSlangdPath(), settings.isAutoDetectSlangd());
     }
 
-    /** Resolves using values that have not necessarily been persisted yet (used by the settings preview). */
+    public @NotNull Path resolve(@NotNull Project project, @NotNull SlangServerSource source,
+                                 @Nullable String configuredPath, boolean autoDetect) throws ExecutionException {
+        return source == SlangServerSource.BUNDLED ? bundledRuntime.resolveExecutable()
+                : resolve(project, autoDetect ? "" : configuredPath, autoDetect);
+    }
+
+    public @NotNull Path preview(@NotNull Project project, @NotNull SlangServerSource source,
+                                 @Nullable String configuredPath, boolean autoDetect) throws ExecutionException {
+        return source == SlangServerSource.BUNDLED ? bundledRuntime.previewExecutable()
+                : resolve(project, autoDetect ? "" : configuredPath, autoDetect);
+    }
+
+    /** External resolver: explicit path, then SLANGD_PATH, VULKAN_SDK and PATH. No fallback for an invalid explicit path. */
     public @NotNull Path resolve(
             @NotNull Project project,
             @Nullable String configuredPath,
