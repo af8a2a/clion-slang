@@ -34,6 +34,8 @@
 - 悬停签名使用当前 Slang 配色进行语法高亮（兼容官方 slangd）
 - [类型别名悬停详情](docs/type-hover.md)：展开向量/矩阵类型，展示元素类型、分量数或行列数，
   区分内建类型与用户别名；自带版已包含补丁 0006
+- [模块语法高亮](docs/module-highlighting.md)：`module` / `import` / `implementing` 模块名、`__include` 路径
+  及点分命名空间声明与 `using`，无需等待语言服务就绪
 - [字段悬停详情](docs/field-hover.md)：按 Rider 样式显示字段声明、所属 struct、大小/对齐/偏移及简短文件链接；
   自带版已包含补丁 0008，支持泛型实例和字段访问处
 - [Struct 悬停详情](docs/struct-hover.md)：形参类型显示命名空间、自然布局大小/对齐/填充及简短定义链接；

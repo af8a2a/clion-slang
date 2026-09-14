@@ -15,6 +15,17 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class SlangColorSettingsPageTest {
+    @Test public void moduleColorsAreConfigurableAndNamespacePathsShareSemanticColors() {
+        var highlighter = new SlangSyntaxHighlighter();
+        assertSame(SlangSyntaxHighlighter.MODULE, highlighter.getTokenHighlights(SlangTokenTypes.MODULE_NAME)[0]);
+        assertSame(SlangSemanticColors.NAMESPACE, SlangSyntaxHighlighter.MODULE.getFallbackAttributeKey());
+        assertSame(SlangSemanticColors.NAMESPACE, highlighter.getTokenHighlights(SlangTokenTypes.NAMESPACE_NAME)[0]);
+        assertSame(SlangSyntaxHighlighter.INCLUDE_PATH, highlighter.getTokenHighlights(SlangTokenTypes.MODULE_PATH)[0]);
+        assertTrue(SlangTokenTypes.STRINGS.contains(SlangTokenTypes.MODULE_PATH));
+        assertTrue(Arrays.stream(new SlangColorSettingsPage().getAttributeDescriptors())
+                .anyMatch(d -> d.getKey() == SlangSyntaxHighlighter.MODULE));
+        assertTrue(new SlangColorSettingsPage().getDemoText().contains("module Rendering;"));
+    }
     @Test
     public void includePathsHaveAnIndependentStringBasedColor() {
         SlangSyntaxHighlighter highlighter = new SlangSyntaxHighlighter();

@@ -26,6 +26,13 @@ public final class SlangLexer extends LexerBase {
     private static final int INCLUDE_PATH_STATE = 4;
     private static final int INCLUDE_BLOCK_COMMENT_STATE = 5;
     private static final int INCLUDE_DOC_COMMENT_STATE = 6;
+    private static final int MODULE_NAME_STATE = 7;
+    private static final int MODULE_DOT_STATE = 8;
+    private static final int NAMESPACE_NAME_STATE = 9;
+    private static final int NAMESPACE_DOT_STATE = 10;
+    // Preserve declaration context across chunked block comments and lexer restarts.
+    private static final int NAME_BLOCK_COMMENT = 16;
+    private static final int NAME_DOC_COMMENT = 32;
 
     private static final Set<String> KEYWORDS = words(
             // Slang declarations and type system.
@@ -34,7 +41,7 @@ public final class SlangLexer extends LexerBase {
             "init", "interface", "internal", "let", "module", "namespace", "new", "operator", "package",
             "private", "property", "protected", "public", "require", "specialize", "struct",
             "subscript", "this", "type_param", "typealias", "typedef", "using", "var", "where", "witness",
-            "$for", "__exported", "__generic", "__include", "__interface", "__target_switch", "spirv_asm",
+            "$for", "__exported", "__generic", "__import", "__include", "__interface", "__target_switch", "spirv_asm",
 
             // Control flow and compile-time control flow.
             "break", "case", "catch", "continue", "default", "defer", "discard", "do", "else",
@@ -185,10 +192,13 @@ public final class SlangLexer extends LexerBase {
 
         nextState = state;
         if (state == IN_BLOCK_COMMENT_STATE || state == IN_DOC_COMMENT_STATE
-                || state == INCLUDE_BLOCK_COMMENT_STATE || state == INCLUDE_DOC_COMMENT_STATE) {
-            boolean doc = state == IN_DOC_COMMENT_STATE || state == INCLUDE_DOC_COMMENT_STATE;
+                || state == INCLUDE_BLOCK_COMMENT_STATE || state == INCLUDE_DOC_COMMENT_STATE
+                || isNameCommentState(state)) {
+            boolean doc = state == IN_DOC_COMMENT_STATE || state == INCLUDE_DOC_COMMENT_STATE
+                    || (isNameCommentState(state) && (state & NAME_DOC_COMMENT) != 0);
             scanBlockCommentChunk(tokenStart, doc);
             preserveIncludeAfterComment();
+            preserveNameAfterComment();
             tokenType = doc ? SlangTokenTypes.DOC_COMMENT : SlangTokenTypes.BLOCK_COMMENT;
             return;
         }
@@ -202,13 +212,49 @@ public final class SlangLexer extends LexerBase {
 
         if (Character.isWhitespace(c)) {
             tokenEnd = tokenStart + 1;
-            if (isLineBreak(c)) nextState = DEFAULT_STATE;
+            if (isLineBreak(c) && !isNameState(state)) nextState = DEFAULT_STATE;
             while (tokenEnd < bufferEnd && Character.isWhitespace(charAt(tokenEnd))) {
-                if (isLineBreak(charAt(tokenEnd))) nextState = DEFAULT_STATE;
+                if (isLineBreak(charAt(tokenEnd)) && !isNameState(state)) nextState = DEFAULT_STATE;
                 tokenEnd++;
             }
             tokenType = SlangTokenTypes.WHITE_SPACE;
             return;
+        }
+
+        if (isNameState(state) && !startsWith(tokenStart, "//") && !startsWith(tokenStart, "/*")) {
+            nextState = DEFAULT_STATE;
+            if (state == MODULE_DOT_STATE || state == NAMESPACE_DOT_STATE) {
+                if (c == '.') {
+                    tokenEnd = tokenStart + 1;
+                    tokenType = SlangTokenTypes.DOT;
+                    nextState = state - 1;
+                    return;
+                }
+                if (state == NAMESPACE_DOT_STATE && startsWith(tokenStart, "::")) {
+                    tokenEnd = tokenStart + 2;
+                    tokenType = SlangTokenTypes.OPERATOR;
+                    nextState = NAMESPACE_NAME_STATE;
+                    return;
+                }
+            } else if (c == '"' && state == MODULE_NAME_STATE) {
+                // Slang file-reference declarations use string escapes, unlike #include headers.
+                scanQuotedLiteral(c);
+                tokenType = SlangTokenTypes.MODULE_PATH;
+                return;
+            } else if (isIdentifierStart(c)) {
+                int end = tokenStart + 1;
+                while (end < bufferEnd && isIdentifierPart(charAt(end))) end++;
+                String name = buffer.subSequence(tokenStart, end).toString();
+                // Recover incomplete declarations before a following declaration keyword/type.
+                if (!KEYWORDS.contains(name) && !BUILTIN_TYPES.contains(name)
+                        && !STRUCTURED_BUFFER_TYPES.contains(name)
+                        && !NUMERIC_BUILTIN_TYPE.matcher(name).matches()) {
+                    tokenEnd = end;
+                    tokenType = state == MODULE_NAME_STATE ? SlangTokenTypes.MODULE_NAME : SlangTokenTypes.NAMESPACE_NAME;
+                    nextState = state + 1;
+                    return;
+                }
+            }
         }
 
         if (state == INCLUDE_PATH_STATE) {
@@ -256,6 +302,7 @@ public final class SlangLexer extends LexerBase {
                         && (charAt(tokenStart + 2) == '*' || charAt(tokenStart + 2) == '!');
                 scanBlockCommentChunk(tokenStart + 2, doc);
                 preserveIncludeAfterComment();
+                preserveNameAfterComment();
                 tokenType = doc ? SlangTokenTypes.DOC_COMMENT : SlangTokenTypes.BLOCK_COMMENT;
                 return;
             }
@@ -308,6 +355,7 @@ public final class SlangLexer extends LexerBase {
     }
 
     private void scanPreprocessorDirective() {
+        nextState = DEFAULT_STATE;
         int nameStart = tokenStart + 1;
         while (nameStart < bufferEnd && isHorizontalWhitespace(charAt(nameStart))) nameStart++;
         int nameEnd = nameStart;
@@ -351,6 +399,25 @@ public final class SlangLexer extends LexerBase {
             case IN_DOC_COMMENT_STATE -> INCLUDE_DOC_COMMENT_STATE;
             default -> INCLUDE_PATH_STATE;
         };
+    }
+
+    private void preserveNameAfterComment() {
+        int context = state & 15;
+        if (!isNameState(context)) return;
+        nextState = switch (nextState) {
+            case IN_BLOCK_COMMENT_STATE -> context | NAME_BLOCK_COMMENT;
+            case IN_DOC_COMMENT_STATE -> context | NAME_DOC_COMMENT;
+            default -> context;
+        };
+    }
+
+    private static boolean isNameState(int value) {
+        return value >= MODULE_NAME_STATE && value <= NAMESPACE_DOT_STATE;
+    }
+
+    private static boolean isNameCommentState(int value) {
+        return isNameState(value & 15)
+                && ((value & ~15) == NAME_BLOCK_COMMENT || (value & ~15) == NAME_DOC_COMMENT);
     }
 
     private void scanBlockCommentChunk(int contentStart, boolean doc) {
@@ -598,6 +665,11 @@ public final class SlangLexer extends LexerBase {
             return SlangTokenTypes.TYPE_KEYWORD;
         }
         if (KEYWORDS.contains(text)) {
+            nextState = switch (text) {
+                case "module", "import", "__import", "implementing", "__include" -> MODULE_NAME_STATE;
+                case "namespace", "using" -> NAMESPACE_NAME_STATE;
+                default -> DEFAULT_STATE;
+            };
             return SlangTokenTypes.KEYWORD;
         }
         if (isSemantic(text)) {
@@ -774,7 +846,7 @@ public final class SlangLexer extends LexerBase {
     }
 
     private static boolean isKnownState(int value) {
-        return value >= DEFAULT_STATE && value <= INCLUDE_DOC_COMMENT_STATE;
+        return (value >= DEFAULT_STATE && value <= NAMESPACE_DOT_STATE) || isNameCommentState(value);
     }
 
     private char charAt(int offset) {

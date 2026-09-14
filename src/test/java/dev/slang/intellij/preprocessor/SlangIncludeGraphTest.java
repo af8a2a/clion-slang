@@ -16,6 +16,10 @@ public class SlangIncludeGraphTest {
                 /* #include "block.slang" */
                 string s = "#include \\\"string.slang\\\"";
                 import module;
+                import "Other.slang";
+                __include "Part.slang";
+                implementing "Owner.slang";
+                module "Named.slang";
                 #include MACRO
                 #if 0
                 # include /* header */ "real.slangh"

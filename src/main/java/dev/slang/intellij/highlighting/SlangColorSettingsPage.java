@@ -26,6 +26,7 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
             descriptor("Comments//Documentation comment", SlangSyntaxHighlighter.DOC_COMMENT),
             descriptor("Preprocessor directives", SlangSyntaxHighlighter.PREPROCESSOR),
             descriptor("Include paths", SlangSyntaxHighlighter.INCLUDE_PATH),
+            descriptor("Modules//Module names", SlangSyntaxHighlighter.MODULE),
             descriptor("Preprocessor branches//Inactive code", SlangBranchColors.INACTIVE),
             descriptor("Preprocessor branches//Active branch", SlangBranchColors.ACTIVE),
             descriptor("Preprocessor branches//Source label", SlangBranchColors.LABEL),
@@ -100,6 +101,13 @@ public final class SlangColorSettingsPage implements ColorSettingsPage {
     );
 
     private static final String DEMO_TEXT = """
+            #language slang 2026
+            module Rendering;
+            __include "Rendering/Surface.slang";
+            implementing Rendering;
+            public import Core;
+            using Metallic.Lighting;
+
             // Slang Rider Light (Rider_Light.icls): blue directives, brown paths, green comments.
             #include "ClusterLightGridCommon.slang"
             #include <lighting/Common.slangh>

@@ -23,7 +23,8 @@ public class SlangLexerTest {
                 "ModernSyntax.slang",
                 "BrokenSyntax.slang",
                 "SemanticHighlighting.slang",
-                "StructuredBufferHighlighting.slang"
+                "StructuredBufferHighlighting.slang",
+                "ModuleHighlighting.slang"
         )) {
             String source = Files.readString(Path.of("src", "test", "testData", "slang", fileName));
             List<Token> tokens = lex(source);
@@ -145,6 +146,81 @@ public class SlangLexerTest {
         return lex(source).stream()
                 .filter(token -> token.type() != SlangTokenTypes.WHITE_SPACE)
                 .toList();
+    }
+
+    @Test public void highlightsModuleDeclarationsImportsImplementationAndNamespacedUsing() throws IOException {
+        var tokens = lex(Files.readString(Path.of("src/test/testData/slang/ModuleHighlighting.slang")));
+        for (String word : List.of("module", "implementing", "import", "__import", "__include",
+                "__exported", "public", "internal", "namespace", "using"))
+            assertToken(tokens, word, SlangTokenTypes.KEYWORD);
+        for (String name : List.of("Core", "GPUDriven", "Lighting", "Nested", "Utility"))
+            assertToken(tokens, name, SlangTokenTypes.MODULE_NAME);
+        for (String name : List.of("Metallic", "Rendering", "Legacy"))
+            assertToken(tokens, name, SlangTokenTypes.NAMESPACE_NAME);
+        assertToken(tokens, "\"Core/ViewConstants.slang\"", SlangTokenTypes.MODULE_PATH);
+        assertToken(tokens, "\"Lighting/Shared.slang\"", SlangTokenTypes.MODULE_PATH);
+        assertToken(tokens, "#language slang 2026", SlangTokenTypes.PREPROCESSOR);
+        assertToken(tokens, "uint", SlangTokenTypes.TYPE_KEYWORD);
+        assertToken(tokens, "lightCount", SlangTokenTypes.IDENTIFIER);
+    }
+
+    @Test public void moduleContextsSurviveTriviaAndRestartAtEveryToken() {
+        for (String newline : List.of("\n", "\r\n", "\r")) {
+            String source = ("module /* first\nsecond */ Core;\n"
+                    + "implementing /** doc\ncontinued */ Core;\n"
+                    + "public import // comment\nNested /* a\nb */ . Utility;\n"
+                    + "__include /* a\nb */ \"Core/Part.slang\";\n"
+                    + "using Metallic /* a\nb */ . Rendering;\n"
+                    + "namespace Metallic.\nRendering { uint lightCount; }\n").replace("\n", newline);
+            var tokens = lex(source);
+            assertToken(tokens, "Utility", SlangTokenTypes.MODULE_NAME);
+            assertToken(tokens, "Rendering", SlangTokenTypes.NAMESPACE_NAME);
+            assertToken(tokens, "\"Core/Part.slang\"", SlangTokenTypes.MODULE_PATH);
+            // Check the entire suffix, not just the first token, after each restart.
+            for (int i = 0; i < tokens.size(); i++) {
+                var first = tokens.get(i);
+                var restarted = new SlangLexer();
+                restarted.start(source, first.start(), source.length(), first.state());
+                for (int j = i; j < tokens.size(); j++) {
+                    var expected = tokens.get(j);
+                    assertSame(expected.text(), expected.type(), restarted.getTokenType());
+                    assertEquals(expected.end(), restarted.getTokenEnd());
+                    assertEquals(expected.state(), restarted.getState());
+                    restarted.advance();
+                }
+                assertEquals(null, restarted.getTokenType());
+            }
+        }
+    }
+
+    @Test public void moduleHighlightingDoesNotLeakIntoExpressionsCommentsOrFollowingDeclarations() {
+        var tokens = lex("module Core; Core value; value.member = Core;\n"
+                + "import Nested.Utility; Utility other;\n"
+                + "namespace Metallic.Rendering { uint field; }\n"
+                + "// module Fake;\n/* import Fake; */ \"module Fake;\"\n"
+                + "module\nfloat recovered; import ; uint next; using ; bool flag;\n"
+                + "__include \"unfinished\nfloat after;\n"
+                + "import\n#define VALUE 1\nordinary;\n");
+        assertEquals(1, tokens.stream().filter(t -> t.text().equals("Core") && t.type() == SlangTokenTypes.MODULE_NAME).count());
+        for (String name : List.of("value", "member", "other", "field", "recovered", "next", "flag", "after", "ordinary"))
+            assertToken(tokens, name, SlangTokenTypes.IDENTIFIER);
+        assertToken(tokens, "\"module Fake;\"", SlangTokenTypes.STRING_LITERAL);
+        assertToken(tokens, "\"unfinished", SlangTokenTypes.MODULE_PATH);
+        assertToken(tokens, "float", SlangTokenTypes.TYPE_KEYWORD);
+    }
+
+    @Test public void editedModuleNamesUseSavedContextAndDoNotColorFollowingVariables() {
+        String before = "/* 😀 */ import Core; uint count;";
+        var start = lex(before).stream().filter(t -> t.text().equals("Core")).findFirst().orElseThrow();
+        for (String replacement : List.of("Lighting", "Nested.Utility", "\"dir/Module.slang\"", "", "/* comment */ Core")) {
+            String after = before.replace("Core", replacement);
+            var restarted = new SlangLexer(); restarted.start(after, start.start(), after.length(), start.state());
+            for (var expected : lex(after).stream().filter(t -> t.start() >= start.start()).toList()) {
+                assertSame(replacement + ": " + expected.text(), expected.type(), restarted.getTokenType());
+                assertEquals(expected.end(), restarted.getTokenEnd());
+                restarted.advance();
+            }
+        }
     }
 
     @Test public void recognizesStructuredBufferFamilyWithoutGuessingGenericOrComparisonIdentifiers() {

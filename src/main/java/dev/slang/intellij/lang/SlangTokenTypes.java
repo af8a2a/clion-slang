@@ -13,6 +13,9 @@ public final class SlangTokenTypes {
     public static final IElementType BAD_CHARACTER = TokenType.BAD_CHARACTER;
 
     public static final IElementType IDENTIFIER = token("IDENTIFIER");
+    public static final IElementType MODULE_NAME = token("MODULE_NAME");
+    public static final IElementType MODULE_PATH = token("MODULE_PATH");
+    public static final IElementType NAMESPACE_NAME = token("NAMESPACE_NAME");
     public static final IElementType KEYWORD = token("KEYWORD");
     public static final IElementType TYPE_KEYWORD = token("TYPE_KEYWORD");
     public static final IElementType STRUCTURED_BUFFER_TYPE = token("STRUCTURED_BUFFER_TYPE");
@@ -42,7 +45,7 @@ public final class SlangTokenTypes {
     public static final IElementType COLON = token("COLON");
 
     public static final TokenSet COMMENTS = TokenSet.create(LINE_COMMENT, BLOCK_COMMENT, DOC_COMMENT);
-    public static final TokenSet STRINGS = TokenSet.create(STRING_LITERAL, CHARACTER_LITERAL);
+    public static final TokenSet STRINGS = TokenSet.create(STRING_LITERAL, CHARACTER_LITERAL, MODULE_PATH);
     public static final TokenSet BRACES = TokenSet.create(LBRACE, RBRACE);
     public static final TokenSet BRACKETS = TokenSet.create(LBRACKET, RBRACKET);
     public static final TokenSet PARENTHESES = TokenSet.create(LPAREN, RPAREN);

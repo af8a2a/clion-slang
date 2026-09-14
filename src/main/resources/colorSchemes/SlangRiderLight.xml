@@ -25,6 +25,7 @@
 
     <!-- DEFAULT_CLASS_* for general types; ReSharper.STRUCT_IDENTIFIER for structs. -->
     <option name="SLANG.SEMANTIC.NAMESPACE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
+    <option name="SLANG.MODULE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
     <option name="SLANG.SEMANTIC.TYPE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
     <option name="SLANG.SEMANTIC.BUILTIN_TYPE"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
     <option name="SLANG.SEMANTIC.CLASS"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>

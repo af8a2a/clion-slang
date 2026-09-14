@@ -207,7 +207,8 @@ public class SlangRiderLightColorSchemeTest {
         mapped(actual, reference, mapped, "ReSharper.CPP_ENUM_ENUMERATOR_IDENTIFIER", SlangSemanticColors.ENUM_MEMBER);
         mapped(actual, reference, mapped, "ReSharper.CPP_GLOBAL_VARIABLE_IDENTIFIER", SlangSemanticColors.STATIC_VARIABLE);
         mapped(actual, reference, mapped, "ReSharper.CPP_LOCAL_VARIABLE_IDENTIFIER", SlangSemanticColors.VARIABLE);
-        mapped(actual, reference, mapped, "ReSharper.NAMESPACE_IDENTIFIER", SlangSemanticColors.NAMESPACE);
+        mapped(actual, reference, mapped, "ReSharper.NAMESPACE_IDENTIFIER", SlangSemanticColors.NAMESPACE,
+                SlangSyntaxHighlighter.MODULE);
         mapped(actual, reference, mapped, "ReSharper.STRUCT_IDENTIFIER", SlangSemanticColors.STRUCT,
                 SlangSemanticColors.STRUCTURED_BUFFER);
         mapped(actual, reference, mapped, "ReSharper.ENUM_IDENTIFIER", SlangSemanticColors.ENUM);

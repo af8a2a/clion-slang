@@ -37,6 +37,8 @@ inline argument names.
 - Hover signature syntax highlighting using the active Slang color scheme (including stock slangd)
 - [Type alias hover details](docs/type-hover.md): vector/matrix expansion, element types and dimensions,
   with built-in/user alias distinction; included in bundled slangd (patch 0006)
+- [Module syntax highlighting](docs/module-highlighting.md): module/import/implementing names, `__include` paths,
+  and dotted namespace declarations/usings, including without a running language server
 - [Field hover details](docs/field-hover.md): Rider-style declaration and owner, natural size/alignment/offset,
   and compact definition links; included in bundled slangd (patch 0008)
 - [Struct hover details](docs/struct-hover.md): namespaces, natural size/alignment/padding and compact
