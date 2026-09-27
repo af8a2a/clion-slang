@@ -1,0 +1,354 @@
+{
+  "slang:float scalar:abs": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc abs<float>(float x) -> float\n```\n\n\nForward derivative: `__d_abs`\n\nBackward derivative: `__d_abs`\n\n\n<!-- slang-builtin:core:abs -->\n\nDefined in E:\\clion-slang\\core(23624)\n"
+    },
+    "range": {
+      "start": {
+        "line": 0,
+        "character": 31
+      },
+      "end": {
+        "line": 0,
+        "character": 34
+      }
+    }
+  },
+  "slang:float scalar:sin": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc sin<float>(float x) -> float\n```\n\n\nForward derivative: `__d_sin`\n\nBackward derivative: `__d_sin`\n\n\n<!-- slang-builtin:core:sin -->\n\nDefined in E:\\clion-slang\\core(31318)\n"
+    },
+    "range": {
+      "start": {
+        "line": 0,
+        "character": 40
+      },
+      "end": {
+        "line": 0,
+        "character": 43
+      }
+    }
+  },
+  "slang:float3 direction:normalize": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc normalize<float, 3>(float3 x) -> float3\n```\n\n\nForward derivative: `__d_normalize`\n\nBackward derivative: `__d_distance`\n\n\n<!-- slang-builtin:core:normalize -->\n\nDefined in E:\\clion-slang\\core(30474)\n"
+    },
+    "range": {
+      "start": {
+        "line": 1,
+        "character": 36
+      },
+      "end": {
+        "line": 1,
+        "character": 45
+      }
+    }
+  },
+  "slang:uint flags:RAY_FLAG_NONE": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(global variable) static const uint RAY_FLAG_NONE = 0\n```\n\n\n\n<!-- slang-builtin:core:RAY_FLAG_NONE -->\n\nDefined in E:\\clion-slang\\core(37458)\n"
+    },
+    "range": {
+      "start": {
+        "line": 2,
+        "character": 22
+      },
+      "end": {
+        "line": 2,
+        "character": 35
+      }
+    }
+  },
+  "slang:uint flags:WaveGetLaneIndex": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc WaveGetLaneIndex() -> uint\n```\n\n\n\n<!-- slang-builtin:core:WaveGetLaneIndex -->\n\nDefined in E:\\clion-slang\\core(33993)\n"
+    },
+    "range": {
+      "start": {
+        "line": 2,
+        "character": 38
+      },
+      "end": {
+        "line": 2,
+        "character": 54
+      }
+    }
+  },
+  "slang:float differentiable:detach": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc detach<float>(float x) -> float\n```\n\n\n\n<!-- slang-builtin:core:detach -->\n\nDefined in E:\\clion-slang\\core(56604)\n"
+    },
+    "range": {
+      "start": {
+        "line": 3,
+        "character": 39
+      },
+      "end": {
+        "line": 3,
+        "character": 45
+      }
+    }
+  },
+  "slang:uint bits:asuint": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc asuint(float x) -> uint\n```\n\n\n\n<!-- slang-builtin:core:asuint -->\n\nDefined in E:\\clion-slang\\core(24569)\n"
+    },
+    "range": {
+      "start": {
+        "line": 4,
+        "character": 28
+      },
+      "end": {
+        "line": 4,
+        "character": 34
+      }
+    }
+  },
+  "slang:float custom:abs": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc User::abs(float x) -> float\n```\n\n\nDefined in E:\\clion-slang\\src\\test\\testData\\slang\\BuiltinDocumentation.slang(7)\n"
+    },
+    "range": {
+      "start": {
+        "line": 9,
+        "character": 37
+      },
+      "end": {
+        "line": 9,
+        "character": 40
+      }
+    }
+  },
+  "slang:uint customFlag:RAY_FLAG_NONE": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(global variable) static const uint User::RAY_FLAG_NONE = 42\n```\n\n\nDefined in E:\\clion-slang\\src\\test\\testData\\slang\\BuiltinDocumentation.slang(8)\n"
+    },
+    "range": {
+      "start": {
+        "line": 10,
+        "character": 33
+      },
+      "end": {
+        "line": 10,
+        "character": 46
+      }
+    }
+  },
+  "slang:float userOverload:abs": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc abs(Payload p) -> float\n```\n\n\nDefined in E:\\clion-slang\\src\\test\\testData\\slang\\BuiltinDocumentation.slang(13)\n"
+    },
+    "range": {
+      "start": {
+        "line": 13,
+        "character": 39
+      },
+      "end": {
+        "line": 13,
+        "character": 42
+      }
+    }
+  },
+  "slang:uint localVariable:RAY_FLAG_NONE": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(local variable) uint RAY_FLAG_NONE\n```\nDefined in E:\\clion-slang\\src\\test\\testData\\slang\\BuiltinDocumentation.slang(15)\n"
+    },
+    "range": {
+      "start": {
+        "line": 14,
+        "character": 54
+      },
+      "end": {
+        "line": 14,
+        "character": 67
+      }
+    }
+  },
+  "hlsl:float scalar:abs": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc abs<float>(float x) -> float\n```\n\n\nForward derivative: `__d_abs`\n\nBackward derivative: `__d_abs`\n\n\n<!-- slang-builtin:core:abs -->\n\nDefined in E:\\clion-slang\\core(23624)\n"
+    },
+    "range": {
+      "start": {
+        "line": 0,
+        "character": 31
+      },
+      "end": {
+        "line": 0,
+        "character": 34
+      }
+    }
+  },
+  "hlsl:float scalar:sin": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc sin<float>(float x) -> float\n```\n\n\nForward derivative: `__d_sin`\n\nBackward derivative: `__d_sin`\n\n\n<!-- slang-builtin:core:sin -->\n\nDefined in E:\\clion-slang\\core(31318)\n"
+    },
+    "range": {
+      "start": {
+        "line": 0,
+        "character": 40
+      },
+      "end": {
+        "line": 0,
+        "character": 43
+      }
+    }
+  },
+  "hlsl:float3 direction:normalize": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc normalize<float, 3>(float3 x) -> float3\n```\n\n\nForward derivative: `__d_normalize`\n\nBackward derivative: `__d_distance`\n\n\n<!-- slang-builtin:core:normalize -->\n\nDefined in E:\\clion-slang\\core(30474)\n"
+    },
+    "range": {
+      "start": {
+        "line": 1,
+        "character": 36
+      },
+      "end": {
+        "line": 1,
+        "character": 45
+      }
+    }
+  },
+  "hlsl:uint flags:RAY_FLAG_NONE": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(global variable) static const uint RAY_FLAG_NONE = 0\n```\n\n\n\n<!-- slang-builtin:core:RAY_FLAG_NONE -->\n\nDefined in E:\\clion-slang\\core(37458)\n"
+    },
+    "range": {
+      "start": {
+        "line": 2,
+        "character": 22
+      },
+      "end": {
+        "line": 2,
+        "character": 35
+      }
+    }
+  },
+  "hlsl:uint flags:WaveGetLaneIndex": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc WaveGetLaneIndex() -> uint\n```\n\n\n\n<!-- slang-builtin:core:WaveGetLaneIndex -->\n\nDefined in E:\\clion-slang\\core(33993)\n"
+    },
+    "range": {
+      "start": {
+        "line": 2,
+        "character": 38
+      },
+      "end": {
+        "line": 2,
+        "character": 54
+      }
+    }
+  },
+  "hlsl:float differentiable:detach": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc detach<float>(float x) -> float\n```\n\n\n\n<!-- slang-builtin:core:detach -->\n\nDefined in E:\\clion-slang\\core(56604)\n"
+    },
+    "range": {
+      "start": {
+        "line": 3,
+        "character": 39
+      },
+      "end": {
+        "line": 3,
+        "character": 45
+      }
+    }
+  },
+  "hlsl:uint bits:asuint": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc asuint(float x) -> uint\n```\n\n\n\n<!-- slang-builtin:core:asuint -->\n\nDefined in E:\\clion-slang\\core(24569)\n"
+    },
+    "range": {
+      "start": {
+        "line": 4,
+        "character": 28
+      },
+      "end": {
+        "line": 4,
+        "character": 34
+      }
+    }
+  },
+  "hlsl:float custom:abs": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc User::abs(float x) -> float\n```\n\n\nDefined in E:\\clion-slang\\src\\test\\testData\\slang\\BuiltinDocumentation.hlsl(7)\n"
+    },
+    "range": {
+      "start": {
+        "line": 9,
+        "character": 37
+      },
+      "end": {
+        "line": 9,
+        "character": 40
+      }
+    }
+  },
+  "hlsl:uint customFlag:RAY_FLAG_NONE": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(global variable) static const uint User::RAY_FLAG_NONE = 42\n```\n\n\nDefined in E:\\clion-slang\\src\\test\\testData\\slang\\BuiltinDocumentation.hlsl(8)\n"
+    },
+    "range": {
+      "start": {
+        "line": 10,
+        "character": 33
+      },
+      "end": {
+        "line": 10,
+        "character": 46
+      }
+    }
+  },
+  "hlsl:float userOverload:abs": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\nfunc abs(Payload p) -> float\n```\n\n\nDefined in E:\\clion-slang\\src\\test\\testData\\slang\\BuiltinDocumentation.hlsl(13)\n"
+    },
+    "range": {
+      "start": {
+        "line": 13,
+        "character": 39
+      },
+      "end": {
+        "line": 13,
+        "character": 42
+      }
+    }
+  },
+  "hlsl:uint localVariable:RAY_FLAG_NONE": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(local variable) uint RAY_FLAG_NONE\n```\nDefined in E:\\clion-slang\\src\\test\\testData\\slang\\BuiltinDocumentation.hlsl(15)\n"
+    },
+    "range": {
+      "start": {
+        "line": 14,
+        "character": 54
+      },
+      "end": {
+        "line": 14,
+        "character": 67
+      }
+    }
+  }
+}

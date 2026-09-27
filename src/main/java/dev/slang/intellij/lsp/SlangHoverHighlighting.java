@@ -16,17 +16,16 @@ final class SlangHoverHighlighting {
         if (!isString(markup.get("kind")) || !"markdown".equals(markup.get("kind").getAsString())
                 || !isString(markup.get("value"))) return false;
         String original = markup.get("value").getAsString();
-        String styled = SlangFieldHoverPresentation.format(SlangStructHoverPresentation.format(original));
-        if (!styled.equals(original)) {
-            markup.addProperty("value", styled);
-            return true;
+        String documented = SlangBuiltinDocumentation.format(original);
+        String styled = SlangFieldHoverPresentation.format(SlangStructHoverPresentation.format(documented));
+        // Reference links and leading-signature highlighting must both run in the same pass.
+        if ((styled.startsWith("```\n") || styled.startsWith("```\r\n"))
+                && java.util.regex.Pattern.compile("(?m)^```[ \\t]*\\r?$")
+                    .matcher(styled.substring(3)).find()) {
+            styled = "```slang" + styled.substring(3);
         }
-        // Keep explicit languages and plaintext intact. Only the first fenced signature
-        // is known to be Slang; later fences may contain prose or other languages.
-        if (!original.startsWith("```\n") && !original.startsWith("```\r\n")) return false;
-        if (!java.util.regex.Pattern.compile("(?m)^```[ \\t]*\\r?$")
-                .matcher(original.substring(3)).find()) return false;
-        markup.addProperty("value", "```slang" + original.substring(3));
+        if (styled.equals(original)) return false;
+        markup.addProperty("value", styled);
         return true;
     }
 

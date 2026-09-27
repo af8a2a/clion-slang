@@ -3,8 +3,8 @@
 `0001-m4a-preprocessor-trace.patch` is a standalone patch against upstream Slang commit
 `5f9227cf6e5055b6a9ee742fdd729aab9162cf25` (`v2026.4.2-29-g5f9227cf6`). Do not apply it on top
 of the obsolete M2/M3 patches. The base commit is pinned for reproducibility, not a claim that it
-is the latest upstream version. Slang retains its upstream license. Plugin 0.8.2 ships a Windows x64
-build with patches 0001–0008, matching DLLs, licenses and the complete patch series; see
+is the latest upstream version. Slang retains its upstream license. Plugin 0.8.7 ships a Windows x64
+build with patches 0001–0009, matching DLLs, licenses and the complete patch series; see
 [bundling and server selection](../../docs/bundled-slangd.md). The source checkout remains outside Git.
 
 `0002-m4c-preprocessor-contexts.patch` applies **after 0001**, on the same pinned base. It adds
@@ -35,6 +35,11 @@ including parameter type references. See [struct hover](../../docs/struct-hover.
 declaring struct, natural size/alignment/offset and compact links to standard hover.
 Plugin 0.8.2 supplies the Rider-style presentation; see [field hover](../../docs/field-hover.md).
 
+`0009-builtin-documentation.patch` applies **after 0008**. It adds a hidden Markdown comment
+with the resolved name for global functions/constants in the synthetic core module. The plugin
+uses it to add official reference links without matching user shadows by name. See
+[builtin documentation](../../docs/builtin-documentation.md).
+
 The protocol and limitations are documented in [preprocessor-trace-protocol.md](../../docs/preprocessor-trace-protocol.md).
 
 ## Reproduce
@@ -61,6 +66,8 @@ git -C .slang-m4a-source apply --check ../patches/slang/0007-struct-hover.patch
 git -C .slang-m4a-source apply ../patches/slang/0007-struct-hover.patch
 git -C .slang-m4a-source apply --check ../patches/slang/0008-field-hover.patch
 git -C .slang-m4a-source apply ../patches/slang/0008-field-hover.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0009-builtin-documentation.patch
+git -C .slang-m4a-source apply ../patches/slang/0009-builtin-documentation.patch
 ```
 
 Do not reuse an existing dirty checkout for these commands. Configure with CMake and an installed

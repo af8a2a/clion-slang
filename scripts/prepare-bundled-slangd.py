@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stage the patched Windows x64 language server and its provenance for buildPlugin.
 
-Requires a built Slang checkout at the pinned commit with patches/slang/0001..0008
+Requires a built Slang checkout at the pinned commit with patches/slang/0001..0009
 applied, CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded, and the slang-glsl-module target.
 No server download or compiler invocation is performed by this script.
 """
@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BASE = "5f9227cf6e5055b6a9ee742fdd729aab9162cf25"
 BINARIES = ("slangd.exe", "slang-compiler.dll", "slang-glsl-module.dll")
 SMOKES = ("preprocessor-trace", "preprocessor-context", "shader-variants", "branch-preview",
-          "structured-buffer", "type-hover", "struct-hover", "field-hover")
+          "structured-buffer", "type-hover", "struct-hover", "field-hover", "builtin-documentation")
 
 
 def run(*args, **kwargs):
@@ -127,7 +127,7 @@ def main():
         f"Base commit: {BASE}\n"
         "Modified by the CLion Slang plugin contributors; all changes are in patches/.\n"
         "Changes: preprocessor trace/contexts/variants/preview, structured-buffer tokens,\n"
-        "type alias hover, struct natural layout and field size/alignment/offset hover.\n"
+        "type alias hover, struct/field layout and builtin hover provenance.\n"
         "Slang is Apache-2.0 WITH LLVM-exception. See licenses/ for license texts\n"
         "and third-party copyright notices. Built with static MSVC runtime.\n",
         encoding="utf-8")

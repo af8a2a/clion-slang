@@ -1,0 +1,21 @@
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -1128,6 +1128,17 @@
+             auto humaneLoc = version->linkage->getSourceManager()->getHumaneLoc(
+                 declRef.getLoc(),
+                 SourceLocType::Actual);
++            // Supply semantic provenance for client-side builtin documentation links.
++            // Only global functions/constants qualify: members and namespace declarations
++            // with the same spelling must not inherit a global builtin's documentation.
++            auto builtinParent = declRef.getDecl()->parentDecl;
++            while (as<GenericDecl>(builtinParent))
++                builtinParent = builtinParent->parentDecl;
++            if (as<ModuleDecl>(builtinParent) &&
++                (declRef.as<FunctionDeclBase>() || declRef.as<VarDeclBase>()) &&
++                humaneLoc.pathInfo.getName() == "core" &&
++                !File::exists(humaneLoc.pathInfo.foundPath) && declRef.getName())
++                sb << "\n<!-- slang-builtin:core:" << getText(declRef.getName()) << " -->\n\n";
+             if (declRef.as<StructDecl>() || isStructFieldHover(declRef))
+                 appendStructDefinitionLocation(sb, humaneLoc);
+             else

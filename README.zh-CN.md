@@ -31,6 +31,10 @@
 ## 功能
 
 - [自带版／外部公版 slangd 选择](docs/bundled-slangd.md)，应用后自动重启语言服务
+- [原生符号搜索](docs/symbol-search.md)：在“搜索所有 → 符号”中查找函数、类型、字段与全局声明，
+  支持未打开文件，显示签名、所属范围和路径，并跳转到声明
+- [内建符号文档参考](docs/builtin-documentation.md)：内建函数与常量悬停显示 Microsoft Learn / Slang 官方链接，
+  内置离线目录，区分同名用户声明
 - 悬停签名使用当前 Slang 配色进行语法高亮（兼容官方 slangd）
 - [类型别名悬停详情](docs/type-hover.md)：展开向量/矩阵类型，展示元素类型、分量数或行列数，
   区分内建类型与用户别名；自带版已包含补丁 0006

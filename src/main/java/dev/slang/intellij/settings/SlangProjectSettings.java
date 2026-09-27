@@ -23,6 +23,7 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
         public String slangdPath = "";
         public boolean showPreprocessorBranches = true;
         public boolean showPreprocessorBranchLabels = true;
+        public boolean includeBuildOutputSymbols = false;
         /** Target local path -> explicitly chosen root path. Absence means automatic. */
         public Map<String, String> preprocessorContexts = new HashMap<>();
         public String shaderVariantsPath = "slang-variants.json";
@@ -37,6 +38,7 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
             slangdPath = other.slangdPath;
             showPreprocessorBranches = other.showPreprocessorBranches;
             showPreprocessorBranchLabels = other.showPreprocessorBranchLabels;
+            includeBuildOutputSymbols = other.includeBuildOutputSymbols;
             if (other.preprocessorContexts != null) preprocessorContexts.putAll(other.preprocessorContexts);
             shaderVariantsPath = other.shaderVariantsPath == null || other.shaderVariantsPath.isBlank()
                     ? "slang-variants.json" : other.shaderVariantsPath;
@@ -101,6 +103,9 @@ public final class SlangProjectSettings implements PersistentStateComponent<Slan
     }
 
     public synchronized boolean isShowPreprocessorBranches() { return state.showPreprocessorBranches; }
+
+    public synchronized boolean isIncludeBuildOutputSymbols() { return state.includeBuildOutputSymbols; }
+    public synchronized void setIncludeBuildOutputSymbols(boolean value) { state.includeBuildOutputSymbols = value; }
 
     public synchronized void setShowPreprocessorBranches(boolean value) { state.showPreprocessorBranches = value; }
 

@@ -34,6 +34,12 @@ inline argument names.
 ## Features
 
 - [Bundled or external slangd](docs/bundled-slangd.md), with automatic restart when switching sources
+- [Native symbol search](docs/symbol-search.md): find Slang functions, types, fields and global declarations
+  in Search Everywhere / Go to Symbol, including unopened files, with signatures and source navigation
+- [Native symbol search](docs/symbol-search.md): find Slang functions, types, fields and global declarations
+  in Search Everywhere / Go to Symbol, including unopened files, with signatures and source navigation
+- [Builtin documentation references](docs/builtin-documentation.md): official Microsoft Learn / Slang links
+  for resolved builtin functions and constants, with an offline catalog and user-shadowing protection
 - Hover signature syntax highlighting using the active Slang color scheme (including stock slangd)
 - [Type alias hover details](docs/type-hover.md): vector/matrix expansion, element types and dimensions,
   with built-in/user alias distinction; included in bundled slangd (patch 0006)

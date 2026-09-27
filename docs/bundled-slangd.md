@@ -1,10 +1,10 @@
-# Bundled and external slangd (0.8.2)
+# Bundled and external slangd (0.8.7)
 
 In **Settings | Languages & Frameworks | Slang | Language server**, choose:
 
 - **Bundled enhanced slangd (Windows x64)**: supplied with the plugin, including patches
-  0001–0008. Enables field size/alignment/offset and struct namespace/size/alignment/padding hover, type alias details,
-  structured-buffer semantic roles, and preprocessor trace/context/variant/preview support.
+  0001–0009. Enables field size/alignment/offset and struct namespace/size/alignment/padding hover, type alias details,
+  builtin documentation provenance, structured-buffer semantic roles, and preprocessor trace/context/variant/preview support.
 - **External / official slangd**: use your Slang or Vulkan SDK. Enable automatic discovery
   (`SLANGD_PATH`, `VULKAN_SDK/Bin`, `VULKAN_SDK/bin`, then `PATH`), or disable it and enter
   an executable or directory. Relative paths resolve against the project directory.
@@ -57,7 +57,7 @@ python -B scripts/prepare-bundled-slangd.py
 The first command above assumes the reduced build has already been configured. The staging script
 accepts `--source`, `--build-dir`, `--configuration` and `--output`. It verifies the source against
 the pinned commit plus the patch series using a private Git index, checks AMD64 PE files and static
-CRT imports, copies license notices and patches, and runs eight real-server smoke suites against
+CRT imports, copies license notices and patches, and runs nine real-server smoke suites against
 the staged copies. It then writes `.bundled-runtime/windows-x86_64/manifest.json`.
 
 Gradle packages that directory in both `runIde` sandboxes and `buildPlugin` archives. Use
@@ -71,7 +71,7 @@ release. Licenses and exact patches accompany the binary in the distributable.
 
 ## 中文
 
-安装 0.8.2 后，在 **设置 → 语言和框架 → Slang → Language server** 选择
+安装 0.8.7 后，在 **设置 → 语言和框架 → Slang → Language server** 选择
 **Bundled enhanced slangd (Windows x64)** 即可使用自带增强版，不再需要手动替换 SDK 文件。
 选择 **External / official slangd** 可使用公版 SDK，继续支持自动查找和手动路径。
 应用后自动重启语言服务，切换时保留手动路径。已有自动查找配置在 Windows x64 上默认迁移到

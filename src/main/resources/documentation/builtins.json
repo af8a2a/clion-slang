@@ -1,0 +1,1556 @@
+{
+  "sources": [
+    "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-intrinsic-functions",
+    "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/index.html"
+  ],
+  "symbols": {
+    "AcceptHitAndEndSearch": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/accepthitandendsearch-069cf.html"
+    },
+    "AllMemoryBarrier": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/allmemorybarrier"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/allmemorybarrier-039.html"
+    },
+    "AllMemoryBarrierWithGroupSync": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/allmemorybarrierwithgroupsync"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/allmemorybarrierwithgroupsync-039gkp.html"
+    },
+    "CANDIDATE_NON_OPAQUE_TRIANGLE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/candidate_non_opaque_triangle-012345678abcefghijlmnopqrs.html"
+    },
+    "CANDIDATE_PROCEDURAL_PRIMITIVE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/candidate_procedural_primitive-012345678abcdefghijlmnopqrst.html"
+    },
+    "COMMITTED_NOTHING": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/committed_nothing-012345678abcdefg.html"
+    },
+    "COMMITTED_PROCEDURAL_PRIMITIVE_HIT": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/committed_procedural_primitive_hit-012345678abcdefghijlmnopqrstvwx.html"
+    },
+    "COMMITTED_TRIANGLE_HIT": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/committed_triangle_hit-012345678abcdefghjkl.html"
+    },
+    "CallShader": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/callshader-04.html"
+    },
+    "CheckAccessFullyMapped": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/checkaccessfullymapped"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/checkaccessfullymapped-05bg.html"
+    },
+    "D3DCOLORtoUBYTE4": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-d3dcolortoubyte4"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/d3dcolortoubyte4-0234567abcde.html"
+    },
+    "DeviceMemoryBarrier": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/devicememorybarrier"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/devicememorybarrier-06c.html"
+    },
+    "DeviceMemoryBarrierWithGroupSync": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/devicememorybarrierwithgroupsync"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/devicememorybarrierwithgroupsync-06cjns.html"
+    },
+    "DispatchMesh": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/dispatchmesh-08.html"
+    },
+    "DispatchRaysDimensions": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/dispatchraysdimensions-08c.html"
+    },
+    "DispatchRaysIndex": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/dispatchraysindex-08c.html"
+    },
+    "EvaluateAttributeAtCentroid": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/evaluateattributeatcentroid-08hj.html"
+    },
+    "EvaluateAttributeAtSample": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/evaluateattributeatsample"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/evaluateattributeatsample-08hj.html"
+    },
+    "EvaluateAttributeCentroid": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/evaluateattributecentroid"
+      ]
+    },
+    "EvaluateAttributeSnapped": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/evaluateattributesnapped"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/evaluateattributesnapped-08h.html"
+    },
+    "GeometryIndex": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/geometryindex-08.html"
+    },
+    "GetAttributeAtVertex": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getattributeatvertex-03ce.html"
+    },
+    "GetClusterID": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getclusterid-03ab.html"
+    },
+    "GetInstanceTraversable": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getinstancetraversable-03b.html"
+    },
+    "GetLssPositionsAndRadii": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getlsspositionsandradii-036fi.html"
+    },
+    "GetRenderTargetSampleCount": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-getrendertargetsamplecount"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getrendertargetsamplecount-039fl.html"
+    },
+    "GetRenderTargetSamplePosition": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-getrendertargetsampleposition"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getrendertargetsampleposition-039fl.html"
+    },
+    "GetSpherePositionAndRadius": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getspherepositionandradius-039hk.html"
+    },
+    "GetTransformListHandle": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/gettransformlisthandle-03cg.html"
+    },
+    "GetTransformListSize": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/gettransformlistsize-03cg.html"
+    },
+    "GetTraversableChild": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/gettraversablechild-03e.html"
+    },
+    "GetTraversableInstanceId": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/gettraversableinstanceid-03em.html"
+    },
+    "GetTraversableObjectToWorld": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/gettraversableobjecttoworld-03ekm.html"
+    },
+    "GetTraversableTransformType": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/gettraversabletransformtype-03en.html"
+    },
+    "GetTraversableWorldToObject": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/gettraversableworldtoobject-03ejl.html"
+    },
+    "GroupMemoryBarrier": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/groupmemorybarrier"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/groupmemorybarrier-05b.html"
+    },
+    "GroupMemoryBarrierWithGroupSync": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/groupmemorybarrierwithgroupsync"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/groupmemorybarrierwithgroupsync-05bimr.html"
+    },
+    "HIT_KIND_TRIANGLE_BACK_FACE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/hit_kind_triangle_back_face-01245679abcdefgijklnopq.html"
+    },
+    "HIT_KIND_TRIANGLE_FRONT_FACE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/hit_kind_triangle_front_face-01245679abcdefgijklmopqr.html"
+    },
+    "HitKind": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/hitkind-03.html"
+    },
+    "HitTriangleVertexPosition": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/hittrianglevertexposition-03bh.html"
+    },
+    "IgnoreHit": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ignorehit-06.html"
+    },
+    "InstanceID": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/instanceid-089.html"
+    },
+    "InstanceIndex": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/instanceindex-08.html"
+    },
+    "InterlockedAdd": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedadd"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedadd-0b.html"
+    },
+    "InterlockedAddF16Emulated": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedaddf16emulated-0beh.html"
+    },
+    "InterlockedAddF16x2": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedaddf16x2-0be.html"
+    },
+    "InterlockedAnd": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedand"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedand-0b.html"
+    },
+    "InterlockedCompareExchange": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedcompareexchange"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedcompareexchange-0bi.html"
+    },
+    "InterlockedCompareExchangeFloatBitwise": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedcompareexchangefloatbitwise-0biqv.html"
+    },
+    "InterlockedCompareStore": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedcomparestore"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedcomparestore-0bi.html"
+    },
+    "InterlockedCompareStoreFloatBitwise": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedcomparestorefloatbitwise-0bins.html"
+    },
+    "InterlockedExchange": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedexchange"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedexchange-0b.html"
+    },
+    "InterlockedMax": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedmax"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedmax-0b.html"
+    },
+    "InterlockedMin": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedmin"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedmin-0b.html"
+    },
+    "InterlockedOr": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedor"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedor-0b.html"
+    },
+    "InterlockedXor": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/interlockedxor"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/interlockedxor-0b.html"
+    },
+    "IsHelperLane": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ishelperlane-028.html"
+    },
+    "IsLssHit": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/islsshit-025.html"
+    },
+    "IsSphereHit": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/isspherehit-028.html"
+    },
+    "MaybeReorderThread": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/maybereorderthread-05c.html"
+    },
+    "NonUniformResourceIndex": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/nonuniformresourceindex-03ai.html"
+    },
+    "ObjectRayDirection": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/objectraydirection-069.html"
+    },
+    "ObjectRayOrigin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/objectrayorigin-069.html"
+    },
+    "ObjectToWorld": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/objecttoworld-068.html"
+    },
+    "ObjectToWorld3x4": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/objecttoworld3x4-068.html"
+    },
+    "ObjectToWorld4x3": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/objecttoworld4x3-068.html"
+    },
+    "PrimitiveIndex": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/primitiveindex-09.html"
+    },
+    "Process2DQuadTessFactorsAvg": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/process2dquadtessfactorsavg"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/process2dquadtessfactorsavg-089dho.html"
+    },
+    "Process2DQuadTessFactorsMax": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/process2dquadtessfactorsmax"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/process2dquadtessfactorsmax-089dho.html"
+    },
+    "Process2DQuadTessFactorsMin": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/process2dquadtessfactorsmin"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/process2dquadtessfactorsmin-089dho.html"
+    },
+    "ProcessIsolineTessFactors": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/processisolinetessfactors"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/processisolinetessfactors-07ei.html"
+    },
+    "ProcessQuadTessFactorsAvg": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/processquadtessfactorsavg"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/processquadtessfactorsavg-07bfm.html"
+    },
+    "ProcessQuadTessFactorsMax": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/processquadtessfactorsmax"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/processquadtessfactorsmax-07bfm.html"
+    },
+    "ProcessQuadTessFactorsMin": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/processquadtessfactorsmin"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/processquadtessfactorsmin-07bfm.html"
+    },
+    "ProcessTriTessFactorsAvg": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/processtritessfactorsavg"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/processtritessfactorsavg-07ael.html"
+    },
+    "ProcessTriTessFactorsMax": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/processtritessfactorsmax"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/processtritessfactorsmax-07ael.html"
+    },
+    "ProcessTriTessFactorsMin": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/processtritessfactorsmin"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/processtritessfactorsmin-07ael.html"
+    },
+    "QuadAll": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/quadall-04.html"
+    },
+    "QuadAny": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/quadany-04.html"
+    },
+    "QuadReadAcrossDiagonal": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/quadreadacrossdiagonal-048e.html"
+    },
+    "QuadReadAcrossX": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/quadreadacrossx-048e.html"
+    },
+    "QuadReadAcrossY": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/quadreadacrossy-048e.html"
+    },
+    "QuadReadLaneAt": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/quadreadlaneat-048c.html"
+    },
+    "RAYQUERY_FLAG_ALLOW_OPACITY_MICROMAPS": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/rayquery_flag_allow_opacity_micromaps-012345679abcefghiklmnopqstuvwxyz10.html"
+    },
+    "RAYQUERY_FLAG_NONE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/rayquery_flag_none-012345679abcefgh.html"
+    },
+    "RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_accept_first_hit_and_end_search-01245679abcdeghijkmnoqrsuvwyz10111213.html"
+    },
+    "RAY_FLAG_CULL_BACK_FACING_TRIANGLES": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_cull_back_facing_triangles-01245679abcefghjklmnoqrstuvwxy.html"
+    },
+    "RAY_FLAG_CULL_FRONT_FACING_TRIANGLES": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_cull_front_facing_triangles-01245679abcefghiklmnoprstuvwxyz.html"
+    },
+    "RAY_FLAG_CULL_NON_OPAQUE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_cull_non_opaque-01245679abcefgijklmn.html"
+    },
+    "RAY_FLAG_CULL_OPAQUE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_cull_opaque-01245679abcefghij.html"
+    },
+    "RAY_FLAG_FORCE_NON_OPAQUE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_force_non_opaque-01245679abcdfghjklmno.html"
+    },
+    "RAY_FLAG_FORCE_OMM_2_STATE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_force_omm_2_state-01245679abcdfghlmnop.html"
+    },
+    "RAY_FLAG_FORCE_OPAQUE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_force_opaque-01245679abcdfghijk.html"
+    },
+    "RAY_FLAG_NONE": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_none-01245679abc.html"
+    },
+    "RAY_FLAG_SKIP_CLOSEST_HIT_SHADER": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_skip_closest_hit_shader-01245679abcefghijkmnoqrstuv.html"
+    },
+    "RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_skip_procedural_primitives-01245679abcefghijklmnpqrstuvwxy.html"
+    },
+    "RAY_FLAG_SKIP_TRIANGLES": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ray_flag_skip_triangles-01245679abcefghijklm.html"
+    },
+    "RayCurrentTime": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/raycurrenttime-03a.html"
+    },
+    "RayFlags": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/rayflags-03.html"
+    },
+    "RayTCurrent": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/raytcurrent-034.html"
+    },
+    "RayTMin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/raytmin-034.html"
+    },
+    "ReorderThread": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/reorderthread-07.html"
+    },
+    "ReportHit": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/reporthit-06.html"
+    },
+    "ReportHitOptix": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/reporthitoptix-069.html"
+    },
+    "SetMeshOutputCounts": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/setmeshoutputcounts-037d.html"
+    },
+    "TraceMotionRay": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/tracemotionray-05b.html"
+    },
+    "TraceRay": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/traceray-05.html"
+    },
+    "WaveActiveAllEqual": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactiveallequal-04ad.html"
+    },
+    "WaveActiveAllTrue": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactivealltrue-04ad.html"
+    },
+    "WaveActiveAnyTrue": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactiveanytrue-04ad.html"
+    },
+    "WaveActiveBallot": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactiveballot-04a.html"
+    },
+    "WaveActiveBitAnd": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactivebitand-04ad.html"
+    },
+    "WaveActiveBitOr": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactivebitor-04ad.html"
+    },
+    "WaveActiveBitXor": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactivebitxor-04ad.html"
+    },
+    "WaveActiveCountBits": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactivecountbits-04af.html"
+    },
+    "WaveActiveMax": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactivemax-04a.html"
+    },
+    "WaveActiveMin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactivemin-04a.html"
+    },
+    "WaveActiveProduct": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactiveproduct-04a.html"
+    },
+    "WaveActiveSum": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveactivesum-04a.html"
+    },
+    "WaveBroadcastLaneAt": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavebroadcastlaneat-04dh.html"
+    },
+    "WaveClusteredRotate": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveclusteredrotate-04d.html"
+    },
+    "WaveGetActiveMulti": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetactivemulti-047d.html"
+    },
+    "WaveGetConvergedMulti": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetconvergedmulti-047g.html"
+    },
+    "WaveGetLaneCount": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetlanecount-047b.html"
+    },
+    "WaveGetLaneEqMask": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetlaneeqmask-047bd.html"
+    },
+    "WaveGetLaneGeMask": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetlanegemask-047bd.html"
+    },
+    "WaveGetLaneGtMask": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetlanegtmask-047bd.html"
+    },
+    "WaveGetLaneIndex": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetlaneindex-047b.html"
+    },
+    "WaveGetLaneLeMask": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetlanelemask-047bd.html"
+    },
+    "WaveGetLaneLtMask": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetlaneltmask-047bd.html"
+    },
+    "WaveGetNumWaves": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetnumwaves-047a.html"
+    },
+    "WaveGetWaveIndex": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavegetwaveindex-047b.html"
+    },
+    "WaveIsFirstLane": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveisfirstlane-046b.html"
+    },
+    "WaveMatch": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavematch-04.html"
+    },
+    "WaveMultiBitAnd": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultibitand-049c.html"
+    },
+    "WaveMultiBitOr": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultibitor-049c.html"
+    },
+    "WaveMultiBitXor": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultibitxor-049c.html"
+    },
+    "WaveMultiMax": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultimax-049.html"
+    },
+    "WaveMultiMin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultimin-049.html"
+    },
+    "WaveMultiPrefixBitAnd": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixbitand-049fi.html"
+    },
+    "WaveMultiPrefixBitOr": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixbitor-049fi.html"
+    },
+    "WaveMultiPrefixBitXor": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixbitxor-049fi.html"
+    },
+    "WaveMultiPrefixCountBits": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixcountbits-049fk.html"
+    },
+    "WaveMultiPrefixExclusiveBitAnd": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixexclusivebitand-049for.html"
+    },
+    "WaveMultiPrefixExclusiveBitOr": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixexclusivebitor-049for.html"
+    },
+    "WaveMultiPrefixExclusiveBitXor": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixexclusivebitxor-049for.html"
+    },
+    "WaveMultiPrefixExclusiveMax": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixexclusivemax-049fo.html"
+    },
+    "WaveMultiPrefixExclusiveMin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixexclusivemin-049fo.html"
+    },
+    "WaveMultiPrefixExclusiveProduct": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixexclusiveproduct-049fo.html"
+    },
+    "WaveMultiPrefixExclusiveSum": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixexclusivesum-049fo.html"
+    },
+    "WaveMultiPrefixInclusiveBitAnd": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixinclusivebitand-049for.html"
+    },
+    "WaveMultiPrefixInclusiveBitOr": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixinclusivebitor-049for.html"
+    },
+    "WaveMultiPrefixInclusiveBitXor": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixinclusivebitxor-049for.html"
+    },
+    "WaveMultiPrefixInclusiveMax": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixinclusivemax-049fo.html"
+    },
+    "WaveMultiPrefixInclusiveMin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixinclusivemin-049fo.html"
+    },
+    "WaveMultiPrefixInclusiveProduct": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixinclusiveproduct-049fo.html"
+    },
+    "WaveMultiPrefixInclusiveSum": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixinclusivesum-049fo.html"
+    },
+    "WaveMultiPrefixProduct": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixproduct-049f.html"
+    },
+    "WaveMultiPrefixSum": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiprefixsum-049f.html"
+    },
+    "WaveMultiProduct": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultiproduct-049.html"
+    },
+    "WaveMultiSum": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavemultisum-049.html"
+    },
+    "WavePrefixBitAnd": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveprefixbitand-04ad.html"
+    },
+    "WavePrefixBitOr": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveprefixbitor-04ad.html"
+    },
+    "WavePrefixBitXor": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveprefixbitxor-04ad.html"
+    },
+    "WavePrefixCountBits": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveprefixcountbits-04af.html"
+    },
+    "WavePrefixMax": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveprefixmax-04a.html"
+    },
+    "WavePrefixMin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveprefixmin-04a.html"
+    },
+    "WavePrefixProduct": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveprefixproduct-04a.html"
+    },
+    "WavePrefixSum": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveprefixsum-04a.html"
+    },
+    "WaveReadLaneAt": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavereadlaneat-048c.html"
+    },
+    "WaveReadLaneFirst": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/wavereadlanefirst-048c.html"
+    },
+    "WaveRotate": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waverotate-04.html"
+    },
+    "WaveShuffle": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/waveshuffle-04.html"
+    },
+    "WorkgroupCount": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/workgroupcount-09.html"
+    },
+    "WorkgroupSize": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/workgroupsize-09.html"
+    },
+    "WorldRayDirection": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/worldraydirection-058.html"
+    },
+    "WorldRayOrigin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/worldrayorigin-058.html"
+    },
+    "WorldToObject": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/worldtoobject-057.html"
+    },
+    "WorldToObject3x4": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/worldtoobject3x4-057.html"
+    },
+    "WorldToObject4x3": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/worldtoobject4x3-057.html"
+    },
+    "_WaveCountBits": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/0wavecountbits-015a.html"
+    },
+    "abort": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/abort"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/abort.html"
+    },
+    "abs": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-abs"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/abs.html"
+    },
+    "acos": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-acos"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/acos.html"
+    },
+    "acosh": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/acosh.html"
+    },
+    "all": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-all"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/all.html"
+    },
+    "any": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-any"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/any.html"
+    },
+    "asdouble": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/asdouble"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asdouble.html"
+    },
+    "asfloat": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-asfloat"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asfloat.html"
+    },
+    "asfloat16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asfloat16.html"
+    },
+    "asin": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-asin"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asin.html"
+    },
+    "asinh": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asinh.html"
+    },
+    "asint": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-asint"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asint.html"
+    },
+    "asint16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asint16.html"
+    },
+    "asuint": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/asuint",
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-asuint"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asuint.html"
+    },
+    "asuint16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/asuint16.html"
+    },
+    "atan": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-atan"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/atan.html"
+    },
+    "atan2": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-atan2"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/atan2.html"
+    },
+    "atanh": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/atanh.html"
+    },
+    "bit_cast": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/bit_cast.html"
+    },
+    "bitfieldExtract": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/bitfieldextract-8.html"
+    },
+    "bitfieldInsert": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/bitfieldinsert-8.html"
+    },
+    "ceil": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-ceil"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ceil.html"
+    },
+    "clamp": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-clamp"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/clamp.html"
+    },
+    "clip": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-clip"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/clip.html"
+    },
+    "clock2x32ARB": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/clock2x32arb-9ab.html"
+    },
+    "clockARB": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/clockarb-567.html"
+    },
+    "concat": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/concat.html"
+    },
+    "coopVecLoad": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecload-47.html"
+    },
+    "coopVecLoadCoherent": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecloadcoherent-47b.html"
+    },
+    "coopVecLoadGroupshared": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecloadgroupshared-47b.html"
+    },
+    "coopVecMatMul": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecmatmul-47a.html"
+    },
+    "coopVecMatMulAdd": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecmatmuladd-47ad.html"
+    },
+    "coopVecMatMulAddPacked": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecmatmuladdpacked-47adg.html"
+    },
+    "coopVecMatMulPacked": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecmatmulpacked-47ad.html"
+    },
+    "coopVecOuterProductAccumulate": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecouterproductaccumulate-47cj.html"
+    },
+    "coopVecReduceSumAccumulate": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/coopvecreducesumaccumulate-47dg.html"
+    },
+    "copysign": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/copysign.html"
+    },
+    "copysign_double": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/copysign_double.html"
+    },
+    "copysign_float": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/copysign_float.html"
+    },
+    "copysign_half": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/copysign_half.html"
+    },
+    "cos": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-cos"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/cos.html"
+    },
+    "cosh": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-cosh"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/cosh.html"
+    },
+    "cospi": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/cospi.html"
+    },
+    "countbits": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/countbits"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/countbits.html"
+    },
+    "createDynamicObject": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/createdynamicobject-6d.html"
+    },
+    "cross": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-cross"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/cross.html"
+    },
+    "cudaBlockDim": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/cudablockdim-49.html"
+    },
+    "cudaBlockIdx": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/cudablockidx-49.html"
+    },
+    "cudaThreadIdx": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/cudathreadidx-4a.html"
+    },
+    "ddx": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-ddx"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ddx.html"
+    },
+    "ddx_coarse": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/ddx-coarse"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ddx_coarse.html"
+    },
+    "ddx_fine": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/ddx-fine"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ddx_fine.html"
+    },
+    "ddy": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-ddy"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ddy.html"
+    },
+    "ddy_coarse": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/ddy-coarse"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ddy_coarse.html"
+    },
+    "ddy_fine": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/ddy-fine"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ddy_fine.html"
+    },
+    "debugBreak": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/debugbreak-5.html"
+    },
+    "defaultGetDescriptorFromHandle": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/defaultgetdescriptorfromhandle-7ako.html"
+    },
+    "degrees": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-degrees"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/degrees.html"
+    },
+    "detach": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/detach.html"
+    },
+    "determinant": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-determinant"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/determinant.html"
+    },
+    "diffPair": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/diffpair-4.html"
+    },
+    "distance": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-distance"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/distance.html"
+    },
+    "divide": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/divide.html"
+    },
+    "dot": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-dot"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/dot.html"
+    },
+    "dot2add": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/dot2add.html"
+    },
+    "dot4add_i8packed": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/dot4add_i8packed.html"
+    },
+    "dot4add_u8packed": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/dot4add_u8packed.html"
+    },
+    "dst": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dst"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/dst.html"
+    },
+    "enableVMMDeviceScopeCapabilityIfNeeded": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/enablevmmdevicescopecapabilityifneeded-6789fkuw.html"
+    },
+    "errorf": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/errorf"
+      ]
+    },
+    "exp": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-exp"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/exp.html"
+    },
+    "exp10": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/exp10.html"
+    },
+    "exp2": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-exp2"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/exp2.html"
+    },
+    "f16tof32": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/f16tof32"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/f16tof32.html"
+    },
+    "f32tof16": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/f32tof16"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/f32tof16.html"
+    },
+    "f32tof16_": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/f32tof16_.html"
+    },
+    "fabs": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fabs.html"
+    },
+    "faceforward": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-faceforward"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/faceforward.html"
+    },
+    "fdim": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fdim.html"
+    },
+    "firstbithigh": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/firstbithigh"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/firstbithigh.html"
+    },
+    "firstbitlow": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/firstbitlow"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/firstbitlow.html"
+    },
+    "floatCast": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/floatcast-5.html"
+    },
+    "floor": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-floor"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/floor.html"
+    },
+    "fma": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-fma"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fma.html"
+    },
+    "fmax": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fmax.html"
+    },
+    "fmax3": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fmax3.html"
+    },
+    "fmedian3": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fmedian3.html"
+    },
+    "fmin": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fmin.html"
+    },
+    "fmin3": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fmin3.html"
+    },
+    "fmod": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-fmod"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fmod.html"
+    },
+    "frac": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-frac"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/frac.html"
+    },
+    "fract": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fract.html"
+    },
+    "frexp": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-frexp"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/frexp.html"
+    },
+    "fwidth": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-fwidth"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fwidth.html"
+    },
+    "fwidth_coarse": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fwidth_coarse.html"
+    },
+    "fwidth_fine": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/fwidth_fine.html"
+    },
+    "getDescriptorFromHandle": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getdescriptorfromhandle-3dh.html"
+    },
+    "getRealtimeClock": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getrealtimeclock-3b.html"
+    },
+    "getRealtimeClockLow": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getrealtimeclocklow-3bg.html"
+    },
+    "getStringHash": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/getstringhash-39.html"
+    },
+    "isfinite": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-isfinite"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/isfinite.html"
+    },
+    "isinf": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-isinf"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/isinf.html"
+    },
+    "isnan": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-isnan"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/isnan.html"
+    },
+    "ldexp": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-ldexp"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/ldexp.html"
+    },
+    "length": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-length"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/length.html"
+    },
+    "lerp": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-lerp"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/lerp.html"
+    },
+    "lit": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-lit"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/lit.html"
+    },
+    "loadAligned": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/loadaligned-4.html"
+    },
+    "log": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-log"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/log.html"
+    },
+    "log10": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-log10"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/log10.html"
+    },
+    "log2": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-log2"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/log2.html"
+    },
+    "mad": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/mad"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/mad.html"
+    },
+    "makeArrayFromElement": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/makearrayfromelement-49d.html"
+    },
+    "makeTuple": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/maketuple-4.html"
+    },
+    "max": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-max"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/max.html"
+    },
+    "max3": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/max3.html"
+    },
+    "median3": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/median3.html"
+    },
+    "min": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-min"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/min.html"
+    },
+    "min3": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/min3.html"
+    },
+    "modf": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-modf"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/modf.html"
+    },
+    "msad4": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-msad4"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/msad4.html"
+    },
+    "mul": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-mul"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/mul.html"
+    },
+    "nextafter": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/nextafter.html"
+    },
+    "noise": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-noise"
+      ]
+    },
+    "nonuniform": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/nonuniform.html"
+    },
+    "normalize": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-normalize"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/normalize.html"
+    },
+    "packHalf2x16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packhalf2x16-4.html"
+    },
+    "packInt4x8": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packint4x8-4.html"
+    },
+    "packInt4x8Clamp": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packint4x8clamp-4a.html"
+    },
+    "packSnorm2x16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packsnorm2x16-4.html"
+    },
+    "packSnorm4x8": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packsnorm4x8-4.html"
+    },
+    "packUint4x8": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packuint4x8-4.html"
+    },
+    "packUint4x8Clamp": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packuint4x8clamp-4b.html"
+    },
+    "packUnorm2x16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packunorm2x16-4.html"
+    },
+    "packUnorm4x8": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/packunorm4x8-4.html"
+    },
+    "pack_clamp_s8": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/pack_clamp_s8.html"
+    },
+    "pack_clamp_u8": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/pack_clamp_u8.html"
+    },
+    "pack_s8": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/pack_s8.html"
+    },
+    "pack_u8": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/pack_u8.html"
+    },
+    "pow": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-pow"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/pow.html"
+    },
+    "powr": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/powr.html"
+    },
+    "printf": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/printf"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/printf.html"
+    },
+    "radians": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-radians"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/radians.html"
+    },
+    "rcp": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/rcp"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/rcp.html"
+    },
+    "reflect": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-reflect"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/reflect.html"
+    },
+    "refract": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-refract"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/refract.html"
+    },
+    "reinterpret": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/reinterpret.html"
+    },
+    "reversebits": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/reversebits"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/reversebits.html"
+    },
+    "rint": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/rint.html"
+    },
+    "round": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-round"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/round.html"
+    },
+    "rsqrt": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-rsqrt"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/rsqrt.html"
+    },
+    "saturate": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-saturate"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/saturate.html"
+    },
+    "select": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/select.html"
+    },
+    "sign": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-sign"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/sign.html"
+    },
+    "sin": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-sin"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/sin.html"
+    },
+    "sincos": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-sincos"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/sincos.html"
+    },
+    "sinh": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-sinh"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/sinh.html"
+    },
+    "sinpi": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/sinpi.html"
+    },
+    "smoothstep": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-smoothstep"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/smoothstep.html"
+    },
+    "sqrt": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-sqrt"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/sqrt.html"
+    },
+    "static_assert": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/static_assert.html"
+    },
+    "step": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-step"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/step.html"
+    },
+    "storeAligned": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/storealigned-5.html"
+    },
+    "syncTorchCudaStream": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/synctorchcudastream-49d.html"
+    },
+    "tan": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tan"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/tan.html"
+    },
+    "tanh": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tanh"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/tanh.html"
+    },
+    "tanpi": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/tanpi.html"
+    },
+    "tex1Dbias": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex1dbias"
+      ]
+    },
+    "tex1Dgrad": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex1dgrad"
+      ]
+    },
+    "tex1Dlod": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex1dlod"
+      ]
+    },
+    "tex1Dproj": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex1dproj"
+      ]
+    },
+    "tex2Dbias": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex2dbias"
+      ]
+    },
+    "tex2Dgrad": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex2dgrad"
+      ]
+    },
+    "tex2Dlod": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex2dlod"
+      ]
+    },
+    "tex2Dproj": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex2dproj"
+      ]
+    },
+    "tex3Dbias": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex3dbias"
+      ]
+    },
+    "tex3Dgrad": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex3dgrad"
+      ]
+    },
+    "tex3Dlod": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex3dlod"
+      ]
+    },
+    "tex3Dproj": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex3dproj"
+      ]
+    },
+    "texCUBEbias": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-texcubebias"
+      ]
+    },
+    "texCUBEgrad": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-texcubegrad"
+      ]
+    },
+    "texCUBElod": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-texcubelod"
+      ]
+    },
+    "texCUBEproj": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-texcubeproj"
+      ]
+    },
+    "transpose": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-transpose"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/transpose.html"
+    },
+    "trunc": {
+      "microsoft": [
+        "https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-trunc"
+      ],
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/trunc.html"
+    },
+    "unmodified": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unmodified.html"
+    },
+    "unpackHalf2x16ToFloat": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackhalf2x16tofloat-6eg.html"
+    },
+    "unpackHalf2x16ToHalf": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackhalf2x16tohalf-6eg.html"
+    },
+    "unpackInt4x8ToInt16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackint4x8toint16-6ce.html"
+    },
+    "unpackInt4x8ToInt32": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackint4x8toint32-6ce.html"
+    },
+    "unpackSnorm2x16ToFloat": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpacksnorm2x16tofloat-6fh.html"
+    },
+    "unpackSnorm2x16ToHalf": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpacksnorm2x16tohalf-6fh.html"
+    },
+    "unpackSnorm4x8ToFloat": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpacksnorm4x8tofloat-6eg.html"
+    },
+    "unpackSnorm4x8ToHalf": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpacksnorm4x8tohalf-6eg.html"
+    },
+    "unpackUint4x8ToUint16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackuint4x8touint16-6df.html"
+    },
+    "unpackUint4x8ToUint32": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackuint4x8touint32-6df.html"
+    },
+    "unpackUnorm2x16ToFloat": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackunorm2x16tofloat-6fh.html"
+    },
+    "unpackUnorm2x16ToHalf": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackunorm2x16tohalf-6fh.html"
+    },
+    "unpackUnorm4x8ToFloat": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackunorm4x8tofloat-6eg.html"
+    },
+    "unpackUnorm4x8ToHalf": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpackunorm4x8tohalf-6eg.html"
+    },
+    "unpack_s8s16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpack_s8s16.html"
+    },
+    "unpack_s8s32": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpack_s8s32.html"
+    },
+    "unpack_u8u16": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpack_u8u16.html"
+    },
+    "unpack_u8u32": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unpack_u8u32.html"
+    },
+    "unused": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/unused.html"
+    },
+    "updateDiff": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/updatediff-6.html"
+    },
+    "updatePair": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/updatepair-6.html"
+    },
+    "updatePrimal": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/updateprimal-6.html"
+    },
+    "workgroupUniformLoad": {
+      "slang": "https://docs.shader-slang.org/en/latest/external/core-module-reference/global-decls/workgroupuniformload-9g.html"
+    }
+  }
+}

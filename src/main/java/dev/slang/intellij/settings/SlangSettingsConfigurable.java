@@ -36,6 +36,7 @@ public final class SlangSettingsConfigurable implements Configurable {
     private JCheckBox branchDisplay;
     private JCheckBox branchLabels;
     private JTextField variantsPath;
+    private JCheckBox buildOutputSymbols;
 
     public SlangSettingsConfigurable(@NotNull Project project) {
         this.project = project;
@@ -105,6 +106,11 @@ public final class SlangSettingsConfigurable implements Configurable {
         form.add(variantsPath, constraints);
         branchDisplay.addActionListener(event -> branchLabels.setEnabled(branchDisplay.isSelected()));
 
+        constraints.gridy++;
+        buildOutputSymbols = new JCheckBox("Include symbols from build/ and cmake-build-* directories");
+        buildOutputSymbols.setToolTipText("By default, symbol search skips these directories beneath project and content roots.");
+        form.add(buildOutputSymbols, constraints);
+
         serverSource.addActionListener(event -> {
             updateFieldEnabledState();
             updateResolvedPathPreview();
@@ -132,6 +138,7 @@ public final class SlangSettingsConfigurable implements Configurable {
                 || !Objects.equals(uiPath, settings.getSlangdPath())
                 || branchDisplay.isSelected() != settings.isShowPreprocessorBranches()
                 || branchLabels.isSelected() != settings.isShowPreprocessorBranchLabels()
+                || buildOutputSymbols.isSelected() != settings.isIncludeBuildOutputSymbols()
                 || !Objects.equals(variantsPath.getText().trim().isEmpty() ? "slang-variants.json" : variantsPath.getText().trim(), settings.getShaderVariantsPath());
     }
 
@@ -154,6 +161,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         settings.setShowPreprocessorBranches(branchDisplay.isSelected());
         settings.setShowPreprocessorBranchLabels(branchLabels.isSelected());
         settings.setShaderVariantsPath(variantsPath.getText());
+        settings.setIncludeBuildOutputSymbols(buildOutputSymbols.isSelected());
         dev.slang.intellij.preprocessor.SlangContextService.getInstance(project).previews().clear();
         updateResolvedPathPreview();
         SlangBranchDisplayService.getInstance(project).refresh();
@@ -176,6 +184,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         branchDisplay.setSelected(settings.isShowPreprocessorBranches());
         branchLabels.setSelected(settings.isShowPreprocessorBranchLabels());
         variantsPath.setText(settings.getShaderVariantsPath());
+        buildOutputSymbols.setSelected(settings.isIncludeBuildOutputSymbols());
         branchLabels.setEnabled(branchDisplay.isSelected());
         updateFieldEnabledState();
         updateResolvedPathPreview();
@@ -192,6 +201,7 @@ public final class SlangSettingsConfigurable implements Configurable {
         branchDisplay = null;
         branchLabels = null;
         variantsPath = null;
+        buildOutputSymbols = null;
     }
 
     private SlangServerSource selectedSource() {
