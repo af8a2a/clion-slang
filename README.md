@@ -40,6 +40,7 @@ inline argument names.
   in Search Everywhere / Go to Symbol, including unopened files, with signatures and source navigation
 - [Builtin documentation references](docs/builtin-documentation.md): official Microsoft Learn / Slang links
   for resolved builtin functions and constants, with an offline catalog and user-shadowing protection
+- Duplicate inlay hints from repeated macro expansion are collapsed per response, preserving distinct hints
 - Hover signature syntax highlighting using the active Slang color scheme (including stock slangd)
 - [Type alias hover details](docs/type-hover.md): vector/matrix expansion, element types and dimensions,
   with built-in/user alias distinction; included in bundled slangd (patch 0006)

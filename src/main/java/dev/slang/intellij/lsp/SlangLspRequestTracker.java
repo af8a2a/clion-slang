@@ -10,13 +10,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Correlates definition/hover requests with responses without changing JSON-RPC ids. */
+/** Correlates definition/hover/inlay-hint requests with responses without changing JSON-RPC ids. */
 final class SlangLspRequestTracker {
     private static final String DEFINITION_METHOD = "textDocument/definition";
     private static final int MAX_TRACKED_REQUESTS = 4_096;
 
     private final Set<String> definitionRequestIds = ConcurrentHashMap.newKeySet();
     private final Set<String> hoverRequestIds = ConcurrentHashMap.newKeySet();
+
+    private final Set<String> inlayHintRequestIds = ConcurrentHashMap.newKeySet();
 
     void recordOutgoingPayload(byte @NotNull [] payload) {
         try {
@@ -27,6 +29,12 @@ final class SlangLspRequestTracker {
             JsonObject request = message.getAsJsonObject();
             JsonElement method = request.get("method");
             JsonElement id = request.get("id");
+            if (id != null && !id.isJsonNull() && isMethod(method, "textDocument/inlayHint")) {
+                if (inlayHintRequestIds.size() >= MAX_TRACKED_REQUESTS) {
+                    inlayHintRequestIds.clear();
+                }
+                inlayHintRequestIds.add(id.toString());
+            }
             if (id != null && !id.isJsonNull() && isMethod(method, "textDocument/hover")) {
                 if (hoverRequestIds.size() >= MAX_TRACKED_REQUESTS) {
                     hoverRequestIds.clear();
@@ -59,6 +67,13 @@ final class SlangLspRequestTracker {
         return id != null && !id.isJsonNull() && !response.has("method")
                 && (response.has("result") || response.has("error"))
                 && hoverRequestIds.remove(id.toString());
+    }
+
+    boolean consumeInlayHintResponse(@NotNull JsonObject response) {
+        JsonElement id = response.get("id");
+        return id != null && !id.isJsonNull() && !response.has("method")
+                && (response.has("result") || response.has("error"))
+                && inlayHintRequestIds.remove(id.toString());
     }
 
     private static boolean isMethod(JsonElement element, String expected) {
