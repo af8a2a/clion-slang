@@ -3,8 +3,8 @@
 `0001-m4a-preprocessor-trace.patch` is a standalone patch against upstream Slang commit
 `5f9227cf6e5055b6a9ee742fdd729aab9162cf25` (`v2026.4.2-29-g5f9227cf6`). Do not apply it on top
 of the obsolete M2/M3 patches. The base commit is pinned for reproducibility, not a claim that it
-is the latest upstream version. Slang retains its upstream license. Plugin 0.8.7 ships a Windows x64
-build with patches 0001–0009, matching DLLs, licenses and the complete patch series; see
+is the latest upstream version. Slang retains its upstream license. Plugin 0.8.11 ships a Windows x64
+build with patches 0001–0011, matching DLLs, licenses and the complete patch series; see
 [bundling and server selection](../../docs/bundled-slangd.md). The source checkout remains outside Git.
 
 `0002-m4c-preprocessor-contexts.patch` applies **after 0001**, on the same pinned base. It adds
@@ -40,6 +40,10 @@ with the resolved name for global functions/constants in the synthetic core modu
 uses it to add official reference links without matching user shadows by name. See
 [builtin documentation](../../docs/builtin-documentation.md).
 
+`0010-macro-hover-expansion.patch` applies **after 0009**. It captures bounded final preprocessor
+tokens per macro invocation and shows the active definition and expansion in standard hover.
+See [macro hover](../../docs/macro-hover.md).
+
 The protocol and limitations are documented in [preprocessor-trace-protocol.md](../../docs/preprocessor-trace-protocol.md).
 
 ## Reproduce
@@ -68,6 +72,10 @@ git -C .slang-m4a-source apply --check ../patches/slang/0008-field-hover.patch
 git -C .slang-m4a-source apply ../patches/slang/0008-field-hover.patch
 git -C .slang-m4a-source apply --check ../patches/slang/0009-builtin-documentation.patch
 git -C .slang-m4a-source apply ../patches/slang/0009-builtin-documentation.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0010-macro-hover-expansion.patch
+git -C .slang-m4a-source apply ../patches/slang/0010-macro-hover-expansion.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0011-member-access-highlighting.patch
+git -C .slang-m4a-source apply ../patches/slang/0011-member-access-highlighting.patch
 ```
 
 Do not reuse an existing dirty checkout for these commands. Configure with CMake and an installed
@@ -127,3 +135,10 @@ and distinguishes builtin origins using standard LSP hover, without a client pro
 
 With the seventh patch, [struct hover](../../docs/struct-hover.md) shows namespaces and natural
 layout details at parameter type references, with compact definition file links.
+
+`0011-member-access-highlighting.patch` applies after 0010. Resolved struct/class fields
+(including implicit and static references) and vector/matrix selectors use the existing standard
+`property` semantic role. Receivers, methods and namespace globals keep their own roles.
+No new legend entries or custom negotiation are needed. Apply with
+`git -C .slang-m4a-source apply ../patches/slang/0011-member-access-highlighting.patch` and validate
+with `python scripts/slangd-member-access-smoke.py --slangd <path-to-slangd>`.

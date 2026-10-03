@@ -71,6 +71,9 @@ public class SlangStructuredBufferProtocolTest {
             assertToken(decoded, "uint", "slangTypeArgument");
             assertToken(decoded, "HitEntry", "slangTypeArgument");
             assertToken(decoded, "TElement", "typeParameter");
+            assertToken(decoded, "ContextScatter", "type");
+            assertToken(decoded, "TSink", "typeParameter");
+            assertToken(decoded, "IScatterSink", "type");
             for (var token : decoded) {
                 var color = support.getTextAttributesKey(token.role, List.of());
                 if (token.role.equals("slangStructuredBuffer")) assertSame(SlangSemanticColors.STRUCTURED_BUFFER, color);

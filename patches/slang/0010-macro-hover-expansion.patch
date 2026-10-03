@@ -1,0 +1,195 @@
+diff --git a/source/slang/slang-content-assist-info.h b/source/slang/slang-content-assist-info.h
+--- a/source/slang/slang-content-assist-info.h
++++ b/source/slang/slang-content-assist-info.h
+@@ -60,6 +60,7 @@
+ 
+     Name* name;
+     SourceLoc loc;
++    bool isFunctionLike = false;
+     List<Param> params;
+     List<Token> tokenList;
+ };
+@@ -68,6 +69,10 @@
+ {
+     Name* name;
+     SourceLoc loc;
++    SourceLoc definitionLoc;
++    List<Token> expandedTokens;
++    bool hasExpansionPreview = false;
++    bool expansionTruncated = false;
+ };
+ 
+ struct FileIncludeContentAssistInfo
+diff --git a/source/slang/slang-preprocessor.cpp b/source/slang/slang-preprocessor.cpp
+--- a/source/slang/slang-preprocessor.cpp
++++ b/source/slang/slang-preprocessor.cpp
+@@ -735,6 +735,8 @@
+     Index getArgCount() { return m_args.getCount(); }
+ 
+     SourceLoc getInvocationLoc() { return m_macroInvocationLoc; }
++    Index hoverInfoIndex = -1;
++    MacroInvocation* getNextBusyMacroInvocation() { return m_nextBusyMacroInvocation; }
+ 
+     MacroDefinition* getMacroDefinition() { return m_macro; }
+ 
+@@ -876,6 +878,8 @@
+         m_lookaheadToken = _readTokenImpl();
+         return result;
+     }
++
++    void recordHoverToken(const Token& token);
+ 
+     Token peekRawToken() { return m_lookaheadToken; }
+ 
+@@ -1325,6 +1329,7 @@
+ 
+     /// Stores macro definition and invocation info for language server.
+     PreprocessorContentAssistInfo* contentAssistInfo = nullptr;
++    Dictionary<SourceLoc::RawValue, Index> hoverInvocationIndices;
+     String traceRootPath;
+ 
+     /// Pending inactive source range for the primary input file.
+@@ -1353,6 +1358,7 @@
+     info.name = def->getName();
+     info.loc = def->getLoc();
+     info.tokenList = def->tokens.m_tokens;
++    info.isFunctionLike = def->flavor == MacroDefinition::Flavor::FunctionLike;
+     for (auto param : def->params)
+     {
+         MacroDefinitionContentAssistInfo::Param p;
+@@ -1375,7 +1381,46 @@
+     info.name = invocation->getMacroDefinition()->getName();
+     info.loc = invocation->getInvocationLoc();
+ 
++    info.definitionLoc = invocation->getMacroDefinition()->getLoc();
++    info.hasExpansionPreview = true;
++    for (auto& token : invocation->getMacroDefinition()->tokens.m_tokens)
++        if (token.type != TokenType::EndOfFile && token.type != TokenType::NewLine &&
++            token.type != TokenType::WhiteSpace)
++            info.hasExpansionPreview = false;
++    invocation->hoverInfoIndex = preprocessor->contentAssistInfo->macroInvocations.getCount();
+     preprocessor->contentAssistInfo->macroInvocations.add(info);
++    preprocessor->hoverInvocationIndices[info.loc.getRaw()] = invocation->hoverInfoIndex;
++}
++
++// Called only for final tokens emitted to the parser, never intermediate argument expansion.
++void ExpansionInputStream::recordHoverToken(const Token& token)
++{
++    if (!m_preprocessor->contentAssistInfo || token.type == TokenType::EndOfFile ||
++        token.type == TokenType::NewLine || token.type == TokenType::WhiteSpace)
++        return;
++    auto append = [&](Index index)
++    {
++        auto& info = m_preprocessor->contentAssistInfo->macroInvocations[index];
++        info.hasExpansionPreview = true;
++        if (info.expandedTokens.getCount() < 512)
++            info.expandedTokens.add(token);
++        else
++            info.expansionTruncated = true;
++    };
++    auto stream = m_inputStreams.getTopStream();
++    auto busy = stream->getFirstBusyMacroInvocation();
++    Index rootIndex = -1;
++    // Function-like rescan may drop the initiating macro from the busy chain
++    // (e.g. SUM(...) -> ADD(__VA_ARGS__)); retain the original call's preview.
++    if (busy && m_preprocessor->hoverInvocationIndices.tryGetValue(
++                    m_initiatingMacroInvocationLoc.getRaw(), rootIndex))
++        append(rootIndex);
++    for (auto invocation = busy; invocation;
++         invocation = invocation->getNextBusyMacroInvocation())
++    {
++        if (invocation->hoverInfoIndex >= 0 && invocation->hoverInfoIndex != rootIndex)
++            append(invocation->hoverInfoIndex);
++    }
+ }
+ 
+ static void reportIncludeFileForContentAssist(Preprocessor* preprocessor, Token token, String path)
+@@ -5070,6 +5115,7 @@
+             continue;
+         }
+ 
++        expansionStream->recordHoverToken(token);
+         expansionStream->readToken();
+         return token;
+     }
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -3122,7 +3122,31 @@
+     auto identifier = doc->peekIdentifier(line, col, startOffset);
+     if (identifier.getLength() == 0)
+         return SLANG_FAIL;
++    MacroInvocationContentAssistInfo* invocation = nullptr;
++    auto manager = version->linkage->getSourceManager();
++    Index identifierLine, identifierCol;
++    doc->offsetToLineCol(startOffset, identifierLine, identifierCol);
++    for (auto& candidate : version->linkage->contentAssistInfo.preprocessorInfo.macroInvocations)
++    {
++        if (candidate.name->text.getUnownedSlice() != identifier) continue;
++        auto loc = manager->getHumaneLoc(candidate.loc, SourceLocType::Actual);
++        if (loc.line == identifierLine && loc.column == identifierCol &&
++            loc.pathInfo.foundPath == doc->getPath())
++        {
++            invocation = &candidate;
++            break;
++        }
++    }
+     auto def = version->tryGetMacroDefinition(identifier);
++    if (invocation)
++    {
++        for (auto& candidate : version->linkage->contentAssistInfo.preprocessorInfo.macroDefinitions)
++            if (candidate.loc == invocation->definitionLoc && candidate.name == invocation->name)
++            {
++                def = &candidate;
++                break;
++            }
++    }
+     if (!def)
+         return SLANG_FAIL;
+     LanguageServerProtocol::Hover hover;
+@@ -3134,8 +3158,8 @@
+     hover.range.end.line = (int)outLine;
+     hover.range.end.character = (int)(outCol + identifier.getLength());
+     StringBuilder sb;
+-    sb << "```\n#define " << identifier;
+-    if (def->params.getCount())
++    sb << "```slang\n#define " << identifier;
++    if (def->isFunctionLike)
+     {
+         sb << "(";
+         bool isFirst = true;
+@@ -3153,13 +3177,31 @@
+     }
+     for (auto& token : def->tokenList)
+     {
++        if (token.type == TokenType::EndOfFile || token.type == TokenType::NewLine ||
++            token.type == TokenType::WhiteSpace) continue;
+         sb << " ";
+         sb << token.getContent();
+     }
+     sb << "\n```\n\n";
+-    auto humaneLoc =
+-        version->linkage->getSourceManager()->getHumaneLoc(def->loc, SourceLocType::Actual);
+-    appendDefinitionLocation(sb, m_workspace, humaneLoc);
++    sb << "<!-- slang-macro-hover:1 -->\n\n";
++    if (invocation && invocation->hasExpansionPreview)
++    {
++        sb << "**Expansion preview**\n\n```slang\n";
++        bool first = true;
++        for (auto& token : invocation->expandedTokens)
++        {
++            if (!first) sb << " ";
++            first = false;
++            sb << token.getContent();
++        }
++        sb << "\n```\n\n";
++        if (invocation->expansionTruncated)
++            sb << "Expansion preview truncated after 512 tokens.\n\n";
++    }
++    else
++        sb << "Expansion preview unavailable at this location.\n\n";
++    auto humaneLoc = manager->getHumaneLoc(def->loc, SourceLocType::Actual);
++    appendStructDefinitionLocation(sb, humaneLoc);
+     hover.contents.kind = "markdown";
+     hover.contents.value = sb.produceString();
+     return hover;

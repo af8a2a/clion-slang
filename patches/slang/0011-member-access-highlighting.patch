@@ -1,0 +1,52 @@
+diff --git a/source/slang/slang-language-server-semantic-tokens.cpp b/source/slang/slang-language-server-semantic-tokens.cpp
+index a0ed6625f..12ca956b7 100644
+--- a/source/slang/slang-language-server-semantic-tokens.cpp
++++ b/source/slang/slang-language-server-semantic-tokens.cpp
+@@ -143,11 +143,10 @@ List<SemanticToken> getSemanticTokens(
+         }
+         else if (as<VarDecl>(target))
+         {
+-            if (as<MemberExpr>(originalExpr) || as<StaticMemberExpr>(originalExpr))
+-            {
+-                return;
+-            }
+-            token.type = SemanticTokenType::Variable;
++            // Classify the resolved declaration, not the spelling of A.b: namespace
++            // globals remain variables, while explicit and implicit fields share a color.
++            token.type = as<AggTypeDeclBase>(target->parentDecl)
++                ? SemanticTokenType::Property : SemanticTokenType::Variable;
+         }
+         else if (as<FunctionDeclBase>(target))
+         {
+@@ -209,6 +208,21 @@ List<SemanticToken> getSemanticTokens(
+                     declRefExpr->name,
+                     declRefExpr->loc);
+             }
++            else if (as<SwizzleExpr>(node) || as<MatrixSwizzleExpr>(node))
++            {
++                // Vector/matrix components have no VarDecl. Only color source-written
++                // selectors, never compiler-generated swizzles or the receiver/dot.
++                auto memberLoc = as<SwizzleExpr>(node)
++                    ? as<SwizzleExpr>(node)->memberOpLoc
++                    : as<MatrixSwizzleExpr>(node)->memberOpLoc;
++                if (!memberLoc.isValid() || !manager->getHumaneLoc(node->loc, SourceLocType::Actual)
++                        .pathInfo.foundPath.getUnownedSlice().endsWithCaseInsensitive(fileName))
++                    return;
++                auto token = _createSemanticToken(manager, node->loc, nullptr);
++                token.type = SemanticTokenType::Property;
++                token.length = doc->getTokenLength(token.line, token.col);
++                maybeInsertToken(token);
++            }
+             else if (auto overloadedExpr = as<OverloadedExpr>(node))
+             {
+                 if (overloadedExpr->lookupResult2.items.getCount())
+@@ -311,7 +325,8 @@ List<SemanticToken> getSemanticTokens(
+                 {
+                     SemanticToken token =
+                         _createSemanticToken(manager, varDecl->getNameLoc(), varDecl->getName());
+-                    token.type = SemanticTokenType::Variable;
++                    token.type = as<AggTypeDeclBase>(varDecl->parentDecl)
++                        ? SemanticTokenType::Property : SemanticTokenType::Variable;
+                     maybeInsertToken(token);
+                 }
+             }

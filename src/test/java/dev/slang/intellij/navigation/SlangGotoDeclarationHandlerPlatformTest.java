@@ -83,6 +83,26 @@ public class SlangGotoDeclarationHandlerPlatformTest extends BasePlatformTestCas
         ));
     }
 
+    public void testMacroBodyCtrlHoverUnderlinesOnlyTheIdentifier() throws Exception {
+        String source = "#define VALUE resolveDescriptor(parameters.source)\n";
+        myFixture.configureByText("MacroNavigation.slang", source);
+        PsiFile macroFile = myFixture.getFile();
+        Editor macroEditor = myFixture.getEditor();
+        PsiDocumentManager.getInstance(getProject()).commitAllDocuments();
+        for (String name : List.of("VALUE", "resolveDescriptor", "parameters", "source")) {
+            int start = source.indexOf(name);
+            PsiElement leaf = macroFile.findElementAt(start + 1);
+            assertNotNull(leaf);
+            assertEquals(new TextRange(start, start + name.length()), leaf.getTextRange());
+            CtrlMouseData data = ReadAction.nonBlocking(() ->
+                            new GotoDeclarationAction().getCtrlMouseData(macroEditor, macroFile, start + 1))
+                    .withDocumentsCommitted(getProject())
+                    .submit(AppExecutorUtil.getAppExecutorService()).get(10, TimeUnit.SECONDS);
+            assertNotNull(data);
+            assertEquals(List.of(new TextRange(start, start + name.length())), data.getRanges());
+        }
+    }
+
     public void testCtrlHoverUsesTheRegisteredHandlerAndExactIdentifierRange() throws Exception {
         int hoverOffset = callOffset + 2;
         CtrlMouseData data = ReadAction.nonBlocking(() ->

@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.slang.intellij"
-version = "0.8.8"
+version = "0.8.11"
 
 repositories {
     mavenCentral()

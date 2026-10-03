@@ -16,7 +16,7 @@ final class SlangHoverHighlighting {
         if (!isString(markup.get("kind")) || !"markdown".equals(markup.get("kind").getAsString())
                 || !isString(markup.get("value"))) return false;
         String original = markup.get("value").getAsString();
-        String documented = SlangBuiltinDocumentation.format(original);
+        String documented = SlangMacroHoverPresentation.format(SlangBuiltinDocumentation.format(original));
         String styled = SlangFieldHoverPresentation.format(SlangStructHoverPresentation.format(documented));
         // Reference links and leading-signature highlighting must both run in the same pass.
         if ((styled.startsWith("```\n") || styled.startsWith("```\r\n"))

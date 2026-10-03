@@ -46,3 +46,11 @@ namespace UserTypes
     struct StructuredBuffer<T> { T value; };
 }
 UserTypes::StructuredBuffer<HitEntry> g_Shadow;
+
+// Regression: generic declarations and interface requirements need semantic colors.
+public interface IScatterSink { void writePixel(int2 pixel, float4 color); }
+public struct ContextScatter<TSink : IScatterSink>
+{
+    public TSink sink;
+    public float4 textColor;
+};

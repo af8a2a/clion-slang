@@ -27,7 +27,7 @@ public final class SlangParserDefinition implements ParserDefinition {
 
     @Override
     public @NotNull Lexer createLexer(Project project) {
-        return new SlangLexer();
+        return new SlangPsiLexer();
     }
 
     @Override

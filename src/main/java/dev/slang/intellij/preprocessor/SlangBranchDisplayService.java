@@ -23,6 +23,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFileManager;
@@ -61,7 +62,9 @@ public final class SlangBranchDisplayService implements Disposable {
     private final Map<Editor, SlangBranchDecorations> decorations = new IdentityHashMap<>();
     private final SlangBranchSyncBarrier awaitingSync = new SlangBranchSyncBarrier();
     private long generation;
-    private boolean restartNeeded;
+    private final Alarm restartAlarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, this);
+    private final SlangServerRestartPolicy restartPolicy = new SlangServerRestartPolicy();
+    private LspServer lifecycleServer;
     private volatile boolean disposed;
 
     private static final class Entry {
@@ -85,7 +88,7 @@ public final class SlangBranchDisplayService implements Disposable {
         var connection = project.getMessageBus().connect(this);
         connection.subscribe(ProjectTopics.PROJECT_ROOTS, new ModuleRootListener() {
             @Override public void rootsChanged(@NotNull ModuleRootEvent event) {
-                ui(() -> { restartNeeded = true; invalidate(); });
+                ui(() -> { scheduleRestart(); invalidate(); });
             }
         });
         connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
@@ -137,6 +140,7 @@ public final class SlangBranchDisplayService implements Disposable {
         LspServerManager.getInstance(project).addLspServerManagerListener(new LspServerManagerListener() {
             @Override public void serverStateChanged(@NotNull LspServer server) {
                 if (isOurServer(server)) ui(() -> {
+                    updateServerLifecycle(server);
                     if (server.getState() != LspServerState.Running) {
                         awaitingSync.clear();
                         SlangContextService.getInstance(project).previews().clear();
@@ -174,7 +178,7 @@ public final class SlangBranchDisplayService implements Disposable {
     private void invalidate() {
         generation++;
         SlangContextService.getInstance(project).previews().invalidateRequests();
-        if (restartNeeded || !SlangProjectSettings.getInstance(project).isShowPreprocessorBranches())
+        if (restartPolicy.pending() || !SlangProjectSettings.getInstance(project).isShowPreprocessorBranches())
             SlangContextService.getInstance(project).previews().clear();
         SlangContextService.getInstance(project).invalidate();
         alarm.cancelAllRequests();
@@ -192,12 +196,7 @@ public final class SlangBranchDisplayService implements Disposable {
         if (!settings.isShowPreprocessorBranches()) return;
         LspServer server = runningServer();
         if (server == null) return;
-        if (restartNeeded) {
-            restartNeeded = false;
-            awaitingSync.clear();
-            LspServerManager.getInstance(project).stopAndRestartIfNeeded(SlangLspServerSupportProvider.class);
-            return;
-        }
+        if (restartPolicy.pending()) return;
         Map<Document, VirtualFile> documents = new IdentityHashMap<>();
         for (Editor editor : EditorFactory.getInstance().getAllEditors()) {
             if (!eligibleEditor(editor)) continue;
@@ -322,7 +321,6 @@ public final class SlangBranchDisplayService implements Disposable {
         }
         if (events.stream().anyMatch(SlangBranchDisplayService::affectsContexts))
             SlangContextService.getInstance(project).invalidate();
-        if (runningServer() == null || !SlangProjectSettings.getInstance(project).isShowPreprocessorBranches()) return;
         for (VFileEvent event : events) {
             if (!affectsContexts(event)) continue;
             VirtualFile file = event.getFile();
@@ -331,10 +329,60 @@ public final class SlangBranchDisplayService implements Disposable {
             if (event instanceof VFileContentChangeEvent content && content.isFromSave()
                     && isSlangFile(file) && document != null && hasEditor(document)) continue;
             // M4a slangd has no watched-files invalidation. Restart to avoid a cached old include/config.
-            restartNeeded = true;
+            scheduleRestart();
             invalidate();
             break;
         }
+    }
+
+    private static long nowMillis() { return System.nanoTime() / 1_000_000; }
+
+    private void updateServerLifecycle(LspServer server) {
+        var state = server.getState();
+        if (lifecycleServer == null) lifecycleServer = server;
+        if (state == LspServerState.Initializing || state == LspServerState.Running) {
+            lifecycleServer = server;
+            if (state == LspServerState.Initializing) restartPolicy.initializing();
+            else restartPolicy.running(nowMillis());
+        } else if (server == lifecycleServer) {
+            if (state == LspServerState.ShutdownUnexpectedly) {
+                if (!restartPolicy.failed(nowMillis()))
+                    LOG.warn("Slang language server recovery stopped after three unsuccessful attempts; restart it manually");
+            } else {
+                restartPolicy.stoppedNormally();
+            }
+        }
+        armRestart();
+    }
+
+    private void scheduleRestart() {
+        // Do not revive a server the user stopped, or start one for unrelated project events.
+        var servers = LspServerManager.getInstance(project).getServersForProvider(SlangLspServerSupportProvider.class);
+        if (servers.stream().noneMatch(server -> server.getState() == LspServerState.Running
+                || server.getState() == LspServerState.Initializing)) return;
+        restartPolicy.changed(nowMillis());
+        armRestart();
+    }
+
+    private void armRestart() {
+        restartAlarm.cancelAllRequests();
+        if (restartPolicy.pending()) restartAlarm.addRequest(this::restartWhenReady,
+                Math.max(100, restartPolicy.delay(nowMillis())), ModalityState.any());
+    }
+
+    private void restartWhenReady() {
+        if (disposed || project.isDisposed() || !restartPolicy.pending()) return;
+        var manager = LspServerManager.getInstance(project);
+        boolean initializing = manager.getServersForProvider(SlangLspServerSupportProvider.class).stream()
+                .anyMatch(server -> server.getState() == LspServerState.Initializing);
+        // CMake refreshes can keep opening/changing files while LSP synchronizes its open-file set.
+        if (initializing || DumbService.isDumb(project)) {
+            restartAlarm.addRequest(this::restartWhenReady, 1_000, ModalityState.any());
+            return;
+        }
+        if (!restartPolicy.take(nowMillis(), false)) { armRestart(); return; }
+        awaitingSync.clear();
+        manager.stopAndRestartIfNeeded(SlangLspServerSupportProvider.class);
     }
 
     private static boolean affectsContexts(VFileEvent event) {
@@ -394,6 +442,7 @@ public final class SlangBranchDisplayService implements Disposable {
     @Override public void dispose() {
         disposed = true;
         alarm.cancelAllRequests();
+        restartAlarm.cancelAllRequests();
         Runnable cleanup = () -> {
             for (Entry entry : entries.values()) if (entry.request != null) entry.request.cancel(true);
             entries.clear();
