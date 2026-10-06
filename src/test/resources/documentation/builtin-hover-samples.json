@@ -2,7 +2,7 @@
   "slang:float scalar:abs": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc abs<float>(float x) -> float\n```\n\n\nForward derivative: `__d_abs`\n\nBackward derivative: `__d_abs`\n\n\n<!-- slang-builtin:core:abs -->\n\nDefined in E:\\clion-slang\\core(23624)\n"
+      "value": "```\nfunc abs<float>(float x) -> float\n```\n\n\nForward derivative: `__d_abs`\n\nBackward derivative: `__d_abs`\n\n\n<!-- slang-builtin:core:abs -->\n\nDefined in E:\\clion-slang\\core(24641)\n"
     },
     "range": {
       "start": {
@@ -18,7 +18,7 @@
   "slang:float scalar:sin": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc sin<float>(float x) -> float\n```\n\n\nForward derivative: `__d_sin`\n\nBackward derivative: `__d_sin`\n\n\n<!-- slang-builtin:core:sin -->\n\nDefined in E:\\clion-slang\\core(31318)\n"
+      "value": "```\nfunc sin<float>(float x) -> float\n```\n\n\nForward derivative: `__d_sin`\n\nBackward derivative: `__d_sin`\n\n\n<!-- slang-builtin:core:sin -->\n\nDefined in E:\\clion-slang\\core(32464)\n"
     },
     "range": {
       "start": {
@@ -34,7 +34,7 @@
   "slang:float3 direction:normalize": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc normalize<float, 3>(float3 x) -> float3\n```\n\n\nForward derivative: `__d_normalize`\n\nBackward derivative: `__d_distance`\n\n\n<!-- slang-builtin:core:normalize -->\n\nDefined in E:\\clion-slang\\core(30474)\n"
+      "value": "```\nfunc normalize<float, 3>(float3 x) -> float3\n```\n\n\nForward derivative: `__d_normalize`\n\nBackward derivative: `__d_distance`\n\n\n<!-- slang-builtin:core:normalize -->\n\nDefined in E:\\clion-slang\\core(31600)\n"
     },
     "range": {
       "start": {
@@ -50,7 +50,7 @@
   "slang:uint flags:RAY_FLAG_NONE": {
     "contents": {
       "kind": "markdown",
-      "value": "```\n(global variable) static const uint RAY_FLAG_NONE = 0\n```\n\n\n\n<!-- slang-builtin:core:RAY_FLAG_NONE -->\n\nDefined in E:\\clion-slang\\core(37458)\n"
+      "value": "```\n(global variable) static const uint RAY_FLAG_NONE = 0\n```\n\n\n\n<!-- slang-builtin:core:RAY_FLAG_NONE -->\n\nDefined in E:\\clion-slang\\core(38707)\n"
     },
     "range": {
       "start": {
@@ -66,7 +66,7 @@
   "slang:uint flags:WaveGetLaneIndex": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc WaveGetLaneIndex() -> uint\n```\n\n\n\n<!-- slang-builtin:core:WaveGetLaneIndex -->\n\nDefined in E:\\clion-slang\\core(33993)\n"
+      "value": "```\nfunc WaveGetLaneIndex() -> uint\n```\n\n\n\n<!-- slang-builtin:core:WaveGetLaneIndex -->\n\nDefined in E:\\clion-slang\\core(35149)\n"
     },
     "range": {
       "start": {
@@ -82,7 +82,7 @@
   "slang:float differentiable:detach": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc detach<float>(float x) -> float\n```\n\n\n\n<!-- slang-builtin:core:detach -->\n\nDefined in E:\\clion-slang\\core(56604)\n"
+      "value": "```\nfunc detach<float>(float x) -> float\n```\n\n\n\n<!-- slang-builtin:core:detach -->\n\nDefined in E:\\clion-slang\\core(59282)\n"
     },
     "range": {
       "start": {
@@ -98,7 +98,7 @@
   "slang:uint bits:asuint": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc asuint(float x) -> uint\n```\n\n\n\n<!-- slang-builtin:core:asuint -->\n\nDefined in E:\\clion-slang\\core(24569)\n"
+      "value": "```\nfunc asuint(float x) -> uint\n```\n\n\n\n<!-- slang-builtin:core:asuint -->\n\nDefined in E:\\clion-slang\\core(25586)\n"
     },
     "range": {
       "start": {
@@ -178,7 +178,7 @@
   "hlsl:float scalar:abs": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc abs<float>(float x) -> float\n```\n\n\nForward derivative: `__d_abs`\n\nBackward derivative: `__d_abs`\n\n\n<!-- slang-builtin:core:abs -->\n\nDefined in E:\\clion-slang\\core(23624)\n"
+      "value": "```\nfunc abs<float>(float x) -> float\n```\n\n\nForward derivative: `__d_abs`\n\nBackward derivative: `__d_abs`\n\n\n<!-- slang-builtin:core:abs -->\n\nDefined in E:\\clion-slang\\core(24641)\n"
     },
     "range": {
       "start": {
@@ -194,7 +194,7 @@
   "hlsl:float scalar:sin": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc sin<float>(float x) -> float\n```\n\n\nForward derivative: `__d_sin`\n\nBackward derivative: `__d_sin`\n\n\n<!-- slang-builtin:core:sin -->\n\nDefined in E:\\clion-slang\\core(31318)\n"
+      "value": "```\nfunc sin<float>(float x) -> float\n```\n\n\nForward derivative: `__d_sin`\n\nBackward derivative: `__d_sin`\n\n\n<!-- slang-builtin:core:sin -->\n\nDefined in E:\\clion-slang\\core(32464)\n"
     },
     "range": {
       "start": {
@@ -210,7 +210,7 @@
   "hlsl:float3 direction:normalize": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc normalize<float, 3>(float3 x) -> float3\n```\n\n\nForward derivative: `__d_normalize`\n\nBackward derivative: `__d_distance`\n\n\n<!-- slang-builtin:core:normalize -->\n\nDefined in E:\\clion-slang\\core(30474)\n"
+      "value": "```\nfunc normalize<float, 3>(float3 x) -> float3\n```\n\n\nForward derivative: `__d_normalize`\n\nBackward derivative: `__d_distance`\n\n\n<!-- slang-builtin:core:normalize -->\n\nDefined in E:\\clion-slang\\core(31600)\n"
     },
     "range": {
       "start": {
@@ -226,7 +226,7 @@
   "hlsl:uint flags:RAY_FLAG_NONE": {
     "contents": {
       "kind": "markdown",
-      "value": "```\n(global variable) static const uint RAY_FLAG_NONE = 0\n```\n\n\n\n<!-- slang-builtin:core:RAY_FLAG_NONE -->\n\nDefined in E:\\clion-slang\\core(37458)\n"
+      "value": "```\n(global variable) static const uint RAY_FLAG_NONE = 0\n```\n\n\n\n<!-- slang-builtin:core:RAY_FLAG_NONE -->\n\nDefined in E:\\clion-slang\\core(38707)\n"
     },
     "range": {
       "start": {
@@ -242,7 +242,7 @@
   "hlsl:uint flags:WaveGetLaneIndex": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc WaveGetLaneIndex() -> uint\n```\n\n\n\n<!-- slang-builtin:core:WaveGetLaneIndex -->\n\nDefined in E:\\clion-slang\\core(33993)\n"
+      "value": "```\nfunc WaveGetLaneIndex() -> uint\n```\n\n\n\n<!-- slang-builtin:core:WaveGetLaneIndex -->\n\nDefined in E:\\clion-slang\\core(35149)\n"
     },
     "range": {
       "start": {
@@ -258,7 +258,7 @@
   "hlsl:float differentiable:detach": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc detach<float>(float x) -> float\n```\n\n\n\n<!-- slang-builtin:core:detach -->\n\nDefined in E:\\clion-slang\\core(56604)\n"
+      "value": "```\nfunc detach<float>(float x) -> float\n```\n\n\n\n<!-- slang-builtin:core:detach -->\n\nDefined in E:\\clion-slang\\core(59282)\n"
     },
     "range": {
       "start": {
@@ -274,7 +274,7 @@
   "hlsl:uint bits:asuint": {
     "contents": {
       "kind": "markdown",
-      "value": "```\nfunc asuint(float x) -> uint\n```\n\n\n\n<!-- slang-builtin:core:asuint -->\n\nDefined in E:\\clion-slang\\core(24569)\n"
+      "value": "```\nfunc asuint(float x) -> uint\n```\n\n\n\n<!-- slang-builtin:core:asuint -->\n\nDefined in E:\\clion-slang\\core(25586)\n"
     },
     "range": {
       "start": {

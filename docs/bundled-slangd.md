@@ -1,10 +1,10 @@
-# Bundled and external slangd (0.8.11)
+# Bundled and external slangd (0.8.15)
 
 In **Settings | Languages & Frameworks | Slang | Language server**, choose:
 
-- **Bundled enhanced slangd (Windows x64)**: supplied with the plugin, including patches
-  0001–0011. Enables field size/alignment/offset and struct namespace/size/alignment/padding hover, type alias details,
-  macro expansion previews, builtin documentation provenance, structured-buffer semantic roles, and preprocessor trace/context/variant/preview support.
+- **Bundled enhanced slangd (Windows x64)**: supplied with the plugin, based on Slang 2026.19 with the
+  `patches/slang/2026.19` editor enhancements. Enables field size/alignment/offset and struct namespace/size/alignment/padding hover, type alias details,
+  typed HLSL SM 6.6 descriptor heaps with highlighting/reference links, macro expansion previews, builtin documentation provenance, structured-buffer semantic roles, and preprocessor trace/context/variant/preview support.
 - **External / official slangd**: use your Slang or Vulkan SDK. Enable automatic discovery
   (`SLANGD_PATH`, `VULKAN_SDK/Bin`, `VULKAN_SDK/bin`, then `PATH`), or disable it and enter
   an executable or directory. Relative paths resolve against the project directory.
@@ -43,13 +43,13 @@ This is a language-server build; optional LLVM, DXIL and GPU code-generation bac
 
 ## Rebuild the distributable
 
-Follow [patch reproduction](../patches/slang/README.md) to obtain the pinned Slang source and
-apply all eight patches. Configure with the reduced options documented there, adding the static
+Follow [patch reproduction](../patches/slang/2026.19/README.md) to obtain the pinned Slang source and
+apply the consolidated editor patch. Configure with the reduced options documented there, adding the static
 runtime option, then build both targets:
 
 ```powershell
-cmake -S .slang-m4a-source -B .slang-m4a-build -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
-cmake --build .slang-m4a-build --target slangd slang-glsl-module --config RelWithDebInfo --parallel 8
+cmake -S .slang-2026.19-source -B .slang-2026.19-build -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_C_FLAGS=/utf-8 -DCMAKE_CXX_FLAGS=/utf-8
+cmake --build .slang-2026.19-build --target slangd slang-glsl-module --config RelWithDebInfo --parallel 8
 python -B scripts/prepare-bundled-slangd.py
 .\gradlew.bat test buildPlugin
 ```
@@ -57,22 +57,34 @@ python -B scripts/prepare-bundled-slangd.py
 The first command above assumes the reduced build has already been configured. The staging script
 accepts `--source`, `--build-dir`, `--configuration` and `--output`. It verifies the source against
 the pinned commit plus the patch series using a private Git index, checks AMD64 PE files and static
-CRT imports, copies license notices and patches, and runs ten real-server smoke suites against
-the staged copies. It then writes `.bundled-runtime/windows-x86_64/manifest.json`.
+CRT imports, copies license notices and patches, and runs fifteen real-server smoke suites against
+the staged copies. It then writes `.bundled-runtime/2026.19/windows-x86_64/manifest.json`.
 
 Gradle packages that directory in both `runIde` sandboxes and `buildPlugin` archives. Use
 `-PbundledSlangdDir=<directory>` for a different staged directory. Packaging fails for missing or
 changed payloads, an unexpected base commit, or stale patches. There is no fallback to the obsolete
-`.bundled-runtime/windows-x86_64.zip`. Generated binaries and source checkouts remain ignored by Git;
+`.bundled-runtime/2026.19/windows-x86_64.zip`. Generated binaries and source checkouts remain ignored by Git;
 a fresh source checkout must stage its runtime before packaging.
 
-The pinned base is `5f9227cf6e5055b6a9ee742fdd729aab9162cf25`, not a claim about the latest Slang
-release. Licenses and exact patches accompany the binary in the distributable.
+The pinned base is official Slang 2026.19, `0fb6b7587a94fa33d88141ec9930766eedc6f59a`. This does not automatically track future Slang
+releases. Licenses and exact patches accompany the binary in the distributable.
 
 ## 中文
 
-安装 0.8.11 后，在 **设置 → 语言和框架 → Slang → Language server** 选择
+安装 0.8.15 后，在 **设置 → 语言和框架 → Slang → Language server** 选择
 **Bundled enhanced slangd (Windows x64)** 即可使用自带增强版，不再需要手动替换 SDK 文件。
 选择 **External / official slangd** 可使用公版 SDK，继续支持自动查找和手动路径。
 应用后自动重启语言服务，切换时保留手动路径。已有自动查找配置在 Windows x64 上默认迁移到
 自带版；已有手动配置继续使用外部版。该选择不影响项目实际构建使用的 Slang 编译器。
+
+### Standard-library version compatibility (0.8.15)
+
+The bundled server uses official Slang 2026.19 core-library declarations for both
+HLSL descriptor heaps and `getDescriptorFromDynamicResourceHeap<T>`. This resolves the
+reported generic resolver's undefined-identifier/type errors without suppressing
+compiler diagnostics. Existing editor colors and reference links are preserved.
+
+Rebuild instructions and the current patch are in
+[`patches/slang/2026.19`](../patches/slang/2026.19/README.md). The prior top-level patch
+series is historical and must not be applied to this version. The separate project
+shader compiler and any explicitly selected external slangd are unchanged.

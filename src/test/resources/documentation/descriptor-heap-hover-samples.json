@@ -1,0 +1,194 @@
+{
+  "builtin-sampler": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```slang\n(HLSL SM 6.6 builtin) SamplerDescriptorHeap\n```\n\nIndexable sampler descriptor heap. Assign an indexed descriptor to SamplerState or SamplerComparisonState.\n\nFor non-uniform indices, use NonUniformResourceIndex(index).\n\n[HLSL Reference: Shader Model 6.6 Dynamic Resources \u2197](https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html#resourcedescriptorheap-and-samplerdescriptorheap)\n"
+    },
+    "range": {
+      "start": {
+        "line": 2,
+        "character": 20
+      },
+      "end": {
+        "line": 2,
+        "character": 41
+      }
+    }
+  },
+  "builtin-resource": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```slang\n(HLSL SM 6.6 builtin) ResourceDescriptorHeap\n```\n\nIndexable resource descriptor heap. Assign an indexed descriptor to a CBV, SRV or UAV resource type.\n\nFor non-uniform indices, use NonUniformResourceIndex(index).\n\n[HLSL Reference: Shader Model 6.6 Dynamic Resources \u2197](https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html#resourcedescriptorheap-and-samplerdescriptorheap)\n"
+    },
+    "range": {
+      "start": {
+        "line": 6,
+        "character": 20
+      },
+      "end": {
+        "line": 6,
+        "character": 42
+      }
+    }
+  },
+  "builtin-comparison": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```slang\n(HLSL SM 6.6 builtin) SamplerDescriptorHeap\n```\n\nIndexable sampler descriptor heap. Assign an indexed descriptor to SamplerState or SamplerComparisonState.\n\nFor non-uniform indices, use NonUniformResourceIndex(index).\n\n[HLSL Reference: Shader Model 6.6 Dynamic Resources \u2197](https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html#resourcedescriptorheap-and-samplerdescriptorheap)\n"
+    },
+    "range": {
+      "start": {
+        "line": 10,
+        "character": 20
+      },
+      "end": {
+        "line": 10,
+        "character": 41
+      }
+    }
+  },
+  "local-declaration": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(local variable) float ResourceDescriptorHeap\n```\nDefined in C:\\Users\\11252\\AppData\\Local\\Temp\\slang-descriptor-heaps-ktj0i2ve\\Heaps.hlsl(15)\n"
+    },
+    "range": {
+      "start": {
+        "line": 14,
+        "character": 10
+      },
+      "end": {
+        "line": 14,
+        "character": 32
+      }
+    }
+  },
+  "local-use": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(local variable) float ResourceDescriptorHeap\n```\nDefined in C:\\Users\\11252\\AppData\\Local\\Temp\\slang-descriptor-heaps-ktj0i2ve\\Heaps.hlsl(15)\n"
+    },
+    "range": {
+      "start": {
+        "line": 15,
+        "character": 20
+      },
+      "end": {
+        "line": 15,
+        "character": 42
+      }
+    }
+  },
+  "parameter-declaration": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(parameter) float SamplerDescriptorHeap\n```\n\nparameter-declaration  \n\nDefined in C:\\Users\\11252\\AppData\\Local\\Temp\\slang-descriptor-heaps-ktj0i2ve\\Heaps.hlsl(18)\n"
+    },
+    "range": {
+      "start": {
+        "line": 17,
+        "character": 28
+      },
+      "end": {
+        "line": 17,
+        "character": 49
+      }
+    }
+  },
+  "parameter-use": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(parameter) float SamplerDescriptorHeap\n```\n\nparameter-declaration  \n\nDefined in C:\\Users\\11252\\AppData\\Local\\Temp\\slang-descriptor-heaps-ktj0i2ve\\Heaps.hlsl(18)\n"
+    },
+    "range": {
+      "start": {
+        "line": 19,
+        "character": 20
+      },
+      "end": {
+        "line": 19,
+        "character": 41
+      }
+    }
+  },
+  "global-declaration": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(global variable) float Custom::ResourceDescriptorHeap\n```\n\nglobal-declaration  \n\nDefined in C:\\Users\\11252\\AppData\\Local\\Temp\\slang-descriptor-heaps-ktj0i2ve\\Heaps.hlsl(24)\n"
+    },
+    "range": {
+      "start": {
+        "line": 23,
+        "character": 10
+      },
+      "end": {
+        "line": 23,
+        "character": 32
+      }
+    }
+  },
+  "global-use": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(global variable) float Custom::ResourceDescriptorHeap\n```\n\nglobal-declaration  \n\nDefined in C:\\Users\\11252\\AppData\\Local\\Temp\\slang-descriptor-heaps-ktj0i2ve\\Heaps.hlsl(24)\n"
+    },
+    "range": {
+      "start": {
+        "line": 24,
+        "character": 35
+      },
+      "end": {
+        "line": 24,
+        "character": 57
+      }
+    }
+  },
+  "field-declaration": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```slang\npublic field\nfloat SamplerDescriptorHeap\n```\n\n(in struct `CustomHeap`)\n\n**Natural field layout (bytes)**  \nSize: `4`  \nAlignment: `4`  \nOffset: `0`\n\n\nfield-declaration  \n\n\n---\n\n[Heaps.hlsl:29](<file:///C:/Users/11252/AppData/Local/Temp/slang-descriptor-heaps-ktj0i2ve/Heaps.hlsl#L29>)\n"
+    },
+    "range": {
+      "start": {
+        "line": 28,
+        "character": 10
+      },
+      "end": {
+        "line": 28,
+        "character": 31
+      }
+    }
+  },
+  "field-use": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```slang\npublic field\nfloat SamplerDescriptorHeap\n```\n\n(in struct `CustomHeap`)\n\n**Natural field layout (bytes)**  \nSize: `4`  \nAlignment: `4`  \nOffset: `0`\n\n\nfield-declaration  \n\n\n---\n\n[Heaps.hlsl:29](<file:///C:/Users/11252/AppData/Local/Temp/slang-descriptor-heaps-ktj0i2ve/Heaps.hlsl#L29>)\n"
+    },
+    "range": {
+      "start": {
+        "line": 32,
+        "character": 26
+      },
+      "end": {
+        "line": 32,
+        "character": 47
+      }
+    }
+  },
+  "qualified-use": {
+    "contents": {
+      "kind": "markdown",
+      "value": "```\n(global variable) float Custom::ResourceDescriptorHeap\n```\n\nglobal-declaration  \n\nDefined in C:\\Users\\11252\\AppData\\Local\\Temp\\slang-descriptor-heaps-ktj0i2ve\\Heaps.hlsl(24)\n"
+    },
+    "range": {
+      "start": {
+        "line": 34,
+        "character": 45
+      },
+      "end": {
+        "line": 34,
+        "character": 67
+      }
+    }
+  }
+}

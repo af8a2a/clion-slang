@@ -1,0 +1,167 @@
+diff --git a/source/slang/hlsl.meta.slang b/source/slang/hlsl.meta.slang
+index a8982c52c..d34b46232 100644
+--- a/source/slang/hlsl.meta.slang
++++ b/source/slang/hlsl.meta.slang
+@@ -26621,6 +26621,22 @@ enum __DynamicResourceKind
+     Sampler = 1
+ }
+ 
++// HLSL SM 6.6 compatibility for the bundled language server. Keep descriptor
++// kinds in the type system, so sampler and resource heaps cannot be interchanged.
++struct __HLSLDescriptorHeapElement<let kind : __DynamicResourceKind>
++{
++    uint index;
++}
++struct __HLSLDescriptorHeap<let kind : __DynamicResourceKind>
++{
++    __subscript(uint index) -> __HLSLDescriptorHeapElement<kind>
++    {
++        get { return { index }; }
++    }
++}
++static const __HLSLDescriptorHeap<__DynamicResourceKind.General> ResourceDescriptorHeap = {};
++static const __HLSLDescriptorHeap<__DynamicResourceKind.Sampler> SamplerDescriptorHeap = {};
++
+ __generic<T:ITexelElement, Shape : __ITextureShape, let isArray : int, let isMS : int, let sampleCount : int, let access : int, let isShadow : int, let isCombined : int, let format : int>
+ extension _Texture<T, Shape, isArray, isMS, sampleCount, access, isShadow, isCombined, format> : __IDynamicResourceCastable<__DynamicResourceKind.General>
+ {
+@@ -26628,6 +26644,13 @@ extension _Texture<T, Shape, isArray, isMS, sampleCount, access, isShadow, isCom
+     __implicit_conversion($(kConversionCost_GenericParamUpcast))
+     __init(__DynamicResource res);
+ 
++    __implicit_conversion($(kConversionCost_GenericParamUpcast))
++    __init(__HLSLDescriptorHeapElement<__DynamicResourceKind.General> descriptor)
++    {
++        return defaultGetDescriptorFromHandle(DescriptorHandle<This>(uint2(descriptor.index, 0)));
++    }
++
++
+     typealias Handle = DescriptorHandle<This>;
+ 
+     static const DescriptorKind kind = (Shape.flavor == __ShapeBuffer.flavor ?
+@@ -26685,6 +26708,13 @@ extension $(typeName) : __IDynamicResourceCastable<__DynamicResourceKind.$(dynam
+     __implicit_conversion($(kConversionCost_GenericParamUpcast))
+     __init(__DynamicResource res);
+ 
++    __implicit_conversion($(kConversionCost_GenericParamUpcast))
++    __init(__HLSLDescriptorHeapElement<__DynamicResourceKind.$(dynamicKind)> descriptor)
++    {
++        return defaultGetDescriptorFromHandle(DescriptorHandle<This>(uint2(descriptor.index, 0)));
++    }
++
++
+     static const DescriptorKind kind = DescriptorKind.$(kind);
+     static const DescriptorAccess descriptorAccess = DescriptorAccess.$(access);
+ 
+diff --git a/source/slang/slang-check-conversion.cpp b/source/slang/slang-check-conversion.cpp
+index cd416663c..dfd5cdb09 100644
+--- a/source/slang/slang-check-conversion.cpp
++++ b/source/slang/slang-check-conversion.cpp
+@@ -1720,7 +1720,25 @@ bool SemanticsVisitor::_coerce(
+     //
+     if (as<ParameterGroupType>(toType))
+     {
+-        return _failedCoercion(toType, outToExpr, fromExpr, sink);
++        // Heap elements have kind-constrained constructors on CBV/texture buffers.
++        // Let normal overload resolution check those, without permitting general
++        // struct -> parameter-group conversions or user types with the same name.
++        bool descriptorHeapElement = false;
++        if (as<ConstantBufferType>(toType) || as<TextureBufferType>(toType))
++        {
++            if (auto fromDeclType = as<DeclRefType>(fromType))
++            {
++                auto decl = fromDeclType->getDeclRef().getDecl();
++                if (decl->getName() && getText(decl->getName()) == "__HLSLDescriptorHeapElement")
++                {
++                    auto origin = getLinkage()->getSourceManager()->getHumaneLoc(
++                        decl->loc, SourceLocType::Actual).pathInfo;
++                    descriptorHeapElement = origin.getName() == "core" && !File::exists(origin.foundPath);
++                }
++            }
++        }
++        if (!descriptorHeapElement)
++            return _failedCoercion(toType, outToExpr, fromExpr, sink);
+     }
+ 
+     // If the type that we are converting from is a parameter group type
+diff --git a/source/slang/slang-language-server-ast-lookup.cpp b/source/slang/slang-language-server-ast-lookup.cpp
+index 12d12fec0..a14a60c96 100644
+--- a/source/slang/slang-language-server-ast-lookup.cpp
++++ b/source/slang/slang-language-server-ast-lookup.cpp
+@@ -233,7 +233,7 @@ public:
+ 
+     bool visitVarExpr(VarExpr* expr)
+     {
+-        if (isHlslDescriptorHeapReference(expr) &&
++        if (isHlslDescriptorHeapReference(expr, context->sourceManager) &&
+             _isLocInRange(context, expr->loc, getText(expr->name).getLength()))
+         {
+             ASTLookupResult result;
+diff --git a/source/slang/slang-language-server-semantic-tokens.cpp b/source/slang/slang-language-server-semantic-tokens.cpp
+index 5ec6d5c81..7429183d7 100644
+--- a/source/slang/slang-language-server-semantic-tokens.cpp
++++ b/source/slang/slang-language-server-semantic-tokens.cpp
+@@ -56,6 +56,18 @@ bool isHighlightableName(Name* name)
+     return true;
+ }
+ 
++bool isHlslDescriptorHeapReference(SyntaxNode* node, SourceManager* manager)
++{
++    auto expr = as<VarExpr>(node);
++    if (!expr || !expr->declRef || !expr->name) return false;
++    auto name = getText(expr->name);
++    if (name != "ResourceDescriptorHeap" && name != "SamplerDescriptorHeap") return false;
++    auto decl = expr->declRef.getDecl();
++    if (!as<VarDeclBase>(decl) || !as<ModuleDecl>(decl->parentDecl)) return false;
++    auto origin = manager->getHumaneLoc(decl->loc, SourceLocType::Actual).pathInfo;
++    return origin.getName() == "core" && !File::exists(origin.foundPath);
++}
++
+ List<SemanticToken> getSemanticTokens(
+     Linkage* linkage,
+     Module* module,
+@@ -201,7 +213,7 @@ List<SemanticToken> getSemanticTokens(
+                 }
+             }
+ 
+-            if (isHlslDescriptorHeapReference(node))
++            if (isHlslDescriptorHeapReference(node, manager))
+             {
+                 auto expr = as<VarExpr>(node);
+                 auto token = _createSemanticToken(manager, expr->loc, expr->name);
+diff --git a/source/slang/slang-language-server-semantic-tokens.h b/source/slang/slang-language-server-semantic-tokens.h
+index f82826a98..2ad6d7cc4 100644
+--- a/source/slang/slang-language-server-semantic-tokens.h
++++ b/source/slang/slang-language-server-semantic-tokens.h
+@@ -54,16 +54,8 @@ struct SemanticToken
+         return false;
+     }
+ };
+-// Editor fallback for HLSL globals absent from Slang's core module. Checked
+-// user declarations (including shadowing) always take precedence. MemberExpr,
+-// comments, strings and inactive preprocessor branches cannot match this test.
+-inline bool isHlslDescriptorHeapReference(SyntaxNode* node)
+-{
+-    auto expr = as<VarExpr>(node);
+-    if (!expr || expr->declRef || !expr->name) return false;
+-    auto name = getText(expr->name);
+-    return name == "ResourceDescriptorHeap" || name == "SamplerDescriptorHeap";
+-}
++// Only actual synthetic-core declarations count as descriptor heap builtins.
++bool isHlslDescriptorHeapReference(SyntaxNode* node, SourceManager* manager);
+ 
+ List<SemanticToken> getSemanticTokens(
+     Linkage* linkage,
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index 4846f256d..bd3b2a650 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -1287,7 +1287,7 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::hover(
+             fillLoc(expr->loc);
+         }
+     };
+-    if (isHlslDescriptorHeapReference(leafNode))
++    if (isHlslDescriptorHeapReference(leafNode, version->linkage->getSourceManager()))
+     {
+         auto expr = as<VarExpr>(leafNode);
+         bool sampler = getText(expr->name) == "SamplerDescriptorHeap";

@@ -139,7 +139,7 @@ public class SlangRiderLightColorSchemeTest {
                 SlangSemanticColors.STATIC_VARIABLE, SlangSemanticColors.PARAMETER, SlangSyntaxHighlighter.OPERATOR);
         foreground(scheme, 0x0093A1, SlangSemanticColors.READONLY_VARIABLE);
         assertEquals(Font.BOLD, scheme.getAttributes(SlangSemanticColors.READONLY_VARIABLE).getFontType());
-        foreground(scheme, 0x000000, SlangSemanticColors.BUILTIN_SYMBOL);
+        foreground(scheme, 0x0093A1, SlangSemanticColors.BUILTIN_SYMBOL);
         for (var comment : new TextAttributesKey[]{SlangSyntaxHighlighter.LINE_COMMENT,
                 SlangSyntaxHighlighter.BLOCK_COMMENT, SlangSyntaxHighlighter.DOC_COMMENT}) {
             foreground(scheme, 0x248700, comment);
@@ -193,7 +193,7 @@ public class SlangRiderLightColorSchemeTest {
         mapped(actual, reference, mapped, "DEFAULT_FUNCTION_CALL", SlangSemanticColors.FUNCTION, SlangSemanticColors.INTRINSIC);
         mapped(actual, reference, mapped, "DEFAULT_INSTANCE_METHOD", SlangSemanticColors.METHOD);
         mapped(actual, reference, mapped, "DEFAULT_STATIC_METHOD", SlangSemanticColors.STATIC_METHOD);
-        mapped(actual, reference, mapped, "DEFAULT_PREDEFINED_SYMBOL", SlangSemanticColors.BUILTIN_SYMBOL);
+        mapped(actual, reference, mapped, "DEFAULT_CONSTANT", SlangSemanticColors.BUILTIN_SYMBOL);
         mapped(actual, reference, mapped, "DEFAULT_OPERATION_SIGN", SlangSyntaxHighlighter.OPERATOR);
         mapped(actual, reference, mapped, "DEFAULT_BRACES", SlangSyntaxHighlighter.BRACES);
         mapped(actual, reference, mapped, "DEFAULT_BRACKETS", SlangSyntaxHighlighter.BRACKETS);

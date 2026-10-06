@@ -1,0 +1,2289 @@
+diff --git a/source/compiler-core/slang-language-server-protocol.cpp b/source/compiler-core/slang-language-server-protocol.cpp
+index 5c43484d4..11b58104d 100644
+--- a/source/compiler-core/slang-language-server-protocol.cpp
++++ b/source/compiler-core/slang-language-server-protocol.cpp
+@@ -249,6 +249,23 @@ static const StructRttiInfo _makeWorkspaceCapabilitiesRtti()
+ }
+ const StructRttiInfo WorkspaceCapabilities::g_rttiInfo = _makeWorkspaceCapabilitiesRtti();
+ 
++static const StructRttiInfo _makeSlangExperimentalServerCapabilitiesRtti()
++{
++    SlangExperimentalServerCapabilities obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::SlangExperimentalServerCapabilities",
++        nullptr);
++    builder.addField("preprocessorTrace", &obj.preprocessorTrace);
++    builder.addField("preprocessorContexts", &obj.preprocessorContexts);
++    builder.addField("preprocessorVariants", &obj.preprocessorVariants);
++    builder.addField("preprocessorPreview", &obj.preprocessorPreview);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo SlangExperimentalServerCapabilities::g_rttiInfo =
++    _makeSlangExperimentalServerCapabilitiesRtti();
++
+ static const StructRttiInfo _makeServerCapabilitiesRtti()
+ {
+     ServerCapabilities obj;
+@@ -266,6 +283,7 @@ static const StructRttiInfo _makeServerCapabilitiesRtti()
+     builder.addField("semanticTokensProvider", &obj.semanticTokensProvider);
+     builder.addField("signatureHelpProvider", &obj.signatureHelpProvider);
+     builder.addField("documentSymbolProvider", &obj.documentSymbolProvider);
++    builder.addField("experimental", &obj.experimental);
+     builder.ignoreUnknownFields();
+     return builder.make();
+ }
+@@ -288,6 +306,7 @@ static const StructRttiInfo _makeVSServerCapabilitiesRtti()
+     builder.addField("semanticTokensProvider", &obj.semanticTokensProvider);
+     builder.addField("signatureHelpProvider", &obj.signatureHelpProvider);
+     builder.addField("documentSymbolProvider", &obj.documentSymbolProvider);
++    builder.addField("experimental", &obj.experimental);
+     builder.addField("_vs_projectContextProvider", &obj._vs_projectContextProvider);
+     builder.ignoreUnknownFields();
+     return builder.make();
+@@ -561,6 +580,120 @@ static const StructRttiInfo _makeSemanticTokensRtti()
+ }
+ const StructRttiInfo SemanticTokens::g_rttiInfo = _makeSemanticTokensRtti();
+ 
++static const StructRttiInfo _makePreprocessorBuildMacroRtti()
++{
++    PreprocessorBuildMacro obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorBuildMacro", nullptr);
++    builder.addField("name", &obj.name);
++    builder.addField("value", &obj.value);
++    return builder.make();
++}
++const StructRttiInfo PreprocessorBuildMacro::g_rttiInfo = _makePreprocessorBuildMacroRtti();
++
++static const StructRttiInfo _makePreprocessorBuildContextRtti()
++{
++    PreprocessorBuildContext obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorBuildContext", nullptr);
++    builder.addField("version", &obj.version);
++    builder.addField("fingerprint", &obj.fingerprint);
++    builder.addField("inheritWorkspace", &obj.inheritWorkspace);
++    builder.addField("defines", &obj.defines);
++    builder.addField("undefines", &obj.undefines);
++    builder.addField("includePaths", &obj.includePaths);
++    builder.addField("target", &obj.target);
++    builder.addField("profile", &obj.profile);
++    return builder.make();
++}
++const StructRttiInfo PreprocessorBuildContext::g_rttiInfo = _makePreprocessorBuildContextRtti();
++
++static const StructRttiInfo _makePreprocessorPreviewRtti()
++{
++    PreprocessorPreview obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorPreview", nullptr);
++    builder.addField("version", &obj.version);
++    builder.addField("fingerprint", &obj.fingerprint);
++    builder.addField("defines", &obj.defines);
++    builder.addField("undefines", &obj.undefines);
++    return builder.make();
++}
++const StructRttiInfo PreprocessorPreview::g_rttiInfo = _makePreprocessorPreviewRtti();
++
++static const StructRttiInfo _makePreprocessorTraceParamsRtti()
++{
++    PreprocessorTraceParams obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::PreprocessorTraceParams",
++        &WorkDoneProgressParams::g_rttiInfo);
++    builder.addField("textDocument", &obj.textDocument);
++    builder.addField("contextUri", &obj.contextUri, StructRttiInfo::Flag::Optional);
++    builder.addField("buildContext", &obj.buildContext, StructRttiInfo::Flag::Optional);
++    builder.addField("preview", &obj.preview, StructRttiInfo::Flag::Optional);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo PreprocessorTraceParams::g_rttiInfo = _makePreprocessorTraceParamsRtti();
++const UnownedStringSlice PreprocessorTraceParams::methodName =
++    UnownedStringSlice::fromLiteral("slang/textDocument/preprocessorTrace");
++
++static const StructRttiInfo _makePreprocessorTraceDirectiveRtti()
++{
++    PreprocessorTraceDirective obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::PreprocessorTraceDirective",
++        nullptr);
++    builder.addField("kind", &obj.kind);
++    builder.addField("range", &obj.range);
++    builder.addField("keywordRange", &obj.keywordRange);
++    builder.addField("evaluated", &obj.evaluated);
++    builder.addField("value", &obj.value);
++    builder.addField("active", &obj.active);
++    builder.addField("depth", &obj.depth);
++    builder.addField("parentDirective", &obj.parentDirective);
++    builder.addField("matchingIfDirective", &obj.matchingIfDirective);
++    builder.addField("previousBranchDirective", &obj.previousBranchDirective);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo PreprocessorTraceDirective::g_rttiInfo =
++    _makePreprocessorTraceDirectiveRtti();
++
++static const StructRttiInfo _makePreprocessorTraceInactiveRegionRtti()
++{
++    PreprocessorTraceInactiveRegion obj;
++    StructRttiBuilder builder(
++        &obj,
++        "LanguageServerProtocol::PreprocessorTraceInactiveRegion",
++        nullptr);
++    builder.addField("range", &obj.range);
++    builder.addField("controllingDirective", &obj.controllingDirective);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo PreprocessorTraceInactiveRegion::g_rttiInfo =
++    _makePreprocessorTraceInactiveRegionRtti();
++
++static const StructRttiInfo _makePreprocessorTraceRtti()
++{
++    PreprocessorTrace obj;
++    StructRttiBuilder builder(&obj, "LanguageServerProtocol::PreprocessorTrace", nullptr);
++    builder.addField("uri", &obj.uri);
++    builder.addField("version", &obj.version);
++    builder.addField("contextUri", &obj.contextUri);
++    builder.addField("contextVersion", &obj.contextVersion);
++    builder.addField("status", &obj.status);
++    builder.addField("occurrenceCount", &obj.occurrenceCount);
++    builder.addField("contextFingerprint", &obj.contextFingerprint);
++    builder.addField("contextError", &obj.contextError);
++    builder.addField("previewFingerprint", &obj.previewFingerprint);
++    builder.addField("directives", &obj.directives);
++    builder.addField("inactiveRegions", &obj.inactiveRegions);
++    builder.ignoreUnknownFields();
++    return builder.make();
++}
++const StructRttiInfo PreprocessorTrace::g_rttiInfo = _makePreprocessorTraceRtti();
++
+ static const StructRttiInfo _makeSignatureHelpParamsRtti()
+ {
+     SignatureHelpParams obj;
+diff --git a/source/compiler-core/slang-language-server-protocol.h b/source/compiler-core/slang-language-server-protocol.h
+index d232c12c0..fd07bffd7 100644
+--- a/source/compiler-core/slang-language-server-protocol.h
++++ b/source/compiler-core/slang-language-server-protocol.h
+@@ -280,6 +280,15 @@ struct DocumentOnTypeFormattingOptions
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
++struct SlangExperimentalServerCapabilities
++{
++    int preprocessorTrace = 0;
++    int preprocessorContexts = 0;
++    int preprocessorVariants = 0;
++    int preprocessorPreview = 0;
++    static const StructRttiInfo g_rttiInfo;
++};
++
+ struct ServerCapabilities
+ {
+     String positionEncoding;
+@@ -295,6 +304,7 @@ struct ServerCapabilities
+     SemanticTokensOptions semanticTokensProvider;
+     SignatureHelpOptions signatureHelpProvider;
+     WorkspaceCapabilities workspace;
++    SlangExperimentalServerCapabilities experimental;
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
+@@ -711,6 +721,87 @@ struct SemanticTokens
+     static const StructRttiInfo g_rttiInfo;
+ };
+ 
++struct PreprocessorBuildMacro
++{
++    String name;
++    String value;
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorBuildContext
++{
++    int version = 0;
++    String fingerprint;
++    bool inheritWorkspace = false;
++    List<PreprocessorBuildMacro> defines;
++    List<String> undefines;
++    List<String> includePaths;
++    String target;
++    String profile;
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorPreview
++{
++    int version = 0;
++    String fingerprint;
++    List<PreprocessorBuildMacro> defines;
++    List<String> undefines;
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorTraceParams : WorkDoneProgressParams
++{
++    TextDocumentIdentifier textDocument;
++    String contextUri;
++    PreprocessorBuildContext buildContext;
++    JSONOptional<PreprocessorPreview> preview;
++
++    static const UnownedStringSlice methodName;
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorTraceDirective
++{
++    String kind;
++    Range range;
++    Range keywordRange;
++    bool evaluated = false;
++    bool value = false;
++    bool active = false;
++    int depth = 0;
++    int parentDirective = -1;
++    int matchingIfDirective = -1;
++    int previousBranchDirective = -1;
++
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorTraceInactiveRegion
++{
++    Range range;
++    int controllingDirective = -1;
++
++    static const StructRttiInfo g_rttiInfo;
++};
++
++struct PreprocessorTrace
++{
++    String uri;
++    int version = 0;
++    String contextUri;
++    int contextVersion = -1;
++    String status;
++    int occurrenceCount = 0;
++    String contextFingerprint;
++    String contextError;
++    String previewFingerprint;
++    List<PreprocessorTraceDirective> directives;
++    List<PreprocessorTraceInactiveRegion> inactiveRegions;
++
++    static const StructRttiInfo g_rttiInfo;
++};
++
+ struct SignatureHelpParams : WorkDoneProgressParams, TextDocumentPositionParams
+ {
+     static const UnownedStringSlice methodName;
+diff --git a/source/slang/slang-content-assist-info.h b/source/slang/slang-content-assist-info.h
+index c913e1546..aa492db5e 100644
+--- a/source/slang/slang-content-assist-info.h
++++ b/source/slang/slang-content-assist-info.h
+@@ -60,6 +60,7 @@ struct MacroDefinitionContentAssistInfo
+ 
+     Name* name;
+     SourceLoc loc;
++    bool isFunctionLike = false;
+     List<Param> params;
+     List<Token> tokenList;
+ };
+@@ -68,6 +69,10 @@ struct MacroInvocationContentAssistInfo
+ {
+     Name* name;
+     SourceLoc loc;
++    SourceLoc definitionLoc;
++    List<Token> expandedTokens;
++    bool hasExpansionPreview = false;
++    bool expansionTruncated = false;
+ };
+ 
+ struct FileIncludeContentAssistInfo
+@@ -77,11 +82,46 @@ struct FileIncludeContentAssistInfo
+     String path;
+ };
+ 
++struct PreprocessorTraceFileContentAssistInfo
++{
++    String rootPath;
++    SourceLoc beginLoc;
++};
++
++struct ConditionalDirectiveContentAssistInfo
++{
++    int fileIndex = -1;
++    String kind;
++    SourceLoc beginLoc;
++    SourceLoc endLoc;
++    SourceLoc keywordLoc;
++    int keywordLength = 0;
++    bool evaluated = false;
++    bool value = false;
++    bool active = false;
++    int depth = 0;
++    int parentDirective = -1;
++    int matchingIfDirective = -1;
++    int previousBranchDirective = -1;
++};
++
++struct InactiveRegionContentAssistInfo
++{
++    int fileIndex = -1;
++    SourceLoc beginLoc;
++    SourceLoc endLoc;
++    int controllingDirective = -1;
++    bool endsAtDirective = false;
++};
++
+ struct PreprocessorContentAssistInfo
+ {
++    List<PreprocessorTraceFileContentAssistInfo> traceFiles;
+     List<MacroDefinitionContentAssistInfo> macroDefinitions;
+     List<MacroInvocationContentAssistInfo> macroInvocations;
+     List<FileIncludeContentAssistInfo> fileIncludes;
++    List<ConditionalDirectiveContentAssistInfo> conditionalDirectives;
++    List<InactiveRegionContentAssistInfo> inactiveRegions;
+ };
+ 
+ enum class ContentAssistCheckingMode
+diff --git a/source/slang/slang-language-server-ast-lookup.cpp b/source/slang/slang-language-server-ast-lookup.cpp
+index e4e46e078..2715ad3ba 100644
+--- a/source/slang/slang-language-server-ast-lookup.cpp
++++ b/source/slang/slang-language-server-ast-lookup.cpp
+@@ -1,4 +1,5 @@
+ #include "slang-language-server-ast-lookup.h"
++#include "slang-language-server-semantic-tokens.h"
+ 
+ #include "slang-visitor.h"
+ #include "slang-workspace-version.h"
+@@ -250,6 +251,15 @@ public:
+ 
+     bool visitVarExpr(VarExpr* expr)
+     {
++        if (isHlslDescriptorHeapReference(expr, context->sourceManager) &&
++            _isLocInRange(context, expr->loc, getText(expr->name).getLength()))
++        {
++            ASTLookupResult result;
++            result.path = context->nodePath;
++            result.path.add(expr);
++            context->results.add(result);
++            return true;
++        }
+         if (expr->name && expr->declRef.getDecl())
+         {
+             if (expr->declRef.getDecl()->hasModifier<ImplicitConversionModifier>())
+diff --git a/source/slang/slang-language-server-semantic-tokens.cpp b/source/slang/slang-language-server-semantic-tokens.cpp
+index c2f7259b8..88e80ebdf 100644
+--- a/source/slang/slang-language-server-semantic-tokens.cpp
++++ b/source/slang/slang-language-server-semantic-tokens.cpp
+@@ -20,7 +20,10 @@ const char* kSemanticTokenTypes[] = {
+     "namespace",
+     "keyword",
+     "macro",
+-    "string"};
++    "string",
++    "typeParameter",
++    "slangTypeArgument",
++    "slangStructuredBuffer"};
+ 
+ static const int kInitTokenLegnth = 6;
+ 
+@@ -53,14 +56,49 @@ bool isHighlightableName(Name* name)
+     return true;
+ }
+ 
++bool isHlslDescriptorHeapReference(SyntaxNode* node, SourceManager* manager)
++{
++    auto expr = as<VarExpr>(node);
++    if (!expr || !expr->declRef || !expr->name) return false;
++    auto name = getText(expr->name);
++    if (name != "ResourceDescriptorHeap" && name != "SamplerDescriptorHeap") return false;
++    auto decl = expr->declRef.getDecl();
++    if (!as<VarDeclBase>(decl) || !as<ModuleDecl>(decl->parentDecl)) return false;
++    auto origin = manager->getHumaneLoc(decl->loc, SourceLocType::Actual).pathInfo;
++    return origin.getName() == "core" && !File::exists(origin.foundPath);
++}
++
+ List<SemanticToken> getSemanticTokens(
+     Linkage* linkage,
+     Module* module,
+     UnownedStringSlice fileName,
+-    DocumentVersion* doc)
++    DocumentVersion* doc,
++    bool structuredBufferRoles,
++    bool builtinModifiers)
+ {
+     auto manager = linkage->getSourceManager();
+ 
++    // Record checked type arguments, not tokens guessed from '<' / '>'. Value arguments,
++    // comparison operators, namespace qualifiers and variable names keep their own roles.
++    HashSet<SourceLoc::RawValue> typeArgumentLocs;
++    HashSet<Expr*> scannedArguments;
++    if (structuredBufferRoles)
++        iterateASTWithLanguageServerFilter(fileName, manager, module->getModuleDecl(), [&](SyntaxNode* node)
++        {
++            auto app = as<GenericAppExpr>(node);
++            if (!app) return;
++            for (auto arg : app->arguments)
++            {
++                if (!arg || !as<TypeType>(arg->type) || !scannedArguments.add(arg)) continue;
++                iterateAST(arg, [](DeclBase*) { return false; }, [&](SyntaxNode* child)
++                {
++                    if (auto expr = as<Expr>(child)) scannedArguments.add(expr);
++                    if (auto reference = as<DeclRefExpr>(child))
++                        if (as<TypeType>(reference->type)) typeArgumentLocs.add(reference->loc.getRaw());
++                });
++            }
++        });
++
+     List<SemanticToken> result;
+     auto maybeInsertToken = [&](const SemanticToken& token)
+     {
+@@ -92,7 +130,7 @@ List<SemanticToken> getSemanticTokens(
+         auto target = decl;
+         if (as<AggTypeDecl>(target))
+         {
+-            if (target->hasModifier<BuiltinTypeModifier>())
++            if (target->hasModifier<BuiltinTypeModifier>() && !typeArgumentLocs.contains(loc.getRaw()))
+                 return;
+             token.type = SemanticTokenType::Type;
+             token.length = doc->getTokenLength(token.line, token.col);
+@@ -118,11 +156,10 @@ List<SemanticToken> getSemanticTokens(
+         }
+         else if (as<VarDecl>(target))
+         {
+-            if (as<MemberExpr>(originalExpr) || as<StaticMemberExpr>(originalExpr))
+-            {
+-                return;
+-            }
+-            token.type = SemanticTokenType::Variable;
++            // Classify the resolved declaration, not the spelling of A.b: namespace
++            // globals remain variables, while explicit and implicit fields share a color.
++            token.type = as<AggTypeDeclBase>(target->parentDecl)
++                ? SemanticTokenType::Property : SemanticTokenType::Variable;
+         }
+         else if (as<FunctionDeclBase>(target))
+         {
+@@ -137,6 +174,21 @@ List<SemanticToken> getSemanticTokens(
+             token.type = SemanticTokenType::Namespace;
+         }
+ 
++        if (structuredBufferRoles && token.type == SemanticTokenType::Type)
++        {
++            if (as<GenericTypeParamDecl>(target)) token.type = SemanticTokenType::TypeParameter;
++            if (typeArgumentLocs.contains(loc.getRaw())) token.type = SemanticTokenType::TypeArgument;
++            // Resolve actual compiler intrinsics: a user-defined type with the same spelling
++            // (or an alias to a resource) is not automatically classified as the built-in.
++            if (auto magic = target->findModifier<MagicTypeModifier>())
++                if (magic->magicName == "HLSLStructuredBufferType" ||
++                    magic->magicName == "HLSLRWStructuredBufferType" ||
++                    magic->magicName == "HLSLAppendStructuredBufferType" ||
++                    magic->magicName == "HLSLConsumeStructuredBufferType" ||
++                    magic->magicName == "HLSLRasterizerOrderedStructuredBufferType")
++                    token.type = SemanticTokenType::StructuredBuffer;
++        }
++
+         if (as<CallableDecl>(target))
+         {
+             if (target->hasModifier<ImplicitConversionModifier>())
+@@ -161,7 +213,15 @@ List<SemanticToken> getSemanticTokens(
+                 }
+             }
+ 
+-            if (auto declRefExpr = as<DeclRefExpr>(node))
++            if (isHlslDescriptorHeapReference(node, manager))
++            {
++                auto expr = as<VarExpr>(node);
++                auto token = _createSemanticToken(manager, expr->loc, expr->name);
++                token.type = SemanticTokenType::Variable;
++                token.modifiers = builtinModifiers ? 1 : 0;
++                maybeInsertToken(token);
++            }
++            else if (auto declRefExpr = as<DeclRefExpr>(node))
+             {
+                 handleDeclRef(
+                     declRefExpr->declRef,
+@@ -169,6 +229,21 @@ List<SemanticToken> getSemanticTokens(
+                     declRefExpr->name,
+                     declRefExpr->loc);
+             }
++            else if (as<SwizzleExpr>(node) || as<MatrixSwizzleExpr>(node))
++            {
++                // Vector/matrix components have no VarDecl. Only color source-written
++                // selectors, never compiler-generated swizzles or the receiver/dot.
++                auto memberLoc = as<SwizzleExpr>(node)
++                    ? as<SwizzleExpr>(node)->memberOpLoc
++                    : as<MatrixSwizzleExpr>(node)->memberOpLoc;
++                if (!memberLoc.isValid() || !manager->getHumaneLoc(node->loc, SourceLocType::Actual)
++                        .pathInfo.foundPath.getUnownedSlice().endsWithCaseInsensitive(fileName))
++                    return;
++                auto token = _createSemanticToken(manager, node->loc, nullptr);
++                token.type = SemanticTokenType::Property;
++                token.length = doc->getTokenLength(token.line, token.col);
++                maybeInsertToken(token);
++            }
+             else if (auto overloadedExpr = as<OverloadedExpr>(node))
+             {
+                 if (overloadedExpr->lookupResult2.items.getCount())
+@@ -194,6 +269,8 @@ List<SemanticToken> getSemanticTokens(
+                     SemanticToken token =
+                         _createSemanticToken(manager, typeDecl->getNameLoc(), typeDecl->getName());
+                     token.type = SemanticTokenType::Type;
++                    if (structuredBufferRoles && as<GenericTypeParamDecl>(typeDecl))
++                        token.type = SemanticTokenType::TypeParameter;
+                     maybeInsertToken(token);
+                 }
+             }
+@@ -269,7 +346,8 @@ List<SemanticToken> getSemanticTokens(
+                 {
+                     SemanticToken token =
+                         _createSemanticToken(manager, varDecl->getNameLoc(), varDecl->getName());
+-                    token.type = SemanticTokenType::Variable;
++                    token.type = as<AggTypeDeclBase>(varDecl->parentDecl)
++                        ? SemanticTokenType::Property : SemanticTokenType::Variable;
+                     maybeInsertToken(token);
+                 }
+             }
+@@ -391,7 +469,7 @@ List<uint32_t> getEncodedTokens(List<SemanticToken>& tokens)
+     result.add((uint32_t)tokens[0].col);
+     result.add((uint32_t)tokens[0].length);
+     result.add((uint32_t)tokens[0].type);
+-    result.add(0);
++    result.add(tokens[0].modifiers);
+ 
+     // Encode the rest tokens as deltas.
+     uint32_t prevLine = (uint32_t)tokens[0].line;
+@@ -410,7 +488,7 @@ List<uint32_t> getEncodedTokens(List<SemanticToken>& tokens)
+         result.add(deltaCol);
+         result.add((uint32_t)tokens[i].length);
+         result.add((uint32_t)tokens[i].type);
+-        result.add(0);
++        result.add(tokens[i].modifiers);
+ 
+         prevLine = thisLine;
+         prevCol = thisCol;
+diff --git a/source/slang/slang-language-server-semantic-tokens.h b/source/slang/slang-language-server-semantic-tokens.h
+index 0fc34daf2..406c9e873 100644
+--- a/source/slang/slang-language-server-semantic-tokens.h
++++ b/source/slang/slang-language-server-semantic-tokens.h
+@@ -21,6 +21,10 @@ enum class SemanticTokenType
+     Keyword,
+     Macro,
+     String,
++    // Append-only refinements, enabled only when the client advertises all three names.
++    TypeParameter,
++    TypeArgument,
++    StructuredBuffer,
+     NormalText
+ };
+ extern const char* kSemanticTokenTypes[(int)SemanticTokenType::NormalText];
+@@ -31,20 +35,35 @@ struct SemanticToken
+     int col;
+     int length;
+     SemanticTokenType type;
++    uint32_t modifiers = 0;
+     bool operator<(const SemanticToken& other) const
+     {
+         if (line < other.line)
+             return true;
+         if (line == other.line)
+-            return col < other.col;
++        {
++            if (col != other.col) return col < other.col;
++            auto priority = [](SemanticTokenType value)
++            {
++                return value == SemanticTokenType::StructuredBuffer ? 3
++                    : value == SemanticTokenType::TypeArgument ? 2
++                    : value == SemanticTokenType::TypeParameter ? 1 : 0;
++            };
++            return priority(type) > priority(other.type);
++        }
+         return false;
+     }
+ };
++// Only actual synthetic-core declarations count as descriptor heap builtins.
++bool isHlslDescriptorHeapReference(SyntaxNode* node, SourceManager* manager);
++
+ List<SemanticToken> getSemanticTokens(
+     Linkage* linkage,
+     Module* module,
+     UnownedStringSlice fileName,
+-    DocumentVersion* doc);
++    DocumentVersion* doc,
++    bool structuredBufferRoles = false,
++    bool builtinModifiers = false);
+ List<uint32_t> getEncodedTokens(List<SemanticToken>& tokens);
+ 
+ } // namespace Slang
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index 6a24bcd31..efa002ad4 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -14,6 +14,7 @@
+ #include "core/slang-string-util.h"
+ #include "core/slang-type-text-util.h"
+ #include "platform/performance-counter.h"
++#include "slang-ast-natural-layout.h"
+ #include "slang-ast-print.h"
+ #include "slang-check-impl.h"
+ #include "slang-com-helper.h"
+@@ -26,6 +27,7 @@
+ #include "slang-mangle.h"
+ #include "slang-workspace-version.h"
+ 
++#include <limits>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -138,6 +140,30 @@ SlangResult LanguageServer::parseNextMessage()
+                 InitializeParams args;
+                 m_connection->toNativeArgsOrSendError(call.params, &args, call.id);
+                 init(args);
++                // Preserve the stock legend and tokens unless the client opts into these roles.
++                auto container = m_connection->getContainer();
++                auto member = [&](JSONValue object, const char* key)
++                {
++                    return object.type == JSONValue::Type::Object
++                        ? container->findObjectValue(object, container->findKey(UnownedStringSlice(key)))
++                        : JSONValue::makeInvalid();
++                };
++                auto clientTypes = member(member(member(member(call.params, "capabilities"),
++                    "textDocument"), "semanticTokens"), "tokenTypes");
++                HashSet<String> requestedTypes;
++                if (clientTypes.type == JSONValue::Type::Array)
++                    for (auto value : container->getArray(clientTypes))
++                        if (value.getKind() == JSONValue::Kind::String) requestedTypes.add(container->getString(value));
++                m_core.m_structuredBufferSemanticTokens = requestedTypes.contains("typeParameter")
++                    && requestedTypes.contains("slangTypeArgument") && requestedTypes.contains("slangStructuredBuffer");
++                auto clientModifiers = member(member(member(member(call.params, "capabilities"),
++                    "textDocument"), "semanticTokens"), "tokenModifiers");
++                m_core.m_builtinSemanticModifiers = false;
++                if (clientModifiers.type == JSONValue::Type::Array)
++                    for (auto value : container->getArray(clientModifiers))
++                        if (value.getKind() == JSONValue::Kind::String &&
++                            container->getString(value) == "defaultLibrary")
++                            m_core.m_builtinSemanticModifiers = true;
+                 auto fillCapability = [&](ServerCapabilities& caps)
+                 {
+                     caps.positionEncoding = "utf-16";
+@@ -167,12 +193,20 @@ SlangResult LanguageServer::parseNextMessage()
+                     caps.completionProvider.workDoneToken = "";
+                     caps.semanticTokensProvider.full = true;
+                     caps.semanticTokensProvider.range = false;
++                    caps.experimental.preprocessorTrace = 1;
++                    caps.experimental.preprocessorContexts = 1;
++                    caps.experimental.preprocessorVariants = 1;
++                    caps.experimental.preprocessorPreview = 1;
+                     caps.signatureHelpProvider.triggerCharacters.add("(");
+                     caps.signatureHelpProvider.triggerCharacters.add("<");
+                     caps.signatureHelpProvider.triggerCharacters.add(",");
+                     caps.signatureHelpProvider.retriggerCharacters.add(",");
+-                    for (auto tokenType : kSemanticTokenTypes)
+-                        caps.semanticTokensProvider.legend.tokenTypes.add(tokenType);
++                    int typeCount = (int)(m_core.m_structuredBufferSemanticTokens
++                        ? SemanticTokenType::NormalText : SemanticTokenType::TypeParameter);
++                    for (int i = 0; i < typeCount; ++i)
++                        caps.semanticTokensProvider.legend.tokenTypes.add(kSemanticTokenTypes[i]);
++                    if (m_core.m_builtinSemanticModifiers)
++                        caps.semanticTokensProvider.legend.tokenModifiers.add("defaultLibrary");
+                 };
+                 ServerInfo serverInfo;
+                 serverInfo.name = "SlangLanguageServer";
+@@ -257,7 +291,8 @@ SlangResult LanguageServer::parseNextMessage()
+ SlangResult LanguageServerCore::didOpenTextDocument(const DidOpenTextDocumentParams& args)
+ {
+     String canonicalPath = uriToCanonicalPath(args.textDocument.uri);
+-    m_workspace->openDoc(canonicalPath, args.textDocument.text);
++    auto doc = m_workspace->openDoc(canonicalPath, args.textDocument.text);
++    doc->setVersion(args.textDocument.version);
+     return SLANG_OK;
+ }
+ 
+@@ -642,6 +677,296 @@ SlangResult LanguageServer::hover(
+     return SLANG_OK;
+ }
+ 
++// Request-local natural layout, following slang-ast-natural-layout. Keep substituted
++// fields and instance filtering here: hover must also work for generic structs and
++// must not count static storage. This does not change compiler sizeof/ABI behavior.
++struct HoverNaturalLayout
++{
++    struct Info
++    {
++        NaturalSize size = NaturalSize::makeInvalid();
++        Count payload = 0; // Bytes occupied by leaves, excluding nested padding.
++    };
++
++    ASTBuilder* astBuilder;
++    Dictionary<Type*, Info> cache;
++    Count remaining = 4096;
++    static constexpr Count maxSize = (std::numeric_limits<Count>::max)();
++
++    bool append(Info& result, const Info& field)
++    {
++        if (!field.size || result.size.size > maxSize - (field.size.alignment - 1))
++            return false;
++        auto offset = NaturalSize::calcAligned(result.size.size, field.size.alignment);
++        if (field.size.size > maxSize - offset)
++            return false;
++        result.size.append(field.size);
++        result.payload += field.payload;
++        return true;
++    }
++
++    Info repeat(const Info& element, IntVal* countVal)
++    {
++        auto count = as<ConstantIntVal>(countVal);
++        if (!element.size || !count || count->getValue() <= 0 || count->getValue() > maxSize ||
++            element.size.size > maxSize - (element.size.alignment - 1))
++            return {};
++        auto n = Count(count->getValue());
++        auto stride = element.size.getStride();
++        if (stride && n - 1 > (maxSize - element.size.size) / stride)
++            return {};
++        return {element.size * n, element.payload * n};
++    }
++
++    Info calc(Type* type, Index depth = 0)
++    {
++        if (!type || depth >= 64 || --remaining < 0)
++            return {};
++        if (auto found = cache.tryGetValue(type))
++            return *found;
++        // Poison before descending so incomplete/recursive source cannot loop.
++        cache.add(type, Info{});
++        auto result = calcImpl(type, depth + 1);
++        cache.set(type, result);
++        return result;
++    }
++
++    Info calcImpl(Type* type, Index depth)
++    {
++        if (auto named = as<NamedExpressionType>(type))
++            return calc(named->getCanonicalType(), depth);
++        if (auto vector = as<VectorExpressionType>(type))
++            return repeat(calc(vector->getElementType(), depth), vector->getElementCount());
++        if (auto matrix = as<MatrixExpressionType>(type))
++            return repeat(
++                repeat(calc(matrix->getElementType(), depth), matrix->getColumnCount()),
++                matrix->getRowCount());
++        if (auto array = as<ArrayExpressionType>(type))
++        {
++            if (array->isUnsized())
++                return {};
++            return repeat(calc(array->getElementType(), depth), array->getElementCount());
++        }
++        if (auto atomic = as<AtomicType>(type))
++            return calc(atomic->getElementType(), depth);
++        if (as<BasicExpressionType>(type) || as<BFloat16Type>(type) || as<Fp8Type>(type))
++        {
++            ASTNaturalLayoutContext context(astBuilder);
++            auto size = context.calcSize(type);
++            return {size, size.size};
++        }
++        // Builtin resource/pointer types also derive from DeclRefType, but their
++        // empty intrinsic declarations do not describe zero-byte user structs.
++        if (as<BuiltinType>(type))
++            return {};
++        if (auto refType = as<DeclRefType>(type))
++        {
++            auto declRef = refType->getDeclRef();
++            if (auto enumRef = declRef.as<EnumDecl>())
++                return calc(getTagType(astBuilder, enumRef), depth);
++            if (auto alias = declRef.as<TypeDefDecl>())
++                return calc(getType(astBuilder, alias), depth);
++            if (auto structRef = declRef.as<StructDecl>())
++            {
++                Info result{NaturalSize::makeEmpty(), 0};
++                for (auto base : getMembersOfType<InheritanceDecl>(astBuilder, structRef))
++                {
++                    auto baseType = getSup(astBuilder, base);
++                    if (isInterfaceType(baseType))
++                        continue;
++                    if (!append(result, calc(baseType, depth)))
++                        return {};
++                }
++                for (auto field : getFields(astBuilder, structRef, MemberFilterStyle::Instance))
++                {
++                    if (!append(result, calc(getType(astBuilder, field), depth)))
++                        return {};
++                }
++                return result;
++            }
++        }
++        // Resources, pointers, interfaces and unspecialized types have no fixed
++        // AST natural layout. Do not invent target-specific storage sizes.
++        return {};
++    }
++};
++
++static void appendStructHover(StringBuilder& sb, DeclRef<Decl> declRef, WorkspaceVersion* version)
++{
++    auto astBuilder = version->linkage->getASTBuilder();
++    String namespaceName;
++    for (auto parent = declRef.getParent(); parent; parent = parent.getParent())
++    {
++        if (parent.as<NamespaceDecl>())
++        {
++            ASTPrinter printer(astBuilder);
++            printer.addDeclPath(parent);
++            namespaceName = printer.getString();
++            break;
++        }
++    }
++    auto signature = getDeclSignatureString(declRef, version);
++    if (namespaceName.getLength())
++    {
++        StringBuilder prefix;
++        prefix << "struct " << namespaceName << "::";
++        if (signature.startsWith(prefix.getUnownedSlice()))
++            signature = String("struct ") + signature.getUnownedSlice().tail(prefix.getLength());
++    }
++    sb << "```slang\n" << signature << "\n```\n\n";
++    if (namespaceName.getLength())
++        sb << "(namespace `" << namespaceName << "`)\n\n";
++    HoverNaturalLayout context{astBuilder};
++    auto layout = context.calc(DeclRefType::create(astBuilder, declRef));
++    if (layout.size &&
++        layout.size.size <= HoverNaturalLayout::maxSize - (layout.size.alignment - 1))
++    {
++        sb << "**Natural layout (bytes)**  \nSize: `" << layout.size.size << "`  \nAlignment: `"
++           << layout.size.alignment << "`  \nPadding: `" << layout.size.size - layout.payload
++           << "`\n\n";
++        if (layout.size.getStride() != layout.size.size)
++            sb << "Array stride: `" << layout.size.getStride() << "`\n\n";
++    }
++    else
++        sb << "Layout unavailable for this type.\n\n";
++}
++
++
++// Offsets are relative to the declaring struct, using the same substituted,
++// instance-only natural layout as struct hover. A preceding unknown field or
++// base invalidates the offset; it must never turn into a guessed zero.
++static bool getHoverFieldOffset(
++    HoverNaturalLayout& context,
++    DeclRef<StructDecl> owner,
++    Decl* target,
++    Count& offset)
++{
++    HoverNaturalLayout::Info prefix{NaturalSize::makeEmpty(), 0};
++    for (auto base : getMembersOfType<InheritanceDecl>(context.astBuilder, owner))
++    {
++        auto baseType = getSup(context.astBuilder, base);
++        if (isInterfaceType(baseType))
++            continue;
++        if (!context.append(prefix, context.calc(baseType)))
++            return false;
++    }
++    for (auto field : getFields(context.astBuilder, owner, MemberFilterStyle::Instance))
++    {
++        auto layout = context.calc(getType(context.astBuilder, field));
++        if (!context.append(prefix, layout))
++            return false;
++        if (field.getDecl() == target)
++        {
++            offset = prefix.size.size - layout.size.size;
++            return true;
++        }
++    }
++    return false;
++}
++
++static bool isStructFieldHover(DeclRef<Decl> declRef)
++{
++    return declRef.as<VarDeclBase>() && declRef.getParent().as<StructDecl>();
++}
++
++static void appendFieldHover(StringBuilder& sb, DeclRef<Decl> declRef, WorkspaceVersion* version)
++{
++    auto astBuilder = version->linkage->getASTBuilder();
++    auto field = declRef.as<VarDeclBase>();
++    auto owner = declRef.getParent().as<StructDecl>();
++    auto type = getType(astBuilder, field);
++    bool isStatic = isEffectivelyStatic(field.getDecl());
++    sb << "```slang\n";
++    switch (getDeclVisibility(field.getDecl()))
++    {
++    case DeclVisibility::Public: sb << "public "; break;
++    case DeclVisibility::Private: sb << "private "; break;
++    case DeclVisibility::Internal: sb << "internal "; break;
++    default: break;
++    }
++    if (isStatic)
++        sb << "static ";
++    sb << "field\n";
++    if (field.getDecl()->findModifier<ConstModifier>())
++        sb << "const ";
++    ASTPrinter printer(astBuilder, ASTPrinter::OptionFlag::SimplifiedBuiltinType |
++                                       ASTPrinter::OptionFlag::NoInternalKeywords);
++    printer.addType(type);
++    sb << printer.getString() << " " << getText(field.getName());
++    // Retain the existing hover's folded initializer (e.g. static const uint count = 3).
++    ASTPrinter signaturePrinter(
++        astBuilder,
++        ASTPrinter::OptionFlag::ParamNames | ASTPrinter::OptionFlag::NoInternalKeywords |
++            ASTPrinter::OptionFlag::SimplifiedBuiltinType | ASTPrinter::OptionFlag::DefaultParamValues);
++    signaturePrinter.getStringBuilder() << getDeclKindString(declRef);
++    signaturePrinter.addDeclSignature(declRef);
++    auto signaturePrefix = signaturePrinter.getString();
++    auto signature = getDeclSignatureString(declRef, version);
++    if (signature.startsWith(signaturePrefix.getUnownedSlice()))
++        sb << signature.getUnownedSlice().tail(signaturePrefix.getLength());
++    sb << "\n```\n\n";
++    ASTPrinter ownerPrinter(astBuilder);
++    ownerPrinter.addDeclPath(owner);
++    sb << "(in struct `" << ownerPrinter.getString() << "`)\n\n";
++
++    HoverNaturalLayout context{astBuilder};
++    auto layout = context.calc(type);
++    sb << "**Natural field layout (bytes)**  \nSize: ";
++    if (layout.size)
++        sb << "`" << layout.size.size << "`  \nAlignment: `" << layout.size.alignment << "`";
++    else
++        sb << "unavailable  \nAlignment: unavailable";
++    sb << "  \nOffset: ";
++    Count offset = 0;
++    if (isStatic)
++        sb << "not applicable (static field)";
++    else if (layout.size && getHoverFieldOffset(context, owner, field.getDecl(), offset))
++        sb << "`" << offset << "`";
++    else
++        sb << "unavailable";
++    sb << "\n\n";
++}
++
++static void appendStructDefinitionLocation(StringBuilder& sb, const HumaneSourceLoc& loc)
++{
++    auto path = loc.pathInfo.foundPath;
++    if (path.getLength() == 0)
++        return;
++    Path::getCanonical(path, path);
++    auto name = Path::getFileName(path);
++    sb << "\n---\n\n[";
++    for (auto c : name)
++    {
++        if (c == '[' || c == ']' || c == '\\' || c == '`' || c == '*' || c == '_' || c == '<' ||
++            c == '>')
++            sb << '\\';
++        sb << c;
++    }
++    sb << ":" << loc.line << "](<file://";
++#if SLANG_WINDOWS_FAMILY
++    if (!path.startsWith("\\\\") && !path.startsWith("//"))
++        sb << "/";
++    else
++        path = path.getUnownedSlice().tail(2);
++#endif
++    // Encode unsigned UTF-8 bytes, including Markdown delimiters. Keep the drive
++    // colon intact so IDE file-URL handlers can resolve Windows paths directly.
++    const char* hex = "0123456789ABCDEF";
++    for (auto c : path)
++    {
++        if (URI::isSafeURIChar(c) || c == ':')
++            sb << c;
++        else if (c == '\\')
++            sb << '/';
++        else
++        {
++            auto byte = uint8_t(c);
++            sb << '%' << hex[byte >> 4] << hex[byte & 15];
++        }
++    }
++    sb << "#L" << loc.line << ">)\n";
++}
++
+ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::hover(
+     const LanguageServerProtocol::HoverParams& args)
+ {
+@@ -706,9 +1031,51 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::hover(
+ 
+     auto fillDeclRefHoverInfo = [&](DeclRef<Decl> declRef, Name* name)
+     {
++        // At a generic declaration's name the lookup returns its GenericDecl
++        // wrapper; references to specializations already return the inner struct.
++        if (auto generic = declRef.as<GenericDecl>();
++            generic && as<StructDecl>(generic.getDecl()->inner))
++            declRef = generic.getDecl()->inner->getDefaultDeclRef();
+         if (declRef.getDecl())
+         {
+-            sb << "```\n" << getDeclSignatureString(declRef, version) << "\n```\n";
++            if (auto alias = as<TypeDefDecl>(declRef.getDecl()); alias && alias->type.type)
++            {
++                auto astBuilder = version->linkage->getASTBuilder();
++                auto type = as<Type>(alias->type.type->substitute(astBuilder, SubstitutionSet(declRef)));
++                auto vectorType = as<VectorExpressionType>(type);
++                auto matrixType = as<MatrixExpressionType>(type);
++                auto loc = version->linkage->getSourceManager()->getHumaneLoc(
++                    declRef.getLoc(), SourceLocType::Actual);
++                // Same synthetic-module origin check used by go-to-definition; never use
++                // the alias spelling (a user declaration may shadow a builtin).
++                bool builtin = !File::exists(loc.pathInfo.foundPath) &&
++                    (loc.pathInfo.getName() == "core" || loc.pathInfo.getName() == "glsl");
++                sb << "```slang\ntypedef\n";
++                if (vectorType)
++                    sb << "vector<" << vectorType->getElementType()->toString() << ", "
++                       << vectorType->getElementCount()->toString() << ">";
++                else if (matrixType)
++                    sb << "matrix<" << matrixType->getElementType()->toString() << ", "
++                       << matrixType->getRowCount()->toString() << ", "
++                       << matrixType->getColumnCount()->toString() << ">";
++                else
++                    sb << type->toString();
++                sb << " " << getText(declRef.getName()) << "\n```\n\n";
++                sb << (builtin ? "**Built-in type alias**" : "**Type alias**") << "\n\n";
++                if (vectorType)
++                    sb << "Element type: `" << vectorType->getElementType()->toString()
++                       << "`  \nComponents: `" << vectorType->getElementCount()->toString() << "`\n\n";
++                else if (matrixType)
++                    sb << "Element type: `" << matrixType->getElementType()->toString()
++                       << "`  \nRows: `" << matrixType->getRowCount()->toString()
++                       << "`  \nColumns: `" << matrixType->getColumnCount()->toString() << "`\n\n";
++            }
++            else if (declRef.as<StructDecl>())
++                appendStructHover(sb, declRef, version);
++            else if (isStructFieldHover(declRef))
++                appendFieldHover(sb, declRef, version);
++            else
++                sb << "```\n" << getDeclSignatureString(declRef, version) << "\n```\n";
+ 
+             _tryGetDocumentation(sb, version, declRef.getDecl());
+ 
+@@ -785,7 +1152,24 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::hover(
+             auto humaneLoc = version->linkage->getSourceManager()->getHumaneLoc(
+                 declRef.getLoc(),
+                 SourceLocType::Actual);
+-            appendDefinitionLocation(sb, m_workspace, humaneLoc);
++            // Supply semantic provenance for client-side builtin documentation links.
++            // Only global functions/constants qualify: members and namespace declarations
++            // with the same spelling must not inherit a global builtin's documentation.
++            auto builtinDecl = declRef.getDecl();
++            while (auto generic = as<GenericDecl>(builtinDecl))
++                builtinDecl = generic->inner;
++            auto builtinParent = builtinDecl->parentDecl;
++            while (as<GenericDecl>(builtinParent))
++                builtinParent = builtinParent->parentDecl;
++            if (as<ModuleDecl>(builtinParent) &&
++                (as<FunctionDeclBase>(builtinDecl) || as<VarDeclBase>(builtinDecl)) &&
++                humaneLoc.pathInfo.getName() == "core" &&
++                !File::exists(humaneLoc.pathInfo.foundPath) && declRef.getName())
++                sb << "\n<!-- slang-builtin:core:" << getText(declRef.getName()) << " -->\n\n";
++            if (declRef.as<StructDecl>() || isStructFieldHover(declRef))
++                appendStructDefinitionLocation(sb, humaneLoc);
++            else
++                appendDefinitionLocation(sb, m_workspace, humaneLoc);
+             maybeAppendAdditionalOverloadsHint();
+             auto nodeHumaneLoc = version->linkage->getSourceManager()->getHumaneLoc(leafNode->loc);
+             doc->oneBasedUTF8LocToZeroBasedUTF16Loc(
+@@ -947,7 +1331,22 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::hover(
+             fillLoc(expr->loc);
+         }
+     };
+-    if (auto declRefExpr = as<DeclRefExpr>(leafNode))
++    if (isHlslDescriptorHeapReference(leafNode, version->linkage->getSourceManager()))
++    {
++        auto expr = as<VarExpr>(leafNode);
++        bool sampler = getText(expr->name) == "SamplerDescriptorHeap";
++        sb << "```slang\n(HLSL SM 6.6 builtin) " << getText(expr->name) << "\n```\n\n"
++           << (sampler ? "Indexable sampler descriptor heap. Assign an indexed descriptor to "
++                         "SamplerState or SamplerComparisonState."
++                       : "Indexable resource descriptor heap. Assign an indexed descriptor to "
++                         "a CBV, SRV or UAV resource type.")
++           << "\n\nFor non-uniform indices, use NonUniformResourceIndex(index)."
++           << "\n\n[HLSL Reference: Shader Model 6.6 Dynamic Resources \xE2\x86\x97]"
++              "(https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html"
++              "#resourcedescriptorheap-and-samplerdescriptorheap)\n";
++        fillLoc(expr->loc);
++    }
++    else if (auto declRefExpr = as<DeclRefExpr>(leafNode))
+     {
+         auto resolvedDeclRef = maybeRedirectToConstructor(declRefExpr, findResult[0].path);
+         fillDeclRefHoverInfo(resolvedDeclRef, declRefExpr->name);
+@@ -1177,6 +1576,19 @@ LanguageServerResult<List<LanguageServerProtocol::Location>> LanguageServerCore:
+             }
+         }
+     }
++    else if (auto varDecl = as<VarDeclBase>(leafNode))
++    {
++        // AST lookup only returns a real declaration when the cursor is on its name.
++        // Preserve that exact target for Ctrl-hover on locals, parameters and fields.
++        auto name = varDecl->getName();
++        if (name && varDecl->getNameLoc().isValid())
++        {
++            auto location = version->linkage->getSourceManager()->getHumaneLoc(
++                varDecl->getNameLoc(), SourceLocType::Actual);
++            locations.add(LocationResult{
++                location, (int)UTF8Util::calcUTF16CharCount(name->text.getUnownedSlice())});
++        }
++    }
+     else if (auto importDecl = as<ImportDecl>(leafNode))
+     {
+         auto location =
+@@ -1524,7 +1936,7 @@ LanguageServerResult<LanguageServerProtocol::SemanticTokens> LanguageServerCore:
+         version->linkage,
+         parsedModule,
+         canonicalPath.getUnownedSlice(),
+-        doc.Ptr());
++        doc.Ptr(), m_structuredBufferSemanticTokens, m_builtinSemanticModifiers);
+     for (auto& token : tokens)
+     {
+         Index line, col;
+@@ -1545,6 +1957,217 @@ LanguageServerResult<LanguageServerProtocol::SemanticTokens> LanguageServerCore:
+     return response;
+ }
+ 
++SlangResult LanguageServer::preprocessorTrace(
++    const LanguageServerProtocol::PreprocessorTraceParams& args,
++    const JSONValue& responseId)
++{
++    auto result = m_core.preprocessorTrace(args);
++    if (!args.contextUri.getLength() && !args.buildContext.version && !args.buildContext.fingerprint.getLength()
++        && !args.preview.hasValue)
++        removePendingModuleToUpdateDiagnostics(args.textDocument.uri);
++
++    if (SLANG_FAILED(result.returnCode) || result.isNull)
++    {
++        JSONResultResponse response;
++        response.id = responseId;
++        response.result = JSONValue::makeNull();
++        m_connection->sendRPC(&response);
++        return SLANG_OK;
++    }
++    m_connection->sendResult(&result.result, responseId);
++    return SLANG_OK;
++}
++
++LanguageServerResult<LanguageServerProtocol::PreprocessorTrace>
++LanguageServerCore::preprocessorTrace(
++    const LanguageServerProtocol::PreprocessorTraceParams& args)
++{
++    String canonicalPath = uriToCanonicalPath(args.textDocument.uri);
++
++    RefPtr<DocumentVersion> doc;
++    if (!m_workspace->openedDocuments.tryGetValue(canonicalPath, doc))
++        return std::nullopt;
++
++    String contextUri = args.contextUri.getLength() ? args.contextUri : args.textDocument.uri;
++    String contextPath = uriToCanonicalPath(contextUri);
++    PreprocessorTrace response;
++    response.uri = args.textDocument.uri;
++    response.version = doc->getVersion();
++    response.contextUri = contextUri;
++    response.contextFingerprint = args.buildContext.fingerprint;
++    if (args.preview.hasValue) response.previewFingerprint = args.preview.value.fingerprint;
++    RefPtr<DocumentVersion> contextDoc;
++    if (m_workspace->openedDocuments.tryGetValue(contextPath, contextDoc))
++        response.contextVersion = contextDoc->getVersion();
++    // Context traces must not pollute the ordinary LSP module/diagnostics cache.
++    bool hasBuildContext = args.buildContext.version || args.buildContext.fingerprint.getLength();
++    RefPtr<WorkspaceVersion> workspaceVersion = args.contextUri.getLength() || hasBuildContext || args.preview.hasValue
++        ? m_workspace->createVersionForPreprocessorTrace(
++            hasBuildContext ? &args.buildContext : nullptr, &response.contextError,
++            args.preview.hasValue ? &args.preview.value : nullptr)
++        : RefPtr<WorkspaceVersion>(m_workspace->getCurrentVersion());
++    if (!workspaceVersion)
++    {
++        response.status = "invalidContext";
++        return response;
++    }
++    SLANG_AST_BUILDER_RAII(workspaceVersion->linkage->getASTBuilder());
++    if (!workspaceVersion->getOrLoadModule(contextPath, true))
++        return std::nullopt;
++
++    auto sourceManager = workspaceVersion->linkage->getSourceManager();
++    auto isPrimaryPath = [&](const HumaneSourceLoc& humaneLoc)
++    {
++        String locCanonicalPath;
++        if (SLANG_SUCCEEDED(
++                Path::getCanonical(humaneLoc.pathInfo.foundPath, locCanonicalPath)))
++            return locCanonicalPath == canonicalPath;
++        return humaneLoc.pathInfo.foundPath == canonicalPath;
++    };
++    auto getLineLength = [&](Index oneBasedLine)
++    {
++        auto boundaries = doc->getUTF16Boundaries(oneBasedLine);
++        return boundaries.getCount() ? (int)boundaries.getCount() - 1 : 0;
++    };
++    auto getDirectiveRanges = [&]
++    (
++        SourceLoc beginLoc,
++        SourceLoc endLoc,
++        SourceLoc loc,
++        int keywordLength,
++        LanguageServerProtocol::Range& range,
++        LanguageServerProtocol::Range& keywordRange
++    )
++    {
++        auto humaneLoc = sourceManager->getHumaneLoc(loc, SourceLocType::Actual);
++        auto beginHumane = sourceManager->getHumaneLoc(beginLoc, SourceLocType::Actual);
++        auto endHumane = sourceManager->getHumaneLoc(endLoc, SourceLocType::Actual);
++        if (!isPrimaryPath(humaneLoc) || !isPrimaryPath(beginHumane) ||
++            !isPrimaryPath(endHumane))
++            return false;
++
++        int32_t line = 0;
++        int32_t col = 0;
++        int32_t endLine = 0;
++        int32_t endCol = 0;
++        doc->oneBasedUTF8LocToZeroBasedUTF16Loc(humaneLoc.line, humaneLoc.column, line, col);
++        doc->oneBasedUTF8LocToZeroBasedUTF16Loc(
++            humaneLoc.line,
++            humaneLoc.column + keywordLength,
++            endLine,
++            endCol);
++        range.start.line = (int)beginHumane.line - 1;
++        range.start.character = 0;
++        Index finalLine = endHumane.line;
++        if (finalLine > beginHumane.line && endHumane.column == 1)
++            --finalLine;
++        range.end.line = (int)finalLine - 1;
++        range.end.character = getLineLength(finalLine);
++        keywordRange.start.line = line;
++        keywordRange.start.character = col;
++        keywordRange.end.line = endLine;
++        keywordRange.end.character = endCol;
++        return true;
++    };
++    auto getInactiveRange = [&]
++    (
++        SourceLoc beginLoc,
++        SourceLoc endLoc,
++        bool endsAtDirective,
++        LanguageServerProtocol::Range& range
++    )
++    {
++        auto beginHumane = sourceManager->getHumaneLoc(beginLoc, SourceLocType::Actual);
++        auto endHumane = sourceManager->getHumaneLoc(endLoc, SourceLocType::Actual);
++        if (!isPrimaryPath(beginHumane) || !isPrimaryPath(endHumane))
++            return false;
++
++        range.start.line = (int)beginHumane.line - 1;
++        range.start.character = 0;
++        range.end.line = (int)endHumane.line - 1;
++        range.end.character = endsAtDirective ? 0 : getLineLength(endHumane.line);
++        return range.start.line < range.end.line ||
++               (range.start.line == range.end.line &&
++                range.start.character < range.end.character);
++    };
++
++    auto& traceInfo = workspaceVersion->linkage->contentAssistInfo.preprocessorInfo;
++    int selectedFile = -1;
++    for (Index i = 0; i < traceInfo.traceFiles.getCount(); ++i)
++    {
++        auto& file = traceInfo.traceFiles[i];
++        String rootCanonical;
++        if (SLANG_FAILED(Path::getCanonical(file.rootPath, rootCanonical)))
++            rootCanonical = file.rootPath;
++        if (rootCanonical != contextPath ||
++            !isPrimaryPath(sourceManager->getHumaneLoc(file.beginLoc, SourceLocType::Actual)))
++            continue;
++        selectedFile = (int)i;
++        ++response.occurrenceCount;
++    }
++    response.status = response.occurrenceCount == 1 ? "ok"
++        : response.occurrenceCount == 0 ? "notIncluded" : "ambiguous";
++    if (response.occurrenceCount != 1)
++        return response;
++    List<int> oldToNewDirectiveIndex;
++    oldToNewDirectiveIndex.setCount(traceInfo.conditionalDirectives.getCount());
++    for (auto& index : oldToNewDirectiveIndex)
++        index = -1;
++
++    for (Index oldIndex = 0; oldIndex < traceInfo.conditionalDirectives.getCount(); ++oldIndex)
++    {
++        auto& source = traceInfo.conditionalDirectives[oldIndex];
++        if (source.fileIndex != selectedFile)
++            continue;
++        PreprocessorTraceDirective target;
++        if (!getDirectiveRanges(
++                source.beginLoc,
++                source.endLoc,
++                source.keywordLoc,
++                source.keywordLength,
++                target.range,
++                target.keywordRange))
++            continue;
++
++        target.kind = source.kind;
++        target.evaluated = source.evaluated;
++        target.value = source.value;
++        target.active = source.active;
++        target.depth = source.depth;
++        target.parentDirective = source.parentDirective;
++        target.matchingIfDirective = source.matchingIfDirective;
++        target.previousBranchDirective = source.previousBranchDirective;
++        oldToNewDirectiveIndex[oldIndex] = (int)response.directives.getCount();
++        response.directives.add(_Move(target));
++    }
++
++    auto remapDirectiveIndex = [&](int oldIndex)
++    {
++        if (oldIndex < 0 || oldIndex >= oldToNewDirectiveIndex.getCount())
++            return -1;
++        return oldToNewDirectiveIndex[oldIndex];
++    };
++    for (auto& directive : response.directives)
++    {
++        directive.parentDirective = remapDirectiveIndex(directive.parentDirective);
++        directive.matchingIfDirective = remapDirectiveIndex(directive.matchingIfDirective);
++        directive.previousBranchDirective =
++            remapDirectiveIndex(directive.previousBranchDirective);
++    }
++
++    for (auto& source : traceInfo.inactiveRegions)
++    {
++        if (source.fileIndex != selectedFile)
++            continue;
++        PreprocessorTraceInactiveRegion target;
++        if (!getInactiveRange(source.beginLoc, source.endLoc, source.endsAtDirective, target.range))
++            continue;
++        target.controllingDirective = remapDirectiveIndex(source.controllingDirective);
++        response.inactiveRegions.add(_Move(target));
++    }
++    return response;
++}
++
+ String LanguageServerCore::getExprDeclSignature(
+     Expr* expr,
+     String* outDocumentation,
+@@ -2644,7 +3267,31 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::tryGetMa
+     auto identifier = doc->peekIdentifier(line, col, startOffset);
+     if (identifier.getLength() == 0)
+         return SLANG_FAIL;
++    MacroInvocationContentAssistInfo* invocation = nullptr;
++    auto manager = version->linkage->getSourceManager();
++    Index identifierLine, identifierCol;
++    doc->offsetToLineCol(startOffset, identifierLine, identifierCol);
++    for (auto& candidate : version->linkage->contentAssistInfo.preprocessorInfo.macroInvocations)
++    {
++        if (candidate.name->text.getUnownedSlice() != identifier) continue;
++        auto loc = manager->getHumaneLoc(candidate.loc, SourceLocType::Actual);
++        if (loc.line == identifierLine && loc.column == identifierCol &&
++            loc.pathInfo.foundPath == doc->getPath())
++        {
++            invocation = &candidate;
++            break;
++        }
++    }
+     auto def = version->tryGetMacroDefinition(identifier);
++    if (invocation)
++    {
++        for (auto& candidate : version->linkage->contentAssistInfo.preprocessorInfo.macroDefinitions)
++            if (candidate.loc == invocation->definitionLoc && candidate.name == invocation->name)
++            {
++                def = &candidate;
++                break;
++            }
++    }
+     if (!def)
+         return SLANG_FAIL;
+     LanguageServerProtocol::Hover hover;
+@@ -2656,8 +3303,8 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::tryGetMa
+     hover.range.end.line = (int)outLine;
+     hover.range.end.character = (int)(outCol + identifier.getLength());
+     StringBuilder sb;
+-    sb << "```\n#define " << identifier;
+-    if (def->params.getCount())
++    sb << "```slang\n#define " << identifier;
++    if (def->isFunctionLike)
+     {
+         sb << "(";
+         bool isFirst = true;
+@@ -2675,13 +3322,31 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::tryGetMa
+     }
+     for (auto& token : def->tokenList)
+     {
++        if (token.type == TokenType::EndOfFile || token.type == TokenType::NewLine ||
++            token.type == TokenType::WhiteSpace) continue;
+         sb << " ";
+         sb << token.getContent();
+     }
+     sb << "\n```\n\n";
+-    auto humaneLoc =
+-        version->linkage->getSourceManager()->getHumaneLoc(def->loc, SourceLocType::Actual);
+-    appendDefinitionLocation(sb, m_workspace, humaneLoc);
++    sb << "<!-- slang-macro-hover:1 -->\n\n";
++    if (invocation && invocation->hasExpansionPreview)
++    {
++        sb << "**Expansion preview**\n\n```slang\n";
++        bool first = true;
++        for (auto& token : invocation->expandedTokens)
++        {
++            if (!first) sb << " ";
++            first = false;
++            sb << token.getContent();
++        }
++        sb << "\n```\n\n";
++        if (invocation->expansionTruncated)
++            sb << "Expansion preview truncated after 512 tokens.\n\n";
++    }
++    else
++        sb << "Expansion preview unavailable at this location.\n\n";
++    auto humaneLoc = manager->getHumaneLoc(def->loc, SourceLocType::Actual);
++    appendStructDefinitionLocation(sb, humaneLoc);
+     hover.contents.kind = "markdown";
+     hover.contents.value = sb.produceString();
+     return hover;
+@@ -2814,6 +3479,16 @@ SlangResult LanguageServer::queueJSONCall(JSONRPCCall call)
+             call.id));
+         cmd.semanticTokenArgs = args;
+     }
++    else if (call.method == PreprocessorTraceParams::methodName)
++    {
++        PreprocessorTraceParams args;
++        SLANG_RETURN_ON_FAIL(m_connection->checkArrayObjectWrap(
++            call.params,
++            GetRttiInfo<PreprocessorTraceParams>::get(),
++            &args,
++            call.id));
++        cmd.preprocessorTraceArgs = args;
++    }
+     else if (call.method == SignatureHelpParams::methodName)
+     {
+         SignatureHelpParams args;
+@@ -2930,6 +3605,10 @@ SlangResult LanguageServer::runCommand(Command& call)
+         {
+             return semanticTokens(call.semanticTokenArgs.get(), call.id);
+         }
++        else if (call.method == PreprocessorTraceParams::methodName)
++        {
++            return preprocessorTrace(call.preprocessorTraceArgs.get(), call.id);
++        }
+         else if (call.method == SignatureHelpParams::methodName)
+         {
+             return signatureHelp(call.signatureHelpArgs.get(), call.id);
+@@ -2973,6 +3652,8 @@ SlangResult LanguageServer::runCommand(Command& call)
+ #if SLANG_HAS_EXCEPTIONS
+     catch (...)
+     {
++        if (call.method == PreprocessorTraceParams::methodName)
++            return m_connection->sendError(JSONRPC::ErrorCode::InternalError, call.id);
+         // If we encountered an internal compiler error, don't crash the language server; instead
+         // return a null response. This recovery only applies with exceptions enabled; under
+         // SLANG_DISABLE_EXCEPTIONS an internal abort routes through handleSignal(AbortCompilation)
+@@ -3060,6 +3741,10 @@ SlangResult LanguageServerCore::didChangeTextDocument(const DidChangeTextDocumen
+     for (auto change : args.contentChanges)
+         m_workspace->changeDoc(canonicalPath, change.range, change.text);
+ 
++    RefPtr<DocumentVersion> doc;
++    if (m_workspace->openedDocuments.tryGetValue(canonicalPath, doc))
++        doc->setVersion(args.textDocument.version);
++
+     return SLANG_OK;
+ }
+ 
+diff --git a/source/slang/slang-language-server.h b/source/slang/slang-language-server.h
+index 653c02174..3e06d18ea 100644
+--- a/source/slang/slang-language-server.h
++++ b/source/slang/slang-language-server.h
+@@ -74,6 +74,7 @@ struct Command
+     Optional<LanguageServerProtocol::SignatureHelpParams> signatureHelpArgs;
+     Optional<LanguageServerProtocol::DefinitionParams> definitionArgs;
+     Optional<LanguageServerProtocol::SemanticTokensParams> semanticTokenArgs;
++    Optional<LanguageServerProtocol::PreprocessorTraceParams> preprocessorTraceArgs;
+     Optional<LanguageServerProtocol::HoverParams> hoverArgs;
+     Optional<LanguageServerProtocol::DidOpenTextDocumentParams> openDocArgs;
+     Optional<LanguageServerProtocol::DidChangeTextDocumentParams> changeDocArgs;
+@@ -108,6 +109,8 @@ public:
+     Slang::InlayHintOptions m_inlayHintOptions;
+     List<LanguageServerProtocol::WorkspaceFolder> m_workspaceFolders;
+     LanguageServerStartupOptions m_options;
++    bool m_structuredBufferSemanticTokens = false;
++    bool m_builtinSemanticModifiers = false;
+ 
+     LanguageServerCore(LanguageServerStartupOptions options)
+         : m_options(options)
+@@ -132,6 +135,8 @@ public:
+         const LanguageServerProtocol::TextEditCompletionItem& editItem);
+     LanguageServerResult<LanguageServerProtocol::SemanticTokens> semanticTokens(
+         const LanguageServerProtocol::SemanticTokensParams& args);
++    LanguageServerResult<LanguageServerProtocol::PreprocessorTrace> preprocessorTrace(
++        const LanguageServerProtocol::PreprocessorTraceParams& args);
+     LanguageServerResult<LanguageServerProtocol::SignatureHelp> signatureHelp(
+         const LanguageServerProtocol::SignatureHelpParams& args);
+     LanguageServerResult<List<LanguageServerProtocol::DocumentSymbol>> documentSymbol(
+@@ -228,6 +233,9 @@ public:
+     SlangResult semanticTokens(
+         const LanguageServerProtocol::SemanticTokensParams& args,
+         const JSONValue& responseId);
++    SlangResult preprocessorTrace(
++        const LanguageServerProtocol::PreprocessorTraceParams& args,
++        const JSONValue& responseId);
+     SlangResult signatureHelp(
+         const LanguageServerProtocol::SignatureHelpParams& args,
+         const JSONValue& responseId);
+diff --git a/source/slang/slang-preprocessor.cpp b/source/slang/slang-preprocessor.cpp
+index 24812c706..291b97b21 100644
+--- a/source/slang/slang-preprocessor.cpp
++++ b/source/slang/slang-preprocessor.cpp
+@@ -111,6 +111,10 @@ struct Conditional
+ 
+     /// The state of the conditional
+     State state;
++
++    /// Indices into the language-server trace, when content-assist tracing is enabled.
++    int ifDirectiveIndex = -1;
++    int currentDirectiveIndex = -1;
+ };
+ 
+ /// An environment used for mapping macro names to their definitions during preprocessing.
+@@ -731,6 +735,8 @@ struct MacroInvocation : InputStream
+     Index getArgCount() { return m_args.getCount(); }
+ 
+     SourceLoc getInvocationLoc() { return m_macroInvocationLoc; }
++    Index hoverInfoIndex = -1;
++    MacroInvocation* getNextBusyMacroInvocation() { return m_nextBusyMacroInvocation; }
+ 
+     MacroDefinition* getMacroDefinition() { return m_macro; }
+ 
+@@ -873,6 +879,8 @@ struct ExpansionInputStream : InputStream
+         return result;
+     }
+ 
++    void recordHoverToken(const Token& token);
++
+     Token peekRawToken() { return m_lookaheadToken; }
+ 
+     TokenType peekRawTokenType() { return peekRawToken().type; }
+@@ -984,6 +992,7 @@ struct InputFile
+     ExpansionInputStream* getExpansionStream() { return m_expansionStream; }
+ 
+     bool isIncludedFile() { return m_parent != nullptr; }
++    int traceFileIndex = -1;
+ 
+ private:
+     friend struct Preprocessor;
+@@ -1327,6 +1336,13 @@ struct Preprocessor
+ 
+     /// Stores macro definition and invocation info for language server.
+     PreprocessorContentAssistInfo* contentAssistInfo = nullptr;
++    Dictionary<SourceLoc::RawValue, Index> hoverInvocationIndices;
++    String traceRootPath;
++
++    /// Pending inactive source range for the primary input file.
++    bool hasPendingInactiveRegion = false;
++    SourceLoc pendingInactiveBeginLoc;
++    int pendingInactiveControllingDirective = -1;
+ 
+     NamePool* getNamePool() { return namePool; }
+     SourceManager* getSourceManager() { return sourceManager; }
+@@ -1349,6 +1365,7 @@ static void reportMacroDefinitionForContentAssist(Preprocessor* preprocessor, Ma
+     info.name = def->getName();
+     info.loc = def->getLoc();
+     info.tokenList = def->tokens.m_tokens;
++    info.isFunctionLike = def->flavor == MacroDefinition::Flavor::FunctionLike;
+     for (auto param : def->params)
+     {
+         MacroDefinitionContentAssistInfo::Param p;
+@@ -1371,7 +1388,46 @@ static void reportMacroInvocationForContentAssist(
+     info.name = invocation->getMacroDefinition()->getName();
+     info.loc = invocation->getInvocationLoc();
+ 
++    info.definitionLoc = invocation->getMacroDefinition()->getLoc();
++    info.hasExpansionPreview = true;
++    for (auto& token : invocation->getMacroDefinition()->tokens.m_tokens)
++        if (token.type != TokenType::EndOfFile && token.type != TokenType::NewLine &&
++            token.type != TokenType::WhiteSpace)
++            info.hasExpansionPreview = false;
++    invocation->hoverInfoIndex = preprocessor->contentAssistInfo->macroInvocations.getCount();
+     preprocessor->contentAssistInfo->macroInvocations.add(info);
++    preprocessor->hoverInvocationIndices[info.loc.getRaw()] = invocation->hoverInfoIndex;
++}
++
++// Called only for final tokens emitted to the parser, never intermediate argument expansion.
++void ExpansionInputStream::recordHoverToken(const Token& token)
++{
++    if (!m_preprocessor->contentAssistInfo || token.type == TokenType::EndOfFile ||
++        token.type == TokenType::NewLine || token.type == TokenType::WhiteSpace)
++        return;
++    auto append = [&](Index index)
++    {
++        auto& info = m_preprocessor->contentAssistInfo->macroInvocations[index];
++        info.hasExpansionPreview = true;
++        if (info.expandedTokens.getCount() < 512)
++            info.expandedTokens.add(token);
++        else
++            info.expansionTruncated = true;
++    };
++    auto stream = m_inputStreams.getTopStream();
++    auto busy = stream->getFirstBusyMacroInvocation();
++    Index rootIndex = -1;
++    // Function-like rescan may drop the initiating macro from the busy chain
++    // (e.g. SUM(...) -> ADD(__VA_ARGS__)); retain the original call's preview.
++    if (busy && m_preprocessor->hoverInvocationIndices.tryGetValue(
++                    m_initiatingMacroInvocationLoc.getRaw(), rootIndex))
++        append(rootIndex);
++    for (auto invocation = busy; invocation;
++         invocation = invocation->getNextBusyMacroInvocation())
++    {
++        if (invocation->hoverInfoIndex >= 0 && invocation->hoverInfoIndex != rootIndex)
++            append(invocation->hoverInfoIndex);
++    }
+ }
+ 
+ static void reportIncludeFileForContentAssist(Preprocessor* preprocessor, Token token, String path)
+@@ -2634,6 +2690,9 @@ struct PreprocessorDirectiveContext
+     // The directive token (e.g., the `if` in `#if`).
+     // Useful for reference in diagnostic messages.
+     Token m_directiveToken;
++    SourceLoc m_beginLoc;
++    SourceLoc m_endLoc;
++    int m_traceIndex = -1;
+ 
+     // Has any kind of parse error been encountered in
+     // the directive so far?
+@@ -2900,6 +2959,92 @@ static bool Expect(
+ // Preprocessor Conditionals
+ //
+ 
++static bool shouldRecordPreprocessorTrace(Preprocessor* preprocessor)
++{
++    return preprocessor->contentAssistInfo && preprocessor->m_currentInputFile;
++}
++
++static int getConditionalDepth(Conditional* conditional)
++{
++    int depth = 0;
++    for (auto parent = conditional ? conditional->parent : nullptr; parent; parent = parent->parent)
++        ++depth;
++    return depth;
++}
++
++static int getParentDirectiveIndex(Conditional* conditional)
++{
++    return conditional && conditional->parent ? conditional->parent->currentDirectiveIndex : -1;
++}
++
++static int addConditionalDirectiveForContentAssist(
++    PreprocessorDirectiveContext* context,
++    const char* kind,
++    bool evaluated,
++    bool value,
++    bool active,
++    int depth,
++    int parentDirective,
++    int matchingIfDirective,
++    int previousBranchDirective)
++{
++    auto preprocessor = context->m_preprocessor;
++    if (!shouldRecordPreprocessorTrace(preprocessor))
++        return -1;
++
++    ConditionalDirectiveContentAssistInfo info;
++    info.fileIndex = preprocessor->m_currentInputFile->traceFileIndex;
++    info.kind = kind;
++    info.beginLoc = context->m_beginLoc;
++    info.keywordLoc = context->m_directiveToken.loc;
++    info.keywordLength = (int)context->m_directiveToken.getContentLength();
++    info.evaluated = evaluated;
++    info.value = evaluated && value;
++    info.active = active;
++    info.depth = depth;
++    info.parentDirective = parentDirective;
++    info.matchingIfDirective = matchingIfDirective;
++    info.previousBranchDirective = previousBranchDirective;
++    auto index = (int)preprocessor->contentAssistInfo->conditionalDirectives.getCount();
++    preprocessor->contentAssistInfo->conditionalDirectives.add(_Move(info));
++    context->m_traceIndex = index;
++    return index;
++}
++
++static int getInactiveControllingDirective(InputFile* inputFile)
++{
++    for (auto conditional = inputFile->getInnerMostConditional(); conditional;
++         conditional = conditional->parent)
++    {
++        if (conditional->state != Conditional::State::During)
++            return conditional->currentDirectiveIndex;
++    }
++    return -1;
++}
++
++static void flushPendingInactiveRegion(
++    Preprocessor* preprocessor,
++    SourceLoc endLoc,
++    bool endsAtDirective = false)
++{
++    if (!preprocessor->hasPendingInactiveRegion)
++        return;
++
++    if (preprocessor->contentAssistInfo &&
++        endLoc.getRaw() > preprocessor->pendingInactiveBeginLoc.getRaw())
++    {
++        InactiveRegionContentAssistInfo info;
++        info.fileIndex = preprocessor->m_currentInputFile->traceFileIndex;
++        info.beginLoc = preprocessor->pendingInactiveBeginLoc;
++        info.endLoc = endLoc;
++        info.controllingDirective = preprocessor->pendingInactiveControllingDirective;
++        info.endsAtDirective = endsAtDirective;
++        preprocessor->contentAssistInfo->inactiveRegions.add(info);
++    }
++    preprocessor->hasPendingInactiveRegion = false;
++    preprocessor->pendingInactiveControllingDirective = -1;
++}
++
+ bool InputFile::isSkipping()
+ {
+     // If we are not inside a preprocessor conditional, then don't skip
+@@ -2944,7 +3089,10 @@ static void updateLexerFlagsForConditionals(InputFile* inputFile)
+ }
+ 
+ /// Start a preprocessor conditional, with an initial enable/disable state.
+-static void beginConditional(PreprocessorDirectiveContext* context, bool enable)
++static Conditional* beginConditional(
++    PreprocessorDirectiveContext* context,
++    bool enable,
++    int directiveIndex)
+ {
+     Preprocessor* preprocessor = context->m_preprocessor;
+     InputFile* inputFile = getInputFile(context);
+@@ -2969,11 +3117,14 @@ static void beginConditional(PreprocessorDirectiveContext* context, bool enable)
+         state = Conditional::State::During;
+ 
+     conditional->state = state;
++    conditional->ifDirectiveIndex = directiveIndex;
++    conditional->currentDirectiveIndex = directiveIndex;
+ 
+     // Push conditional onto the stack
+     inputFile->pushConditional(conditional);
+ 
+     updateLexerFlagsForConditionals(inputFile);
++    return conditional;
+ }
+ 
+ //
+@@ -3360,13 +3511,38 @@ static void HandleIfDirective(PreprocessorDirectiveContext* context)
+     // Read a preprocessor expression (if not skipping), and begin a conditional
+     // based on the value of that expression.
+     //
++    auto inputFile = getInputFile(context);
++    auto parent = inputFile->getInnerMostConditional();
++    bool evaluated = !inputFile->isSkipping();
+     PreprocessorExpressionValue value = _skipOrParseAndEvaluateExpression(context);
+-    beginConditional(context, value != 0);
++    int depth = parent ? getConditionalDepth(parent) + 1 : 0;
++    int parentDirective = parent ? parent->currentDirectiveIndex : -1;
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "if",
++        evaluated,
++        value != 0,
++        false,
++        depth,
++        parentDirective,
++        -1,
++        -1);
++    auto conditional = beginConditional(context, value != 0, directiveIndex);
++    if (directiveIndex >= 0)
++    {
++        auto& info = context->m_preprocessor->contentAssistInfo
++                         ->conditionalDirectives[directiveIndex];
++        info.active = conditional->state == Conditional::State::During;
++        info.matchingIfDirective = directiveIndex;
++    }
+ }
+ 
+ // Handle a `#ifdef` directive
+ static void HandleIfDefDirective(PreprocessorDirectiveContext* context)
+ {
++    auto inputFile = getInputFile(context);
++    auto parent = inputFile->getInnerMostConditional();
++    bool evaluated = !inputFile->isSkipping();
+     // Expect a raw identifier, so we can check if it is defined
+     Token nameToken;
+     if (!ExpectRaw(
+@@ -3378,12 +3554,35 @@ static void HandleIfDefDirective(PreprocessorDirectiveContext* context)
+     Name* name = nameToken.getName();
+ 
+     // Check if the name is defined.
+-    beginConditional(context, LookupMacro(context, name) != NULL);
++    bool value = LookupMacro(context, name) != NULL;
++    int depth = parent ? getConditionalDepth(parent) + 1 : 0;
++    int parentDirective = parent ? parent->currentDirectiveIndex : -1;
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "ifdef",
++        evaluated,
++        value,
++        false,
++        depth,
++        parentDirective,
++        -1,
++        -1);
++    auto conditional = beginConditional(context, value, directiveIndex);
++    if (directiveIndex >= 0)
++    {
++        auto& info = context->m_preprocessor->contentAssistInfo
++                         ->conditionalDirectives[directiveIndex];
++        info.active = conditional->state == Conditional::State::During;
++        info.matchingIfDirective = directiveIndex;
++    }
+ }
+ 
+ // Handle a `#ifndef` directive
+ static void HandleIfNDefDirective(PreprocessorDirectiveContext* context)
+ {
++    auto inputFile = getInputFile(context);
++    auto parent = inputFile->getInnerMostConditional();
++    bool evaluated = !inputFile->isSkipping();
+     // Expect a raw identifier, so we can check if it is defined
+     Token nameToken;
+     if (!ExpectRaw(
+@@ -3395,7 +3594,27 @@ static void HandleIfNDefDirective(PreprocessorDirectiveContext* context)
+     Name* name = nameToken.getName();
+ 
+     // Check if the name is defined.
+-    beginConditional(context, LookupMacro(context, name) == NULL);
++    bool value = LookupMacro(context, name) == NULL;
++    int depth = parent ? getConditionalDepth(parent) + 1 : 0;
++    int parentDirective = parent ? parent->currentDirectiveIndex : -1;
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "ifndef",
++        evaluated,
++        value,
++        false,
++        depth,
++        parentDirective,
++        -1,
++        -1);
++    auto conditional = beginConditional(context, value, directiveIndex);
++    if (directiveIndex >= 0)
++    {
++        auto& info = context->m_preprocessor->contentAssistInfo
++                         ->conditionalDirectives[directiveIndex];
++        info.active = conditional->state == Conditional::State::During;
++        info.matchingIfDirective = directiveIndex;
++    }
+ }
+ 
+ // Handle a `#else` directive
+@@ -3425,6 +3644,7 @@ static void HandleElseDirective(PreprocessorDirectiveContext* context)
+         return;
+     }
+     conditional->elseToken = context->m_directiveToken;
++    int previousBranchDirective = conditional->currentDirectiveIndex;
+ 
+     switch (conditional->state)
+     {
+@@ -3440,6 +3660,19 @@ static void HandleElseDirective(PreprocessorDirectiveContext* context)
+         break;
+     }
+ 
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "else",
++        false,
++        false,
++        conditional->state == Conditional::State::During,
++        getConditionalDepth(conditional),
++        getParentDirectiveIndex(conditional),
++        conditional->ifDirectiveIndex,
++        previousBranchDirective);
++    if (directiveIndex >= 0)
++        conditional->currentDirectiveIndex = directiveIndex;
++
+     updateLexerFlagsForConditionals(inputFile);
+ }
+ 
+@@ -3487,12 +3720,16 @@ static void HandleElifDirective(PreprocessorDirectiveContext* context)
+         return;
+     }
+ 
++    bool evaluated = false;
++    bool value = false;
++    int previousBranchDirective = conditional->currentDirectiveIndex;
+     switch (conditional->state)
+     {
+     case Conditional::State::Before:
+         {
+             // Only evaluate the expression if we are in the before state.
+-            const PreprocessorExpressionValue value = _parseAndEvaluateExpression(context);
++            evaluated = true;
++            value = _parseAndEvaluateExpression(context) != 0;
+             if (value)
+             {
+                 conditional->state = Conditional::State::During;
+@@ -3514,6 +3751,19 @@ static void HandleElifDirective(PreprocessorDirectiveContext* context)
+         }
+     }
+ 
++    int directiveIndex = addConditionalDirectiveForContentAssist(
++        context,
++        "elif",
++        evaluated,
++        value,
++        conditional->state == Conditional::State::During,
++        getConditionalDepth(conditional),
++        getParentDirectiveIndex(conditional),
++        conditional->ifDirectiveIndex,
++        previousBranchDirective);
++    if (directiveIndex >= 0)
++        conditional->currentDirectiveIndex = directiveIndex;
++
+     updateLexerFlagsForConditionals(inputFile);
+ }
+ 
+@@ -3533,6 +3783,17 @@ static void HandleEndIfDirective(PreprocessorDirectiveContext* context)
+         return;
+     }
+ 
++    addConditionalDirectiveForContentAssist(
++        context,
++        "endif",
++        false,
++        false,
++        false,
++        getConditionalDepth(conditional),
++        getParentDirectiveIndex(conditional),
++        conditional->ifDirectiveIndex,
++        conditional->currentDirectiveIndex);
++
+     inputFile->popConditional();
+ 
+     updateLexerFlagsForConditionals(inputFile);
+@@ -3565,6 +3826,11 @@ static void expectEndOfDirective(PreprocessorDirectiveContext* context)
+         SkipToEndOfLine(context);
+     }
+ 
++    // Capture the physical end of the logical directive, including continuations.
++    auto endToken = PeekRawToken(context);
++    context->m_endLoc = SourceLoc::fromRaw(
++        endToken.loc.getRaw() + (SourceLoc::RawValue)endToken.getContentLength());
++
+     // Clear out the end-of-line token
+     AdvanceRawToken(context);
+ }
+@@ -3596,6 +3862,17 @@ void Preprocessor::pushInputFile(InputFile* inputFile, SourceLoc loc, String fil
+     SourceView* sourceView = inputFile->getLexer()->m_sourceView;
+     sourceView->setAbsoluteLocationBase(absoluteSourceLocCounter);
+ 
++    if (contentAssistInfo)
++    {
++        if (!m_currentInputFile)
++            traceRootPath = sourceView->getSourceFile()->getPathInfo().foundPath;
++        PreprocessorTraceFileContentAssistInfo info;
++        info.rootPath = traceRootPath;
++        info.beginLoc = sourceView->getRange().begin;
++        inputFile->traceFileIndex = (int)contentAssistInfo->traceFiles.getCount();
++        contentAssistInfo->traceFiles.add(info);
++    }
++
+     inputFile->m_parent = m_currentInputFile;
+     m_currentInputFile = inputFile;
+     includedFiles.add(fileIdentity);
+@@ -4888,6 +5165,7 @@ static Token ReadToken(Preprocessor* preprocessor)
+         Token token = expansionStream->peekRawToken();
+         if (token.type == TokenType::EndOfFile)
+         {
++            flushPendingInactiveRegion(preprocessor, token.loc);
+             preprocessor->popInputFile();
+             continue;
+         }
+@@ -4898,15 +5176,33 @@ static Token ReadToken(Preprocessor* preprocessor)
+             // Skip the `#`
+             expansionStream->readRawToken();
+ 
++            auto directive = FindDirective(String(expansionStream->peekRawToken().getContent()));
++            bool traceConditional = shouldRecordPreprocessorTrace(preprocessor) &&
++                (directive->flags & PreprocessorDirectiveFlag::ProcessWhenSkipping);
++            if (traceConditional)
++                flushPendingInactiveRegion(preprocessor, token.loc, true);
++
+             // Create a context for parsing the directive
+             PreprocessorDirectiveContext directiveContext;
+             directiveContext.m_preprocessor = preprocessor;
+             directiveContext.m_parseError = false;
+             directiveContext.m_haveDoneEndOfDirectiveChecks = false;
+             directiveContext.m_inputFile = inputFile;
++            directiveContext.m_beginLoc = token.loc;
+ 
+             // Parse and handle the directive
+             HandleDirective(&directiveContext);
++            if (directiveContext.m_traceIndex >= 0)
++                preprocessor->contentAssistInfo
++                    ->conditionalDirectives[directiveContext.m_traceIndex].endLoc =
++                    directiveContext.m_endLoc;
++            if (traceConditional && inputFile->isSkipping() && directiveContext.m_endLoc.isValid())
++            {
++                preprocessor->hasPendingInactiveRegion = true;
++                preprocessor->pendingInactiveBeginLoc = directiveContext.m_endLoc;
++                preprocessor->pendingInactiveControllingDirective =
++                    getInactiveControllingDirective(inputFile);
++            }
+             continue;
+         }
+ 
+@@ -4924,6 +5220,7 @@ static Token ReadToken(Preprocessor* preprocessor)
+             continue;
+         }
+ 
++        expansionStream->recordHoverToken(token);
+         expansionStream->readToken();
+         return token;
+     }
+diff --git a/source/slang/slang-workspace-version.cpp b/source/slang/slang-workspace-version.cpp
+index 0be95d02a..042d8c273 100644
+--- a/source/slang/slang-workspace-version.cpp
++++ b/source/slang/slang-workspace-version.cpp
+@@ -489,8 +489,70 @@ void WorkspaceVersion::parseDiagnostics(String compilerOutput)
+     }
+ }
+ 
+-RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion()
++RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion(
++    const LanguageServerProtocol::PreprocessorBuildContext* buildContext,
++    String* outError,
++    const LanguageServerProtocol::PreprocessorPreview* preview)
+ {
++    auto fail = [&](const char* message) -> RefPtr<WorkspaceVersion>
++    {
++        if (outError) *outError = message;
++        return nullptr;
++    };
++    auto validName = [](const String& name)
++    {
++        if (!name.getLength() || name.getLength() > 128) return false;
++        for (Index i = 0; i < name.getLength(); ++i)
++        {
++            char c = name[i];
++            if (!(c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
++                  (i > 0 && c >= '0' && c <= '9'))) return false;
++        }
++        return true;
++    };
++    // Preview is request-local and last in the initial macro environment. Source directives
++    // still execute normally. Neither workspace settings nor ordinary LSP caches are changed.
++    HashSet<String> previewMacros;
++    if (preview)
++    {
++        if (preview->version != 1 || preview->fingerprint.getLength() != 64 ||
++            preview->defines.getCount() + preview->undefines.getCount() > 256)
++            return fail("Invalid preview version, fingerprint or limits");
++        for (char c : preview->fingerprint)
++            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
++                return fail("Preview fingerprint must be lowercase SHA-256");
++        for (auto& name : preview->undefines)
++            if (!validName(name) || !previewMacros.add(name)) return fail("Invalid or duplicate preview undefine");
++        for (auto& macro : preview->defines)
++        {
++            if (!validName(macro.name) || !previewMacros.add(macro.name) || macro.value.getLength() > 4096 ||
++                macro.value.indexOf('\0') >= 0 || macro.value.indexOf('\n') >= 0 || macro.value.indexOf('\r') >= 0)
++                return fail("Invalid, conflicting or duplicate preview definition");
++        }
++    }
++    HashSet<String> replacedMacros;
++    if (buildContext)
++    {
++        if (buildContext->version != 1 || buildContext->fingerprint.getLength() != 64 ||
++            buildContext->defines.getCount() > 256 || buildContext->undefines.getCount() > 256 ||
++            buildContext->includePaths.getCount() > 256 || buildContext->target.getLength() > 32 ||
++            buildContext->profile.getLength() > 128)
++            return fail("Invalid build context version, fingerprint or limits");
++        for (char c : buildContext->fingerprint)
++            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
++                return fail("Build context fingerprint must be lowercase SHA-256");
++        for (auto& name : buildContext->undefines)
++            if (!validName(name) || !replacedMacros.add(name)) return fail("Invalid or duplicate undefine");
++        for (auto& macro : buildContext->defines)
++        {
++            if (!validName(macro.name) || !replacedMacros.add(macro.name) || macro.value.getLength() > 4096 ||
++                macro.value.indexOf('\0') >= 0 || macro.value.indexOf('\n') >= 0 || macro.value.indexOf('\r') >= 0)
++                return fail("Invalid, conflicting or duplicate macro definition");
++        }
++        for (auto& path : buildContext->includePaths)
++            if (!Path::isAbsolute(path) || path.getLength() > 4096 || path.indexOf('\0') >= 0)
++                return fail("Build include paths must be absolute local paths");
++    }
+     RefPtr<WorkspaceVersion> version = new WorkspaceVersion();
+     version->workspace = this;
+     slang::SessionDesc desc = {};
+@@ -498,41 +560,82 @@ RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion()
+     desc.targetCount = 1;
+     slang::TargetDesc targetDesc = {};
+     targetDesc.profile = slangGlobalSession->findProfile("sm_6_6");
++    if (buildContext)
++    {
++        auto& target = buildContext->target;
++        if (target == "spirv") targetDesc.format = SLANG_SPIRV;
++        else if (target == "dxil") targetDesc.format = SLANG_DXIL;
++        else if (target == "hlsl") targetDesc.format = SLANG_HLSL;
++        else if (target == "glsl") targetDesc.format = SLANG_GLSL;
++        else if (target == "cpp") targetDesc.format = SLANG_CPP_SOURCE;
++        else if (target == "cuda") targetDesc.format = SLANG_CUDA_SOURCE;
++        else if (target == "ptx") targetDesc.format = SLANG_PTX;
++        else if (target.getLength()) return fail("Unsupported build context target");
++        if (buildContext->profile.getLength())
++        {
++            targetDesc.profile = slangGlobalSession->findProfile(buildContext->profile.getBuffer());
++            if (targetDesc.profile == SLANG_PROFILE_UNKNOWN) return fail("Unknown build context profile");
++        }
++    }
+     desc.targets = &targetDesc;
+     List<const char*> searchPathsRaw;
+     // SessionDesc borrows these buffers until createSession returns.
+     List<String> openedDocumentSearchPaths;
+-    for (auto& path : additionalSearchPaths)
+-        searchPathsRaw.add(path.getBuffer());
+-    if (searchInWorkspace)
++    if (buildContext)
++        for (auto& path : buildContext->includePaths) searchPathsRaw.add(path.getBuffer());
++    if (!buildContext || buildContext->inheritWorkspace)
+     {
+-        for (auto& path : workspaceSearchPaths)
++        for (auto& path : additionalSearchPaths)
+             searchPathsRaw.add(path.getBuffer());
+-    }
+-    else
+-    {
+-        HashSet<String> set;
+-        for (const auto& [docPath, _] : openedDocuments)
++        if (searchInWorkspace)
+         {
+-            auto dir = Path::getParentDirectory(docPath.getBuffer());
+-            if (set.add(dir))
+-                openedDocumentSearchPaths.add(dir);
++            for (auto& path : workspaceSearchPaths)
++                searchPathsRaw.add(path.getBuffer());
++        }
++        else
++        {
++            HashSet<String> set;
++            for (const auto& [docPath, _] : openedDocuments)
++            {
++                auto dir = Path::getParentDirectory(docPath.getBuffer());
++                if (set.add(dir)) openedDocumentSearchPaths.add(dir);
++            }
++            for (auto& path : openedDocumentSearchPaths)
++                searchPathsRaw.add(path.getBuffer());
+         }
+-        for (auto& path : openedDocumentSearchPaths)
+-            searchPathsRaw.add(path.getBuffer());
+     }
+     desc.searchPaths = searchPathsRaw.getBuffer();
+     desc.searchPathCount = searchPathsRaw.getCount();
+ 
+-    desc.preprocessorMacroCount = predefinedMacros.getCount();
+     List<slang::PreprocessorMacroDesc> macroDescs;
+     for (auto& macro : predefinedMacros)
+     {
++        if (previewMacros.contains(macro.name)) continue;
++        if (buildContext && (!buildContext->inheritWorkspace || replacedMacros.contains(macro.name)))
++            continue;
+         slang::PreprocessorMacroDesc macroDesc;
+         macroDesc.name = macro.name.getBuffer();
+         macroDesc.value = macro.value.getBuffer();
+         macroDescs.add(macroDesc);
+     }
++    if (buildContext)
++        for (auto& macro : buildContext->defines)
++        {
++            if (previewMacros.contains(macro.name)) continue;
++            slang::PreprocessorMacroDesc macroDesc;
++            macroDesc.name = macro.name.getBuffer();
++            macroDesc.value = macro.value.getBuffer();
++            macroDescs.add(macroDesc);
++        }
++    if (preview)
++        for (auto& macro : preview->defines)
++        {
++            slang::PreprocessorMacroDesc macroDesc;
++            macroDesc.name = macro.name.getBuffer();
++            macroDesc.value = macro.value.getBuffer();
++            macroDescs.add(macroDesc);
++        }
++    desc.preprocessorMacroCount = macroDescs.getCount();
+     desc.preprocessorMacros = macroDescs.getBuffer();
+ 
+     // Inject the assumed language version (slang.predefinedLanguageVersion) as a session compiler
+@@ -550,7 +653,8 @@ RefPtr<WorkspaceVersion> Workspace::createWorkspaceVersion()
+     }
+ 
+     ComPtr<slang::ISession> session;
+-    slangGlobalSession->createSession(desc, session.writeRef());
++    if (SLANG_FAILED(slangGlobalSession->createSession(desc, session.writeRef())) || !session)
++        return fail("Unable to create build context compiler session");
+ 
+     ComPtr<Linkage> linkage;
+     session->queryInterface(Linkage::getTypeGuid(), (void**)linkage.writeRef());
+@@ -805,7 +909,7 @@ void WorkspaceVersion::ensureWorkspaceFlavor(UnownedStringSlice path)
+     }
+ }
+ 
+-Module* WorkspaceVersion::getOrLoadModule(String path)
++Module* WorkspaceVersion::getOrLoadModule(String path, bool allowDisk)
+ {
+     Module* module;
+     if (modules.tryGetValue(path, module))
+@@ -813,10 +917,12 @@ Module* WorkspaceVersion::getOrLoadModule(String path)
+         return module;
+     }
+     auto doc = workspace->openedDocuments.tryGetValue(path);
+-    if (!doc)
++    ComPtr<ISlangBlob> sourceBlob;
++    if (doc)
++        sourceBlob = StringBlob::create((*doc)->getText());
++    else if (!allowDisk || SLANG_FAILED(workspace->loadFile(path.getBuffer(), sourceBlob.writeRef())))
+         return nullptr;
+     ComPtr<ISlangBlob> diagnosticBlob;
+-    auto sourceBlob = StringBlob::create((*doc)->getText());
+ 
+     auto moduleName = getMangledNameFromNameString(path.getUnownedSlice());
+     linkage->contentAssistInfo.primaryModuleName = linkage->getNamePool()->getName(moduleName);
+diff --git a/source/slang/slang-workspace-version.h b/source/slang/slang-workspace-version.h
+index fa1d16428..e58c60ee3 100644
+--- a/source/slang/slang-workspace-version.h
++++ b/source/slang/slang-workspace-version.h
+@@ -22,6 +22,7 @@ private:
+     List<UnownedStringSlice> lines;
+     List<List<Index>> mapUTF16CharIndexToCodePointIndex;
+     List<List<Index>> mapCodePointIndexToUTF8ByteOffset;
++    int version = 0;
+ 
+ public:
+     void setPath(String filePath)
+@@ -33,6 +34,8 @@ public:
+     String getPath() { return path; }
+     const String& getText() { return text; }
+     void setText(const String& newText);
++    int getVersion() const { return version; }
++    void setVersion(int newVersion) { version = newVersion; }
+ 
+     void ensureUTFBoundsAvailable();
+     ArrayView<Index> getUTF16Boundaries(Index line);
+@@ -149,7 +152,7 @@ public:
+     RefPtr<Linkage> linkage;
+     Dictionary<String, DocumentDiagnostics> diagnostics;
+     ASTMarkup* getOrCreateMarkupAST(ModuleDecl* module);
+-    Module* getOrLoadModule(String path);
++    Module* getOrLoadModule(String path, bool allowDisk = false);
+     void ensureWorkspaceFlavor(UnownedStringSlice path);
+     MacroDefinitionContentAssistInfo* tryGetMacroDefinition(UnownedStringSlice name);
+ };
+@@ -164,7 +167,10 @@ class Workspace : public ComObject, public ISlangFileSystem
+ private:
+     RefPtr<WorkspaceVersion> currentVersion;
+     RefPtr<WorkspaceVersion> currentCompletionVersion;
+-    RefPtr<WorkspaceVersion> createWorkspaceVersion();
++    RefPtr<WorkspaceVersion> createWorkspaceVersion(
++        const LanguageServerProtocol::PreprocessorBuildContext* buildContext = nullptr,
++        String* outError = nullptr,
++        const LanguageServerProtocol::PreprocessorPreview* preview = nullptr);
+ 
+ public:
+     List<String> rootDirectories;
+@@ -200,6 +206,11 @@ public:
+     WorkspaceVersion* getCurrentVersion();
+     WorkspaceVersion* getCurrentCompletionVersion() { return currentCompletionVersion.Ptr(); }
+     WorkspaceVersion* createVersionForCompletion();
++    RefPtr<WorkspaceVersion> createVersionForPreprocessorTrace(
++        const LanguageServerProtocol::PreprocessorBuildContext* buildContext = nullptr,
++        String* outError = nullptr,
++        const LanguageServerProtocol::PreprocessorPreview* preview = nullptr)
++    { return createWorkspaceVersion(buildContext, outError, preview); }
+ 
+ public:
+     // Inherited via ISlangFileSystem

@@ -54,7 +54,7 @@
     <option name="SLANG.SEMANTIC.INTRINSIC"><value><option name="FOREGROUND" value="00855F"/></value></option>
     <option name="SLANG.SEMANTIC.MACRO"><value><option name="FOREGROUND" value="0F54D6"/></value></option>
     <option name="SLANG.SEMANTIC.DECORATOR"><value><option name="FOREGROUND" value="6B2FBA"/></value></option>
-    <option name="SLANG.SEMANTIC.BUILTIN_SYMBOL"><value><option name="FOREGROUND" value="000000"/></value></option>
+    <option name="SLANG.SEMANTIC.BUILTIN_SYMBOL"><value><option name="FOREGROUND" value="0093A1"/><option name="FONT_TYPE" value="1"/></value></option>
 
     <!-- Branch overlays must not paint a background over usage/selection highlights. -->
     <option name="SLANG.PREPROCESSOR.INACTIVE_CODE"><value><option name="FOREGROUND" value="949494"/></value></option>

@@ -11,3 +11,6 @@
 build/
 out/
 *.iml
+
+.slang-2026.19-source/
+.slang-2026.19-build/

@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.slang.intellij"
-version = "0.8.11"
+version = "0.8.15"
 
 repositories {
     mavenCentral()
@@ -23,11 +23,11 @@ val platformVersion = providers.gradleProperty("platformVersion").getOrElse("202
 
 // Runtime files live next to lib/, so the IDE installs/removes them with this plugin version.
 val bundledSlangdDirectory = layout.projectDirectory.dir(
-    providers.gradleProperty("bundledSlangdDir").getOrElse(".bundled-runtime/windows-x86_64")
+    providers.gradleProperty("bundledSlangdDir").getOrElse(".bundled-runtime/2026.19/windows-x86_64")
 )
 val verifyBundledSlangd by tasks.registering {
     val root = bundledSlangdDirectory.asFile
-    val currentPatches = fileTree("patches/slang").matching { include("*.patch") }.files
+    val currentPatches = fileTree("patches/slang/2026.19").matching { include("*.patch") }.files
     inputs.dir(root)
     inputs.files(currentPatches)
     doLast {
@@ -62,7 +62,7 @@ val verifyBundledSlangd by tasks.registering {
             check(sha256(root.resolve(relative)) == hash) { "Bundled runtime checksum mismatch: $name" }
         }
         val source = manifest["source"] as Map<*, *>
-        check(source["commit"] == "5f9227cf6e5055b6a9ee742fdd729aab9162cf25") { "Unexpected Slang base commit" }
+        check(source["commit"] == "0fb6b7587a94fa33d88141ec9930766eedc6f59a") { "Unexpected Slang base commit" }
         val patches = source["patches"] as Map<*, *>
         check(currentPatches.map { it.name }.toSet() == patches.keys) { "Stale bundled patch series" }
         currentPatches.forEach {

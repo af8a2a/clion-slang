@@ -171,3 +171,10 @@ Manual acceptance after installing the ZIP:
 
 The declared CLion 2026.1.3 / Java 21 baseline is unchanged. No GUI acceptance is claimed solely
 from successful unit tests or packaging; the previous startup failure demonstrated that distinction.
+
+## HLSL descriptor heaps (0.8.13)
+
+Builtin symbols now use the Rider constant accent (`0093A1`, bold), so the SM 6.6
+`ResourceDescriptorHeap` and `SamplerDescriptorHeap` stand out from ordinary variables.
+The existing **Semantic / Other built-in symbol** setting controls this color; explicit
+user overrides remain in place. Dark themes continue using their native fallback.

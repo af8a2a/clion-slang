@@ -39,6 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * Bridges CLion's declaration action directly to slangd.
@@ -60,6 +61,17 @@ public final class SlangGotoDeclarationHandler implements GotoDeclarationHandler
     private static final String UTF_32 = "utf-32";
 
     private final Map<CacheKey, CacheEntry> definitionCache = new ConcurrentHashMap<>();
+    private final Function<Project, Collection<LspServer>> serverLookup;
+
+    public SlangGotoDeclarationHandler() {
+        this(project -> LspServerManager.getInstance(project)
+                .getServersForProvider(SlangLspServerSupportProvider.class));
+    }
+
+    SlangGotoDeclarationHandler(Function<Project, Collection<LspServer>> serverLookup) {
+        this.serverLookup = serverLookup;
+    }
+
 
     @Override
     public @Nullable PsiElement[] getGotoDeclarationTargets(
@@ -85,8 +97,7 @@ public final class SlangGotoDeclarationHandler implements GotoDeclarationHandler
         }
         int requestOffset = requestOffsetForIdentifier(identifierRange, sourceOffset);
 
-        Collection<LspServer> servers = LspServerManager.getInstance(project)
-                .getServersForProvider(SlangLspServerSupportProvider.class);
+        Collection<LspServer> servers = serverLookup.apply(project);
         for (LspServer server : servers) {
             if (server.getState() != LspServerState.Running
                     || !server.getDescriptor().isSupportedFile(sourceFile)
@@ -132,8 +143,6 @@ public final class SlangGotoDeclarationHandler implements GotoDeclarationHandler
                     project,
                     server,
                     locations,
-                    sourceFile,
-                    requestOffset,
                     positionEncoding
             );
             if (targets.length != 0) {
@@ -204,8 +213,6 @@ public final class SlangGotoDeclarationHandler implements GotoDeclarationHandler
             @NotNull Project project,
             @NotNull LspServer server,
             @NotNull List<TargetLocation> locations,
-            @NotNull VirtualFile sourceFile,
-            int sourceOffset,
             @NotNull String positionEncoding
     ) {
         Map<String, PsiElement> targets = new LinkedHashMap<>();
@@ -227,11 +234,8 @@ public final class SlangGotoDeclarationHandler implements GotoDeclarationHandler
             int endOffset = toDocumentOffset(targetDocument, location.range().getEnd(), positionEncoding);
             endOffset = Math.max(startOffset, endOffset);
 
-            boolean sourceIsInsideTarget = sourceOffset >= startOffset
-                    && (sourceOffset < endOffset || (startOffset == endOffset && sourceOffset == startOffset));
-            if (targetFile.equals(sourceFile) && sourceIsInsideTarget) {
-                continue;
-            }
+            // A server-confirmed declaration may point to itself. Keep that target so
+            // Ctrl-hover at a declaration gets the same identifier link as a reference.
 
             String key = targetFile.getUrl() + ':' + startOffset + ':' + endOffset;
             targets.putIfAbsent(

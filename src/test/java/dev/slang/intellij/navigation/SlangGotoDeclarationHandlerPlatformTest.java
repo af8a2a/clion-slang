@@ -8,15 +8,18 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.platform.lsp.api.LspServer;
-import com.intellij.platform.lsp.api.LspServerManager;
+import com.intellij.platform.lsp.api.LspServerSupportProvider;
 import com.intellij.platform.lsp.api.LspServerState;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.testFramework.ServiceContainerUtil;
+import com.intellij.testFramework.ExtensionTestUtil;
+import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.util.concurrency.AppExecutorUtil;
-import dev.slang.intellij.lsp.SlangLspServerDescriptor;
+import com.intellij.platform.lsp.api.LspServerDescriptor;
+import java.util.HashMap;
+import java.util.Map;
 import dev.slang.intellij.lsp.SlangLspServerSupportProvider;
 import kotlin.jvm.functions.Function1;
 import org.eclipse.lsp4j.DefinitionParams;
@@ -32,7 +35,6 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
 import java.lang.reflect.Proxy;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -47,26 +49,39 @@ public class SlangGotoDeclarationHandlerPlatformTest extends BasePlatformTestCas
     private final AtomicReference<DefinitionParams> receivedDefinition = new AtomicReference<>();
     private final AtomicReference<Location> definitionResult = new AtomicReference<>();
 
-    private SlangLspServerDescriptor descriptor;
+    private LspServerDescriptor descriptor;
     private LspServer server;
     private PsiFile file;
     private Editor editor;
     private int targetOffset;
     private int callOffset;
+    private SlangGotoDeclarationHandler handler;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        ExtensionTestUtil.maskExtensions(LspServerSupportProvider.Companion.getEP_NAME(),
+                List.of(), getTestRootDisposable());
 
-        descriptor = new SlangLspServerDescriptor(getProject());
+        // Fixture files live in TempFileSystem, not on disk. Preserve the LSP URI mapping
+        // explicitly instead of asking LocalFileSystem to resolve /src/Definition.slang.
+        Map<String, VirtualFile> fixtureFiles = new HashMap<>();
+        descriptor = new LspServerDescriptor(getProject(), "Test Slang") {
+            @Override public boolean isSupportedFile(VirtualFile file) {
+                return "slang".equals(file.getExtension());
+            }
+            @Override public String getFileUri(VirtualFile file) {
+                String uri = super.getFileUri(file);
+                fixtureFiles.put(uri, file);
+                return uri;
+            }
+            @Override public VirtualFile findFileByUri(String uri) {
+                return fixtureFiles.get(uri);
+            }
+        };
         server = createServer();
-        LspServerManager manager = createManager(server);
-        ServiceContainerUtil.replaceService(
-                getProject(),
-                LspServerManager.class,
-                manager,
-                getTestRootDisposable()
-        );
+        handler = new SlangGotoDeclarationHandler(project -> List.of(server));
+        ExtensionTestUtil.maskExtensions(GotoDeclarationHandler.EP_NAME, List.of(handler), getTestRootDisposable());
 
         PsiFile projectFile = myFixture.addFileToProject("Definition.slang", SOURCE);
         myFixture.configureFromExistingVirtualFile(projectFile.getVirtualFile());
@@ -125,12 +140,15 @@ public class SlangGotoDeclarationHandlerPlatformTest extends BasePlatformTestCas
         PsiElement sourceElement = file.findElementAt(callOffset);
         assertNotNull(sourceElement);
 
-        PsiElement[] targets = new SlangGotoDeclarationHandler().getGotoDeclarationTargets(
+        PsiElement[] targets = handler.getGotoDeclarationTargets(
                 sourceElement,
                 wordEndOffset,
                 editor
         );
 
+        assertNotNull("Definition request was not issued", receivedDefinition.get());
+        assertNotNull("Fixture URI did not resolve: " + definitionResult.get().getUri(),
+                descriptor.findFileByUri(definitionResult.get().getUri()));
         assertNotNull(targets);
         assertEquals(1, targets.length);
         assertEquals("twice", targets[0].getText());
@@ -139,6 +157,34 @@ public class SlangGotoDeclarationHandlerPlatformTest extends BasePlatformTestCas
                 positionAt(editor.getDocument(), wordEndOffset - 1),
                 receivedDefinition.get().getPosition()
         );
+    }
+
+    public void testDeclarationCtrlHoverKeepsSelfTargetAndExactNameRange() throws Exception {
+        String source = "struct Item { float field; };\nfloat globalValue;\n"
+                + "float f(float parameter) { float localValue = parameter; return localValue; }\n";
+        myFixture.configureByText("Declarations.slang", source);
+        PsiFile declarationFile = myFixture.getFile();
+        Editor declarationEditor = myFixture.getEditor();
+        PsiDocumentManager.getInstance(getProject()).commitAllDocuments();
+        for (String name : List.of("field", "globalValue", "parameter", "localValue")) {
+            int start = source.indexOf(name);
+            definitionResult.set(new Location(descriptor.getFileUri(declarationFile.getVirtualFile()),
+                    new Range(positionAt(declarationEditor.getDocument(), start),
+                            positionAt(declarationEditor.getDocument(), start + name.length()))));
+            CtrlMouseData data = ReadAction.nonBlocking(() ->
+                            new GotoDeclarationAction().getCtrlMouseData(declarationEditor, declarationFile, start + 1))
+                    .withDocumentsCommitted(getProject())
+                    .submit(AppExecutorUtil.getAppExecutorService()).get(10, TimeUnit.SECONDS);
+            assertNotNull(name, data);
+            assertTrue(name, data.isNavigatable());
+            assertEquals(List.of(new TextRange(start, start + name.length())), data.getRanges());
+            PsiElement[] targets = handler.getGotoDeclarationTargets(
+                    declarationFile.findElementAt(start), start + name.length(), declarationEditor);
+            assertNotNull(targets);
+            assertEquals(1, targets.length);
+            assertEquals(start, targets[0].getTextOffset());
+            assertEquals(name, targets[0].getText());
+        }
     }
 
     private LspServer createServer() {
@@ -192,22 +238,6 @@ public class SlangGotoDeclarationHandlerPlatformTest extends BasePlatformTestCas
                 (proxy, method, arguments) -> {
                     if (method.getName().equals("getTextDocumentService")) {
                         return textDocuments;
-                    }
-                    return objectMethodOrUnsupported(proxy, method.getName(), arguments, method.toString());
-                }
-        );
-    }
-
-    private LspServerManager createManager(LspServer fakeServer) {
-        return (LspServerManager) Proxy.newProxyInstance(
-                getClass().getClassLoader(),
-                new Class<?>[]{LspServerManager.class},
-                (proxy, method, arguments) -> {
-                    if (method.getName().equals("getServersForProvider")) {
-                        return (Collection<LspServer>) List.of(fakeServer);
-                    }
-                    if (method.getReturnType() == void.class) {
-                        return null;
                     }
                     return objectMethodOrUnsupported(proxy, method.getName(), arguments, method.toString());
                 }

@@ -1,10 +1,23 @@
+# Current runtime: Slang 2026.19 (plugin 0.8.15)
+
+The active patch series is now [`2026.19/`](2026.19/README.md), based on official
+`v2026.19`, commit `0fb6b7587a94fa33d88141ec9930766eedc6f59a`.
+The older top-level patches are retained for reproducing historical releases;
+**do not apply them to 2026.19**. The active consolidated patch preserves editor
+features while using upstream descriptor heap declarations and
+`getDescriptorFromDynamicResourceHeap` unchanged.
+
+---
+
+## Historical 2026.4.2-based runtime (through plugin 0.8.14)
+
 # Enhanced slangd patches
 
 `0001-m4a-preprocessor-trace.patch` is a standalone patch against upstream Slang commit
 `5f9227cf6e5055b6a9ee742fdd729aab9162cf25` (`v2026.4.2-29-g5f9227cf6`). Do not apply it on top
 of the obsolete M2/M3 patches. The base commit is pinned for reproducibility, not a claim that it
-is the latest upstream version. Slang retains its upstream license. Plugin 0.8.11 ships a Windows x64
-build with patches 0001–0011, matching DLLs, licenses and the complete patch series; see
+is the latest upstream version. Slang retains its upstream license. Plugin 0.8.14 ships a Windows x64
+build with patches 0001–0014, matching DLLs, licenses and the complete patch series; see
 [bundling and server selection](../../docs/bundled-slangd.md). The source checkout remains outside Git.
 
 `0002-m4c-preprocessor-contexts.patch` applies **after 0001**, on the same pinned base. It adds
@@ -76,6 +89,12 @@ git -C .slang-m4a-source apply --check ../patches/slang/0010-macro-hover-expansi
 git -C .slang-m4a-source apply ../patches/slang/0010-macro-hover-expansion.patch
 git -C .slang-m4a-source apply --check ../patches/slang/0011-member-access-highlighting.patch
 git -C .slang-m4a-source apply ../patches/slang/0011-member-access-highlighting.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0012-variable-declaration-navigation.patch
+git -C .slang-m4a-source apply ../patches/slang/0012-variable-declaration-navigation.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0013-hlsl-descriptor-heaps.patch
+git -C .slang-m4a-source apply ../patches/slang/0013-hlsl-descriptor-heaps.patch
+git -C .slang-m4a-source apply --check ../patches/slang/0014-hlsl-descriptor-heap-types.patch
+git -C .slang-m4a-source apply ../patches/slang/0014-hlsl-descriptor-heap-types.patch
 ```
 
 Do not reuse an existing dirty checkout for these commands. Configure with CMake and an installed
@@ -142,3 +161,27 @@ layout details at parameter type references, with compact definition file links.
 No new legend entries or custom negotiation are needed. Apply with
 `git -C .slang-m4a-source apply ../patches/slang/0011-member-access-highlighting.patch` and validate
 with `python scripts/slangd-member-access-smoke.py --slangd <path-to-slangd>`.
+
+`0012-variable-declaration-navigation.patch` applies after 0011. Standard definition requests
+on real variable declaration names return their exact name range, covering locals, globals,
+fields and parameters. The plugin preserves server-confirmed self targets for Ctrl-hover links.
+Run `python scripts/slangd-declaration-navigation-smoke.py --slangd <path-to-slangd>` to verify
+both declarations and references, builtin destinations and unsaved Unicode/CRLF edits.
+
+`0013-hlsl-descriptor-heaps.patch` supplies editor-only recognition of unresolved
+`ResourceDescriptorHeap` and `SamplerDescriptorHeap` variable expressions. Resolved user
+symbols take precedence. The server returns Microsoft DirectX HLSL SM 6.6 reference links
+and negotiates the standard `defaultLibrary` modifier for heap variable tokens. Older
+clients keep their unchanged legend/modifier encoding. This does not add compiler support
+or suppress compiler diagnostics. Validate with `scripts/slangd-descriptor-heap-smoke.py`.
+
+`0014-hlsl-descriptor-heap-types.patch` replaces the unresolved-name fallback with
+real declarations in the bundled core library. Distinct sampler/resource heap element
+types select kind-constrained implicit constructors backed by `DescriptorHandle`.
+CBV/texture-buffer conversion permits only the synthetic-core heap element type through
+the parameter-group conversion gate; normal overload resolution still checks the kind.
+Highlighting and reference links now require the resolved synthetic-core declaration.
+No diagnostics are filtered. The separate project shader compiler is not replaced.
+Run `scripts/slangd-descriptor-heap-diagnostics-smoke.py` for actual published error/clear
+notifications, including the reported sampler functions, typed resources, invalid
+heap-kind/index/scalar conversions and unsaved edits.

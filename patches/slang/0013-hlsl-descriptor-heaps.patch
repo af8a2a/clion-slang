@@ -1,0 +1,186 @@
+diff --git a/source/slang/slang-language-server-ast-lookup.cpp b/source/slang/slang-language-server-ast-lookup.cpp
+index dd3495b4c..12d12fec0 100644
+--- a/source/slang/slang-language-server-ast-lookup.cpp
++++ b/source/slang/slang-language-server-ast-lookup.cpp
+@@ -1,4 +1,5 @@
+ #include "slang-language-server-ast-lookup.h"
++#include "slang-language-server-semantic-tokens.h"
+ 
+ #include "slang-visitor.h"
+ #include "slang-workspace-version.h"
+@@ -232,6 +233,15 @@ public:
+ 
+     bool visitVarExpr(VarExpr* expr)
+     {
++        if (isHlslDescriptorHeapReference(expr) &&
++            _isLocInRange(context, expr->loc, getText(expr->name).getLength()))
++        {
++            ASTLookupResult result;
++            result.path = context->nodePath;
++            result.path.add(expr);
++            context->results.add(result);
++            return true;
++        }
+         if (expr->name && expr->declRef.getDecl())
+         {
+             if (expr->declRef.getDecl()->hasModifier<ImplicitConversionModifier>())
+diff --git a/source/slang/slang-language-server-semantic-tokens.cpp b/source/slang/slang-language-server-semantic-tokens.cpp
+index 12ca956b7..5ec6d5c81 100644
+--- a/source/slang/slang-language-server-semantic-tokens.cpp
++++ b/source/slang/slang-language-server-semantic-tokens.cpp
+@@ -61,7 +61,8 @@ List<SemanticToken> getSemanticTokens(
+     Module* module,
+     UnownedStringSlice fileName,
+     DocumentVersion* doc,
+-    bool structuredBufferRoles)
++    bool structuredBufferRoles,
++    bool builtinModifiers)
+ {
+     auto manager = linkage->getSourceManager();
+ 
+@@ -200,7 +201,15 @@ List<SemanticToken> getSemanticTokens(
+                 }
+             }
+ 
+-            if (auto declRefExpr = as<DeclRefExpr>(node))
++            if (isHlslDescriptorHeapReference(node))
++            {
++                auto expr = as<VarExpr>(node);
++                auto token = _createSemanticToken(manager, expr->loc, expr->name);
++                token.type = SemanticTokenType::Variable;
++                token.modifiers = builtinModifiers ? 1 : 0;
++                maybeInsertToken(token);
++            }
++            else if (auto declRefExpr = as<DeclRefExpr>(node))
+             {
+                 handleDeclRef(
+                     declRefExpr->declRef,
+@@ -448,7 +457,7 @@ List<uint32_t> getEncodedTokens(List<SemanticToken>& tokens)
+     result.add((uint32_t)tokens[0].col);
+     result.add((uint32_t)tokens[0].length);
+     result.add((uint32_t)tokens[0].type);
+-    result.add(0);
++    result.add(tokens[0].modifiers);
+ 
+     // Encode the rest tokens as deltas.
+     uint32_t prevLine = (uint32_t)tokens[0].line;
+@@ -467,7 +476,7 @@ List<uint32_t> getEncodedTokens(List<SemanticToken>& tokens)
+         result.add(deltaCol);
+         result.add((uint32_t)tokens[i].length);
+         result.add((uint32_t)tokens[i].type);
+-        result.add(0);
++        result.add(tokens[i].modifiers);
+ 
+         prevLine = thisLine;
+         prevCol = thisCol;
+diff --git a/source/slang/slang-language-server-semantic-tokens.h b/source/slang/slang-language-server-semantic-tokens.h
+index 2e9a415a5..f82826a98 100644
+--- a/source/slang/slang-language-server-semantic-tokens.h
++++ b/source/slang/slang-language-server-semantic-tokens.h
+@@ -35,6 +35,7 @@ struct SemanticToken
+     int col;
+     int length;
+     SemanticTokenType type;
++    uint32_t modifiers = 0;
+     bool operator<(const SemanticToken& other) const
+     {
+         if (line < other.line)
+@@ -53,12 +54,24 @@ struct SemanticToken
+         return false;
+     }
+ };
++// Editor fallback for HLSL globals absent from Slang's core module. Checked
++// user declarations (including shadowing) always take precedence. MemberExpr,
++// comments, strings and inactive preprocessor branches cannot match this test.
++inline bool isHlslDescriptorHeapReference(SyntaxNode* node)
++{
++    auto expr = as<VarExpr>(node);
++    if (!expr || expr->declRef || !expr->name) return false;
++    auto name = getText(expr->name);
++    return name == "ResourceDescriptorHeap" || name == "SamplerDescriptorHeap";
++}
++
+ List<SemanticToken> getSemanticTokens(
+     Linkage* linkage,
+     Module* module,
+     UnownedStringSlice fileName,
+     DocumentVersion* doc,
+-    bool structuredBufferRoles = false);
++    bool structuredBufferRoles = false,
++    bool builtinModifiers = false);
+ List<uint32_t> getEncodedTokens(List<SemanticToken>& tokens);
+ 
+ } // namespace Slang
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index bfd70bfb0..4846f256d 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -148,6 +148,14 @@ SlangResult LanguageServer::parseNextMessage()
+                         if (value.getKind() == JSONValue::Kind::String) requestedTypes.add(container->getString(value));
+                 m_core.m_structuredBufferSemanticTokens = requestedTypes.contains("typeParameter")
+                     && requestedTypes.contains("slangTypeArgument") && requestedTypes.contains("slangStructuredBuffer");
++                auto clientModifiers = member(member(member(member(call.params, "capabilities"),
++                    "textDocument"), "semanticTokens"), "tokenModifiers");
++                m_core.m_builtinSemanticModifiers = false;
++                if (clientModifiers.type == JSONValue::Type::Array)
++                    for (auto value : container->getArray(clientModifiers))
++                        if (value.getKind() == JSONValue::Kind::String &&
++                            container->getString(value) == "defaultLibrary")
++                            m_core.m_builtinSemanticModifiers = true;
+                 auto fillCapability = [&](ServerCapabilities& caps)
+                 {
+                     caps.positionEncoding = "utf-16";
+@@ -189,6 +197,8 @@ SlangResult LanguageServer::parseNextMessage()
+                         ? SemanticTokenType::NormalText : SemanticTokenType::TypeParameter);
+                     for (int i = 0; i < typeCount; ++i)
+                         caps.semanticTokensProvider.legend.tokenTypes.add(kSemanticTokenTypes[i]);
++                    if (m_core.m_builtinSemanticModifiers)
++                        caps.semanticTokensProvider.legend.tokenModifiers.add("defaultLibrary");
+                 };
+                 ServerInfo serverInfo;
+                 serverInfo.name = "SlangLanguageServer";
+@@ -1277,7 +1287,22 @@ LanguageServerResult<LanguageServerProtocol::Hover> LanguageServerCore::hover(
+             fillLoc(expr->loc);
+         }
+     };
+-    if (auto declRefExpr = as<DeclRefExpr>(leafNode))
++    if (isHlslDescriptorHeapReference(leafNode))
++    {
++        auto expr = as<VarExpr>(leafNode);
++        bool sampler = getText(expr->name) == "SamplerDescriptorHeap";
++        sb << "```slang\n(HLSL SM 6.6 builtin) " << getText(expr->name) << "\n```\n\n"
++           << (sampler ? "Indexable sampler descriptor heap. Assign an indexed descriptor to "
++                         "SamplerState or SamplerComparisonState."
++                       : "Indexable resource descriptor heap. Assign an indexed descriptor to "
++                         "a CBV, SRV or UAV resource type.")
++           << "\n\nFor non-uniform indices, use NonUniformResourceIndex(index)."
++           << "\n\n[HLSL Reference: Shader Model 6.6 Dynamic Resources \xE2\x86\x97]"
++              "(https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html"
++              "#resourcedescriptorheap-and-samplerdescriptorheap)\n";
++        fillLoc(expr->loc);
++    }
++    else if (auto declRefExpr = as<DeclRefExpr>(leafNode))
+     {
+         auto resolvedDeclRef = maybeRedirectToConstructor(declRefExpr, findResult[0].path);
+         fillDeclRefHoverInfo(resolvedDeclRef, declRefExpr->name);
+@@ -1848,7 +1873,7 @@ LanguageServerResult<LanguageServerProtocol::SemanticTokens> LanguageServerCore:
+         version->linkage,
+         parsedModule,
+         canonicalPath.getUnownedSlice(),
+-        doc.Ptr(), m_structuredBufferSemanticTokens);
++        doc.Ptr(), m_structuredBufferSemanticTokens, m_builtinSemanticModifiers);
+     for (auto& token : tokens)
+     {
+         Index line, col;
+diff --git a/source/slang/slang-language-server.h b/source/slang/slang-language-server.h
+index 592f4d499..b6bbf55de 100644
+--- a/source/slang/slang-language-server.h
++++ b/source/slang/slang-language-server.h
+@@ -107,6 +107,7 @@ public:
+     List<LanguageServerProtocol::WorkspaceFolder> m_workspaceFolders;
+     LanguageServerStartupOptions m_options;
+     bool m_structuredBufferSemanticTokens = false;
++    bool m_builtinSemanticModifiers = false;
+ 
+     LanguageServerCore(LanguageServerStartupOptions options)
+         : m_options(options)

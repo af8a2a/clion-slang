@@ -1,0 +1,24 @@
+diff --git a/source/slang/slang-language-server.cpp b/source/slang/slang-language-server.cpp
+index 0376a83be..bfd70bfb0 100644
+--- a/source/slang/slang-language-server.cpp
++++ b/source/slang/slang-language-server.cpp
+@@ -1503,6 +1503,19 @@ LanguageServerResult<List<LanguageServerProtocol::Location>> LanguageServerCore:
+             }
+         }
+     }
++    else if (auto varDecl = as<VarDeclBase>(leafNode))
++    {
++        // AST lookup only returns a real declaration when the cursor is on its name.
++        // Preserve that exact target for Ctrl-hover on locals, parameters and fields.
++        auto name = varDecl->getName();
++        if (name && varDecl->getNameLoc().isValid())
++        {
++            auto location = version->linkage->getSourceManager()->getHumaneLoc(
++                varDecl->getNameLoc(), SourceLocType::Actual);
++            locations.add(LocationResult{
++                location, (int)UTF8Util::calcUTF16CharCount(name->text.getUnownedSlice())});
++        }
++    }
+     else if (auto importDecl = as<ImportDecl>(leafNode))
+     {
+         auto location =

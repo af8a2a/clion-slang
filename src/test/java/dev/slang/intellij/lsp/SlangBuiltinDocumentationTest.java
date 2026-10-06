@@ -113,6 +113,26 @@ public class SlangBuiltinDocumentationTest {
         }
     }
 
+    @Test public void descriptorHeapReferencesSurviveNativeDocumentationRendering() throws Exception {
+        String url = "https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html#resourcedescriptorheap-and-samplerdescriptorheap";
+        Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(), new Class<?>[]{Project.class},
+                (proxy, method, args) -> method.getReturnType() == boolean.class ? false : null);
+        try (var reader = new InputStreamReader(getClass().getResourceAsStream("/documentation/descriptor-heap-hover-samples.json"), StandardCharsets.UTF_8)) {
+            for (var sample : JsonParser.parseReader(reader).getAsJsonObject().entrySet()) {
+                JsonObject response = new JsonObject();
+                response.add("result", sample.getValue().deepCopy());
+                var result = response.getAsJsonObject("result");
+                var range = result.get("range").deepCopy();
+                SlangHoverHighlighting.normalize(response);
+                assertEquals(range, result.get("range"));
+                String markdown = result.getAsJsonObject("contents").get("value").getAsString();
+                var data = LspDocumentationDataKt.createLspDocumentationData(new MarkupContent("markdown", markdown));
+                String html = DocMarkdownToHtmlConverter.convert(project, data.getDescription());
+                assertEquals(sample.getKey(), sample.getKey().startsWith("builtin-"), html.contains("href=\"" + url + "\""));
+            }
+        }
+    }
+
     @Test public void wireAdapterKeepsUtf8LengthRangeAndRequestCorrelation() throws Exception {
         JsonObject contents = new JsonObject(); contents.addProperty("kind", "markdown");
         contents.addProperty("value", builtin("abs", "func abs(float x) -> float"));
