@@ -9,6 +9,12 @@ struct/field/type and macro hover; builtin provenance/reference links; and varia
 name navigation. It preserves upstream's owned search-path buffers and current JSON-RPC
 null-response API while merging the build-context behavior.
 
+When a standalone `implementing` file names an explicit primary module, the language
+server restores that module's top-level `using` directives in an enclosing scope.
+The fragment's own directives retain precedence; sibling files and imported modules
+do not export their using directives. The enclosing scope is wired before checking
+fragment namespace directives, generic constraints and extension targets.
+
 The old custom descriptor heap types and conversion-checker changes are retired.
 The new baseline provides both descriptor heap objects and
 `getDescriptorFromDynamicResourceHeap<T>` in its unmodified core library. Only the

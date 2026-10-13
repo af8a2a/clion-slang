@@ -57,7 +57,7 @@ python -B scripts/prepare-bundled-slangd.py
 The first command above assumes the reduced build has already been configured. The staging script
 accepts `--source`, `--build-dir`, `--configuration` and `--output`. It verifies the source against
 the pinned commit plus the patch series using a private Git index, checks AMD64 PE files and static
-CRT imports, copies license notices and patches, and runs fifteen real-server smoke suites against
+CRT imports, copies license notices and patches, and runs sixteen real-server smoke suites against
 the staged copies. It then writes `.bundled-runtime/2026.19/windows-x86_64/manifest.json`.
 
 Gradle packages that directory in both `runIde` sandboxes and `buildPlugin` archives. Use

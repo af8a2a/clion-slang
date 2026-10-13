@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BASE = "0fb6b7587a94fa33d88141ec9930766eedc6f59a"
 BINARIES = ("slangd.exe", "slang-compiler.dll", "slang-glsl-module.dll")
 SMOKES = ("preprocessor-trace", "preprocessor-context", "shader-variants", "branch-preview",
-          "structured-buffer", "type-hover", "struct-hover", "field-hover", "builtin-documentation", "macro-hover", "member-access", "declaration-navigation", "descriptor-heap", "descriptor-heap-diagnostics", "dynamic-resource-heap")
+          "structured-buffer", "type-hover", "struct-hover", "field-hover", "builtin-documentation", "macro-hover", "member-access", "declaration-navigation", "descriptor-heap", "descriptor-heap-diagnostics", "dynamic-resource-heap", "implementing-scope")
 
 
 def run(*args, **kwargs):
@@ -132,7 +132,8 @@ def main():
         f"Upstream release: v2026.19\nBase commit: {BASE}\n"
         "Modified by the CLion Slang plugin contributors; all changes are in patches/.\n"
         "Changes: preprocessor trace/contexts/variants/preview, structured-buffer tokens,\n"
-        "type alias hover, struct/field layout, builtin provenance, macro hover, member colors variable declaration navigation and typed HLSL SM6.6 heap references.\n"
+        "type alias hover, struct/field layout, builtin provenance, macro hover, member colors,\n"
+        "variable declaration navigation, typed HLSL SM6.6 heap references and implementing-file using scopes.\n"
         "Slang is Apache-2.0 WITH LLVM-exception. See licenses/ for license texts\n"
         "and third-party copyright notices. Built with static MSVC runtime.\n",
         encoding="utf-8")

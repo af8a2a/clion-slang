@@ -279,6 +279,41 @@ index d232c12c0..fd07bffd7 100644
  struct SignatureHelpParams : WorkDoneProgressParams, TextDocumentPositionParams
  {
      static const UnownedStringSlice methodName;
+diff --git a/source/slang/slang-check-decl.cpp b/source/slang/slang-check-decl.cpp
+index 79f849543..43c7ff0d1 100644
+--- a/source/slang/slang-check-decl.cpp
++++ b/source/slang/slang-check-decl.cpp
+@@ -5189,6 +5189,30 @@ void SemanticsDeclVisitorBase::checkModule(ModuleDecl* moduleDecl)
+             visitIncludeDecls(fileDecl);
+     }
+ 
++    if (getShared()->isInLanguageServer())
++    {
++        if (auto implementingDecl = as<ImplementingDecl>(moduleDecl->getFirstDirectMemberDecl()))
++        {
++            auto ownerFile = implementingDecl->fileDecl;
++            if (ownerFile && as<ModuleDeclarationDecl>(ownerFile->getFirstDirectMemberDecl()))
++            {
++                // The implementing file is the synthetic primary module in the language server.
++                // Restore its owner's using directives in an outer lexical scope, preserving
++                // the precedence of the implementing file's own using directives.
++                auto inheritedScope = getASTBuilder()->create<Scope>();
++                inheritedScope->parent = moduleDecl->ownedScope->parent;
++                moduleDecl->ownedScope->parent = inheritedScope;
++                for (auto usingDecl : ownerFile->getMembersOfType<UsingDecl>())
++                    usingDecl->scope = inheritedScope;
++
++                // All imports are now available. Wire the enclosing scope before the child
++                // resolves namespace usings, generic constraints, or extension target types.
++                for (auto usingDecl : ownerFile->getMembersOfType<UsingDecl>())
++                    ensureDecl(usingDecl, DeclCheckState::ScopesWired);
++            }
++        }
++    }
++
+     // The entire goal of semantic checking is to get all of the
+     // declarations in the module up to `DeclCheckState::DefinitionChecked`.
+     //
 diff --git a/source/slang/slang-content-assist-info.h b/source/slang/slang-content-assist-info.h
 index c913e1546..aa492db5e 100644
 --- a/source/slang/slang-content-assist-info.h
