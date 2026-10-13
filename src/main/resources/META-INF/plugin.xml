@@ -40,6 +40,9 @@
         <lang.quoteHandler language="Slang" implementationClass="dev.slang.intellij.editor.SlangQuoteHandler"/>
         <gotoDeclarationHandler implementation="dev.slang.intellij.navigation.SlangGotoDeclarationHandler"/>
         <fileBasedIndex implementation="dev.slang.intellij.navigation.SlangSymbolIndex"/>
+        <fileBasedIndex implementation="dev.slang.intellij.navigation.SlangInheritanceIndex"/>
+        <codeInsight.lineMarkerProvider language="Slang"
+                implementationClass="dev.slang.intellij.navigation.SlangInterfaceLineMarkerProvider"/>
         <gotoSymbolContributor implementation="dev.slang.intellij.navigation.SlangGotoSymbolContributor"/>
 
         <projectConfigurable

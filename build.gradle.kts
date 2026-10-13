@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.slang.intellij"
-version = "0.8.15"
+version = "0.8.17"
 
 repositories {
     mavenCentral()
@@ -117,6 +117,9 @@ tasks {
         }
         providers.gradleProperty("slangVariantsTestPath").orNull?.let {
             systemProperty("slang.test.cmakeVariants", it)
+        }
+        providers.gradleProperty("slangCorpusTestPath").orNull?.let {
+            systemProperty("slang.test.corpus", it)
         }
     }
 

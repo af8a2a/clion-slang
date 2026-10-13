@@ -27,6 +27,8 @@ public final class SlangSymbolExtractor {
     private record Token(String text, int start, int end, IElementType type) {}
     private final List<Token> tokens = new ArrayList<>();
     private final List<SlangSymbol> symbols = new ArrayList<>();
+    private List<SlangSymbol.NamespaceImport> usingNamespaces = List.of();
+    private List<String> typeParameters = List.of();
     private int[] close;
 
     private SlangSymbolExtractor(CharSequence source) {
@@ -63,6 +65,19 @@ public final class SlangSymbolExtractor {
 
     private void scope(int start, int end, String owner, boolean member, int depth) {
         if (depth > 64) return;
+        var outerUsings = usingNamespaces;
+        var scopedUsings = new ArrayList<>(outerUsings);
+        // Namespace imports apply to this scope, never to sibling scopes or executable bodies.
+        for (int at = start; at < end; at++) {
+            if ((at & 255) == 0) ProgressManager.checkCanceled();
+            if (text(at).equals("{") && close[at] >= at) { at = close[at]; continue; }
+            if (text(at).equals("using")) {
+                int stop = boundary(at, end);
+                String imported = typeName(at + 1, stop);
+                if (!imported.isEmpty()) scopedUsings.add(new SlangSymbol.NamespaceImport(imported, owner));
+            }
+        }
+        usingNamespaces = List.copyOf(scopedUsings);
         int i = start;
         while (i < end) {
             ProgressManager.checkCanceled();
@@ -91,25 +106,55 @@ public final class SlangSymbolExtractor {
                     String declaredName = join(nameAt, nameEnd).replace("::", ".");
                     add(nameAt, declaredName, owner, kind + " " + declaredName,
                             kind.equals("namespace") ? SlangSymbol.Kind.NAMESPACE : SlangSymbol.Kind.TYPE);
+                    if (Set.of("struct", "class", "interface").contains(kind)) {
+                        var symbol = symbols.removeLast();
+                        symbols.add(new SlangSymbol(symbol.name(), symbol.container(), symbol.signature(),
+                                symbol.kind(), symbol.offset(), withoutParameters(baseTypes(nameEnd, boundary),
+                                genericParameters(nameEnd, boundary)), usingNamespaces));
+                    }
                     if (body) {
                         String nested = qualify(owner, declaredName);
                         if (kind.equals("enum")) enumMembers(boundary + 1, bodyEnd, nested);
-                        else scope(boundary + 1, bodyEnd, nested, !kind.equals("namespace"), depth + 1);
+                        else {
+                            var outerParameters = typeParameters;
+                            var nestedParameters = new ArrayList<>(outerParameters);
+                            nestedParameters.addAll(genericParameters(nameEnd, boundary));
+                            typeParameters = List.copyOf(nestedParameters);
+                            scope(boundary + 1, bodyEnd, nested, !kind.equals("namespace"), depth + 1);
+                            typeParameters = outerParameters;
+                        }
                     }
                 }
             } else if (kind.equals("extension")) {
                 // Extensions can start with a generic parameter list; only index their members.
                 int typeAt = kindAt + 1;
                 if (text(typeAt).equals("<")) typeAt = afterAngles(typeAt, boundary);
-                if (body && typeAt < boundary)
+                if (body && typeAt < boundary) {
+                    var outerParameters = typeParameters;
+                    var extensionParameters = new ArrayList<>(outerParameters);
+                    extensionParameters.addAll(genericParameters(kindAt + 1, boundary));
+                    typeParameters = List.copyOf(extensionParameters);
                     scope(boundary + 1, bodyEnd, qualify(owner, join(typeAt, boundary)), true, depth + 1);
+                    typeParameters = outerParameters;
+                }
             } else if (!SKIP.contains(kind)) {
                 if (kind.equals("typealias") || kind.equals("associatedtype")) {
-                    if (name(kindAt + 1)) add(kindAt + 1, text(kindAt + 1), owner,
-                            join(declaration, boundary), SlangSymbol.Kind.ALIAS);
+                    if (name(kindAt + 1)) {
+                        add(kindAt + 1, text(kindAt + 1), owner, join(declaration, boundary), SlangSymbol.Kind.ALIAS);
+                        if (kind.equals("typealias")) {
+                            int afterName = kindAt + 2;
+                            int equals = text(afterName).equals("<") ? afterAngles(afterName, boundary) : afterName;
+                            if (text(equals).equals("=")) aliasTarget(typeName(equals + 1, boundary),
+                                    genericParameters(afterName, boundary));
+                        }
+                    }
                 } else if (kind.equals("typedef")) {
                     int alias = lastName(kindAt + 1, boundary);
-                    if (alias >= 0) add(alias, text(alias), owner, join(declaration, boundary), SlangSymbol.Kind.ALIAS);
+                    if (alias >= 0) {
+                        add(alias, text(alias), owner, join(declaration, boundary), SlangSymbol.Kind.ALIAS);
+                        // Arrays/pointers/functions are not aliases of the underlying interface/type.
+                        if (alias + 1 == boundary) aliasTarget(typeName(kindAt + 1, alias), List.of());
+                    }
                 } else {
                     int paren = functionParen(declaration, boundary);
                     int function = paren < 0 ? -1 : functionName(paren, declaration);
@@ -125,6 +170,61 @@ public final class SlangSymbolExtractor {
             i = body ? bodyEnd + 1 : boundary + 1;
             if (i <= begin) i = begin + 1;
         }
+        usingNamespaces = outerUsings;
+    }
+
+    private void aliasTarget(String target, List<String> parameters) {
+        if (target.isEmpty()) return;
+        var symbol = symbols.removeLast();
+        symbols.add(new SlangSymbol(symbol.name(), symbol.container(), symbol.signature(), symbol.kind(),
+                symbol.offset(), withoutParameters(List.of(target), parameters), usingNamespaces));
+    }
+
+    private List<String> withoutParameters(List<String> names, List<String> localParameters) {
+        return names.stream().filter(n -> {
+            String first = n.split("\\.", 2)[0];
+            return !typeParameters.contains(first) && !localParameters.contains(first);
+        }).toList();
+    }
+
+    private List<String> genericParameters(int start, int end) {
+        if (!text(start).equals("<")) return List.of();
+        var result = new ArrayList<String>();
+        int level = 1;
+        boolean expected = true;
+        for (int i = start + 1; i < end && level > 0; i++) {
+            String token = text(i);
+            if (level == 1 && expected && name(i)) { result.add(token); expected = false; }
+            if (token.equals("<")) level++;
+            else if (token.equals(">")) level--;
+            else if (token.equals(">>")) level -= 2;
+            else if (token.equals(",") && level == 1) expected = true;
+        }
+        return result;
+    }
+
+    /** Erase generic arguments while retaining nested qualified names; reject other type expressions. */
+    private String typeName(int start, int end) {
+        var result = new StringBuilder();
+        int i = start;
+        while (i < end && name(i)) {
+            if (!result.isEmpty()) result.append('.');
+            result.append(text(i++));
+            if (text(i).equals("<")) {
+                int angle = 0;
+                do {
+                    String token = text(i++);
+                    if (token.equals("<")) angle++;
+                    else if (token.equals(">")) angle--;
+                    else if (token.equals(">>")) angle -= 2;
+                } while (i < end && angle > 0);
+                if (angle != 0) return "";
+            }
+            if (i == end) return result.toString();
+            if (!text(i).equals(".") && !text(i).equals("::")) return "";
+            i++;
+        }
+        return "";
     }
 
     private int boundary(int start, int end) {
@@ -135,6 +235,27 @@ public final class SlangSymbolExtractor {
             if ((t.equals("(") || t.equals("[")) && close[i] >= i) i = close[i];
         }
         return end;
+    }
+
+    private List<String> baseTypes(int start, int end) {
+        // Constraints inside <T : IFoo> describe T, not the enclosing type.
+        if (text(start).equals("<")) start = afterAngles(start, end);
+        if (!text(start).equals(":")) return List.of();
+        var result = new ArrayList<String>();
+        int i = start + 1;
+        while (i < end && name(i)) {
+            var base = new StringBuilder(text(i++));
+            if (text(i).equals("<")) i = afterAngles(i, end);
+            while (i + 1 < end && (text(i).equals(".") || text(i).equals("::")) && name(i + 1)) {
+                base.append('.').append(text(i + 1));
+                i += 2;
+                if (text(i).equals("<")) i = afterAngles(i, end);
+            }
+            result.add(base.toString());
+            if (!text(i).equals(",")) break;
+            i++;
+        }
+        return List.copyOf(result);
     }
 
     private int functionParen(int start, int end) {
@@ -240,7 +361,7 @@ public final class SlangSymbolExtractor {
         return out.toString();
     }
     private void add(int at, String name, String owner, String signature, SlangSymbol.Kind kind) {
-        symbols.add(new SlangSymbol(name, owner, signature, kind, tokens.get(at).start));
+        symbols.add(new SlangSymbol(name, owner, signature, kind, tokens.get(at).start, List.of(), usingNamespaces));
     }
     private static boolean matches(String open, String end) {
         return (open.equals("(") && end.equals(")")) || (open.equals("[") && end.equals("]"))

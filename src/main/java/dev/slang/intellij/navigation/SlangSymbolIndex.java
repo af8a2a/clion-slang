@@ -25,6 +25,13 @@ public final class SlangSymbolIndex extends FileBasedIndexExtension<String, List
             for (var symbol : symbols) {
                 IOUtil.writeUTF(out, symbol.name()); IOUtil.writeUTF(out, symbol.container()); IOUtil.writeUTF(out, symbol.signature());
                 out.writeByte(symbol.kind().ordinal()); out.writeInt(symbol.offset());
+                out.writeInt(symbol.baseTypes().size());
+                for (String base : symbol.baseTypes()) IOUtil.writeUTF(out, base);
+                out.writeInt(symbol.usingNamespaces().size());
+                for (var namespace : symbol.usingNamespaces()) {
+                    IOUtil.writeUTF(out, namespace.name());
+                    IOUtil.writeUTF(out, namespace.owner());
+                }
             }
         }
         @Override public List<SlangSymbol> read(@NotNull DataInput in) throws IOException {
@@ -35,7 +42,16 @@ public final class SlangSymbolIndex extends FileBasedIndexExtension<String, List
                 String name = IOUtil.readUTF(in), owner = IOUtil.readUTF(in), signature = IOUtil.readUTF(in);
                 int kind = in.readUnsignedByte(), offset = in.readInt();
                 if (kind >= SlangSymbol.Kind.values().length || offset < 0) throw new IOException("Invalid symbol entry");
-                result.add(new SlangSymbol(name, owner, signature, SlangSymbol.Kind.values()[kind], offset));
+                int bases = in.readInt();
+                if (bases < 0 || bases > 10000) throw new IOException("Invalid base type count");
+                var baseTypes = new ArrayList<String>(bases);
+                for (int b = 0; b < bases; b++) baseTypes.add(IOUtil.readUTF(in));
+                int uses = in.readInt();
+                if (uses < 0 || uses > 10000) throw new IOException("Invalid namespace import count");
+                var namespaces = new ArrayList<SlangSymbol.NamespaceImport>(uses);
+                for (int u = 0; u < uses; u++)
+                    namespaces.add(new SlangSymbol.NamespaceImport(IOUtil.readUTF(in), IOUtil.readUTF(in)));
+                result.add(new SlangSymbol(name, owner, signature, SlangSymbol.Kind.values()[kind], offset, baseTypes, namespaces));
             }
             return List.copyOf(result);
         }
@@ -52,7 +68,7 @@ public final class SlangSymbolIndex extends FileBasedIndexExtension<String, List
     }
     @Override public @NotNull KeyDescriptor<String> getKeyDescriptor() { return EnumeratorStringDescriptor.INSTANCE; }
     @Override public @NotNull DataExternalizer<List<SlangSymbol>> getValueExternalizer() { return VALUES; }
-    @Override public int getVersion() { return 1; }
+    @Override public int getVersion() { return 4; }
     @Override public @NotNull FileBasedIndex.InputFilter getInputFilter() {
         return new DefaultFileTypeSpecificInputFilter(SlangFileType.INSTANCE);
     }

@@ -96,7 +96,7 @@ public final class SlangBranchDisplayService implements Disposable {
                 if (isSlangFile(file)) refresh();
             }
             @Override public void fileClosed(@NotNull FileEditorManager manager, @NotNull VirtualFile file) {
-                if (isSlangFile(file)) ui(() -> {
+                if (isSlangFile(file) && "file".equals(file.getFileSystem().getProtocol())) ui(() -> {
                     SlangContextService.getInstance(project).previews().closeFile(file.getPath(),
                             SlangContextService.path(file).toString(), manager.isFileOpen(file));
                     invalidate();

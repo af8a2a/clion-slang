@@ -34,6 +34,7 @@ final class SlangSymbolNavigationItem extends FakePsiElement {
         return file.getFileSystem().isCaseSensitive() ? url : url.toLowerCase(Locale.ROOT);
     }
     String qualifiedName() { return symbol.qualifiedName(); }
+    boolean isTypeAlias() { return symbol.kind() == SlangSymbol.Kind.ALIAS; }
     @Override public @NotNull Project getProject() { return project; }
     @Override public @NotNull Language getLanguage() { return SlangLanguage.INSTANCE; }
     @Override public @NotNull PsiElement getParent() { return file; }
@@ -54,7 +55,7 @@ final class SlangSymbolNavigationItem extends FakePsiElement {
     @Override public Icon getIcon(boolean open) {
         return switch (symbol.kind()) {
             case FUNCTION -> AllIcons.Nodes.Function;
-            case TYPE -> AllIcons.Nodes.Class;
+            case TYPE -> symbol.isInterface() ? AllIcons.Nodes.Interface : AllIcons.Nodes.Class;
             case NAMESPACE -> AllIcons.Nodes.Package;
             case FIELD -> AllIcons.Nodes.Field;
             case VARIABLE -> AllIcons.Nodes.Gvariable;
